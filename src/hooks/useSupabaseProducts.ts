@@ -40,6 +40,7 @@ export const useSupabaseProducts = () => {
       setProducts(data || []);
     } catch (error) {
       console.error('Error fetching products:', error);
+      setProducts([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
@@ -58,6 +59,7 @@ export const useSupabaseProducts = () => {
       setCategories(['All', ...uniqueCategories]);
     } catch (error) {
       console.error('Error fetching categories:', error);
+      setCategories(['All']); // Set default categories on error
     }
   };
 

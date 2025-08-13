@@ -26,6 +26,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     const result = await addToCart(product.id, 1);
     if (!result.error) {
       showToast('Product added to cart!');
@@ -36,6 +37,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
 
   const handleAddToWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     const result = await addToWishlist(product.id);
     if (!result.error) {
       showToast(`${product.name} added to wishlist!`);

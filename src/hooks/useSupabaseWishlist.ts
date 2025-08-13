@@ -87,6 +87,7 @@ export const useSupabaseWishlist = () => {
       await fetchWishlistItems();
       return { error: null };
     } catch (error) {
+      console.error('Error adding to wishlist:', error);
       return { error };
     }
   };

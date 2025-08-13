@@ -96,6 +96,7 @@ export const useSupabaseCart = () => {
       await fetchCartItems();
       return { error: null };
     } catch (error) {
+      console.error('Error adding to cart:', error);
       return { error };
     }
   };

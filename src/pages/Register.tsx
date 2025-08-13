@@ -34,12 +34,33 @@ const Register: React.FC = () => {
     setError(null);
     
     const { data: authData, error } = await signUp(data.email, data.password, data.name, data.phone);
-    setIsLoading(false);
     
     if (error) {
       setError(error.message);
-    } else if (authData.user) {
-      navigate('/');
+      setIsLoading(false);
+    } else {
+      // Show verification message
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 max-w-md';
+      toast.innerHTML = `
+        <div class="flex items-center space-x-3">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div>
+            <p class="font-semibold">Verification email sent!</p>
+            <p class="text-sm">Please check ${data.email} and click the verification link to activate your account.</p>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        if (document.body.contains(toast)) {
+          document.body.removeChild(toast);
+        }
+        navigate('/login');
+      }, 5000);
+      setIsLoading(false);
     }
   };
 

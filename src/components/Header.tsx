@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X, Heart, Search } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Heart, Search, LogOut } from 'lucide-react';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
@@ -154,9 +154,10 @@ const Header: React.FC = () => {
                         )}
                         <button
                           onClick={handleLogout}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                          className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
                         >
-                          Logout
+                          <LogOut className="h-4 w-4" />
+                          <span>Logout</span>
                         </button>
                       </>
                     ) : (
