@@ -3,12 +3,14 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, User, Menu, X, Heart, Search } from 'lucide-react';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
 import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { getCartItemsCount } = useSupabaseCart();
+  const { getWishlistItemsCount } = useSupabaseWishlist();
   const { user, userProfile, signOut } = useSupabaseAuth();
   const navigate = useNavigate();
 
@@ -16,6 +18,10 @@ const Header: React.FC = () => {
     signOut();
     navigate('/');
     setIsProfileOpen(false);
+  };
+
+  const handleSearchClick = () => {
+    alert('Search functionality coming soon!');
   };
 
   return (
@@ -54,25 +60,30 @@ const Header: React.FC = () => {
             <motion.button 
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
+              onClick={handleSearchClick}
               className="p-2 text-gray-700 hover:text-[#815536] transition-colors duration-200"
             >
               <Search className="h-5 w-5" />
             </motion.button>
             
-            <motion.button 
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              className="relative p-2 text-gray-700 hover:text-[#815536] transition-colors duration-200"
-            >
-              <Heart className="h-5 w-5" />
-              <motion.span
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center"
+            <Link to="/wishlist">
+              <motion.div 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="relative p-2 text-gray-700 hover:text-[#815536] transition-colors duration-200"
               >
-                0
-              </motion.span>
-            </motion.button>
+                <Heart className="h-5 w-5" />
+                {getWishlistItemsCount() > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center"
+                  >
+                    {getWishlistItemsCount()}
+                  </motion.span>
+                )}
+              </motion.div>
+            </Link>
 
             <Link to="/cart">
               <motion.div 

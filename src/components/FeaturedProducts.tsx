@@ -4,36 +4,41 @@ import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Star, ArrowRight } from 'lucide-react';
 import { useSupabaseProducts } from '../hooks/useSupabaseProducts';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
+import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
 
 const FeaturedProducts: React.FC = () => {
   const { products, loading } = useSupabaseProducts();
   const { addToCart } = useSupabaseCart();
+  const { addToWishlist } = useSupabaseWishlist();
   
   const featuredProducts = products.slice(0, 4);
 
-  const handleAddToCart = async (productId: string) => {
-    const result = await addToCart(productId, 1);
-    if (!result.error) {
-      // Show success message
-      const toast = document.createElement('div');
-      toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-      toast.textContent = 'Product added to cart!';
-      document.body.appendChild(toast);
-      setTimeout(() => {
-        document.body.removeChild(toast);
-      }, 3000);
-    }
-  };
-
-  const handleAddToWishlist = (productName: string) => {
-    // Show wishlist message
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     const toast = document.createElement('div');
-    toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-    toast.textContent = `${productName} added to wishlist!`;
+    toast.className = `fixed bottom-4 right-4 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+    toast.textContent = message;
     document.body.appendChild(toast);
     setTimeout(() => {
       document.body.removeChild(toast);
     }, 3000);
+  };
+
+  const handleAddToCart = async (productId: string) => {
+    const result = await addToCart(productId, 1);
+    if (!result.error) {
+      showToast('Product added to cart!');
+    } else {
+      showToast(result.error.message, 'error');
+    }
+  };
+
+  const handleAddToWishlist = async (productId: string, productName: string) => {
+    const result = await addToWishlist(productId);
+    if (!result.error) {
+      showToast(`${productName} added to wishlist!`);
+    } else {
+      showToast(result.error.message, 'error');
+    }
   };
 
   if (loading) {
@@ -130,7 +135,7 @@ const FeaturedProducts: React.FC = () => {
                         <motion.button
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
-                          onClick={() => handleAddToWishlist(product.name)}
+                          onClick={() => handleAddToWishlist(product.id, product.name)}
                           className="bg-white/90 backdrop-blur-sm text-gray-900 p-2 rounded-lg hover:bg-white transition-all duration-200"
                         >
                           <Heart className="h-4 w-4" />
@@ -237,23 +242,13 @@ const FeaturedProducts: React.FC = () => {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => handleAddToWishlist(product.name)}
+                    onClick={() => handleAddToWishlist(product.id, product.name)}
                     className="flex items-center space-x-2 px-6 py-3 border-2 border-[#815536] text-[#815536] font-semibold rounded-lg hover:bg-[#815536] hover:text-white transition-all duration-200"
                   >
                     <Heart className="h-5 w-5" />
                     <span>Wishlist</span>
                   </motion.button>
 
-                  <Link to={`/product/${product.id}`}>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="flex items-center space-x-2 px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-all duration-200"
-                    >
-                      <span>Read More</span>
-                      <ArrowRight className="h-5 w-5" />
-                    </motion.button>
-                  </Link>
                 </div>
               </div>
             </motion.div>

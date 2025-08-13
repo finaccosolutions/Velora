@@ -71,26 +71,17 @@ export const useSupabaseAuth = () => {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            full_name: fullName,
+            phone: phone || null,
+          }
+        }
       });
 
       if (error) throw error;
 
-      if (data.user) {
-        // Create user profile
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert({
-            id: data.user.id,
-            email,
-            full_name: fullName,
-            phone: phone || null,
-          });
-
-        if (profileError) {
-          console.error('Error creating user profile:', profileError);
-        }
-      }
-
+      // The user profile is now created by a Supabase database trigger
       return { data, error: null };
     } catch (error) {
       return { data: null, error };

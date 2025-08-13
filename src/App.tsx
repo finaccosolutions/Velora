@@ -15,6 +15,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProducts from './pages/admin/AdminProducts';
 import About from './pages/About';
 import Contact from './pages/Contact';
+import Wishlist from './pages/Wishlist';
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
               <Route path="/admin/products" element={<AdminProducts />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/wishlist" element={<Wishlist />} />
               <Route path="/order-success" element={
                 <div className="min-h-screen flex items-center justify-center bg-gray-50">
                   <motion.div

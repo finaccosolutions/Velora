@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingCart, Heart, Star } from 'lucide-react';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
+import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
 import { motion } from 'framer-motion';
 
 interface ProductCardProps {
@@ -11,21 +12,36 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
   const { addToCart } = useSupabaseCart();
+  const { addToWishlist } = useSupabaseWishlist();
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      document.body.removeChild(toast);
+    }, 3000);
+  };
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
-    addToCart(product.id, 1).then((result) => {
-      if (!result.error) {
-        // Show success message
-        const toast = document.createElement('div');
-        toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-        toast.textContent = 'Product added to cart!';
-        document.body.appendChild(toast);
-        setTimeout(() => {
-          document.body.removeChild(toast);
-        }, 3000);
-      }
-    });
+    const result = await addToCart(product.id, 1);
+    if (!result.error) {
+      showToast('Product added to cart!');
+    } else {
+      showToast(result.error.message, 'error');
+    }
+  };
+
+  const handleAddToWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const result = await addToWishlist(product.id);
+    if (!result.error) {
+      showToast(`${product.name} added to wishlist!`);
+    } else {
+      showToast(result.error.message, 'error');
+    }
   };
 
   return (
@@ -47,7 +63,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
               {Math.round(((product.original_price - product.price) / product.original_price) * 100)}% OFF
             </div>
           )}
-          <button className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-[#c9baa8]">
+          <button 
+            onClick={handleAddToWishlist}
+            className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-[#c9baa8]"
+          >
             <Heart className="h-4 w-4 text-[#815536]" />
           </button>
         </div>
