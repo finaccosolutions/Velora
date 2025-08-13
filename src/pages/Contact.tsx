@@ -70,12 +70,12 @@ const Contact: React.FC = () => {
               {
                 icon: MapPin,
                 title: 'Visit Our Store',
-                details: ['123 Fragrance Street', 'Bandra West, Mumbai', 'Maharashtra 400050', 'India']
+                details: ['Perinthalmanna', 'Kerala', 'India']
               },
               {
                 icon: Phone,
                 title: 'Call Us',
-                details: ['+91 98765 43210', '+91 98765 43211', 'Mon-Sat: 10AM-8PM', 'Sun: 11AM-6PM']
+                details: ['+91 73560 62349', '+91 98765 43211', 'Mon-Sat: 10AM-8PM', 'Sun: 11AM-6PM']
               },
               {
                 icon: Mail,
