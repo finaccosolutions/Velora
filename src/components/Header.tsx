@@ -60,7 +60,7 @@ const Header: React.FC = () => {
             <motion.button 
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              onClick={handleSearchClick}
+              onClick={() => navigate('/products')}
               className="p-2 text-gray-700 hover:text-[#815536] transition-colors duration-200"
             >
               <Search className="h-5 w-5" />
@@ -105,7 +105,12 @@ const Header: React.FC = () => {
             </Link>
 
             {/* User Profile */}
-            <div className="relative">
+            <div className="relative flex items-center space-x-2">
+              {user && userProfile && (
+                <span className="text-sm font-medium text-gray-700 hidden sm:block">
+                  {userProfile.full_name}
+                </span>
+              )}
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}

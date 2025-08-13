@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Heart, Star } from 'lucide-react';
+import { Heart, Star } from 'lucide-react';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
 import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
 import { motion } from 'framer-motion';
@@ -12,7 +12,7 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
   const { addToCart } = useSupabaseCart();
-  const { addToWishlist } = useSupabaseWishlist();
+  const { wishlistItems, addToWishlist, removeFromWishlist } = useSupabaseWishlist();
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     const toast = document.createElement('div');
@@ -24,27 +24,33 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
     }, 3000);
   };
 
-  const handleAddToCart = async (e: React.MouseEvent) => {
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    const result = await addToCart(product.id, 1);
-    if (!result.error) {
-      showToast('Product added to cart!');
+    
+    const isInWishlist = wishlistItems.some(item => item.product_id === product.id);
+    
+    if (isInWishlist) {
+      const wishlistItem = wishlistItems.find(item => item.product_id === product.id);
+      if (wishlistItem) {
+        const result = await removeFromWishlist(wishlistItem.id);
+        if (!result.error) {
+          showToast(`${product.name} removed from wishlist!`);
+        } else {
+          showToast(result.error.message, 'error');
+        }
+      }
     } else {
-      showToast(result.error.message, 'error');
+      const result = await addToWishlist(product.id);
+      if (!result.error) {
+        showToast(`${product.name} added to wishlist!`);
+      } else {
+        showToast(result.error.message, 'error');
+      }
     }
   };
 
-  const handleAddToWishlist = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const result = await addToWishlist(product.id);
-    if (!result.error) {
-      showToast(`${product.name} added to wishlist!`);
-    } else {
-      showToast(result.error.message, 'error');
-    }
-  };
+  const isInWishlist = wishlistItems.some(item => item.product_id === product.id);
 
   return (
     <motion.div
@@ -66,10 +72,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
             </div>
           )}
           <button 
-            onClick={handleAddToWishlist}
-            className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-[#c9baa8]"
+            onClick={handleWishlistToggle}
+            className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white"
           >
-            <Heart className="h-4 w-4 text-[#815536]" />
+            <Heart 
+              className={`h-4 w-4 ${
+                isInWishlist 
+                  ? 'text-red-500 fill-current' 
+                  : 'text-gray-600'
+              }`} 
+            />
           </button>
         </div>
 
@@ -106,17 +118,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
             </span>
           </div>
 
-          <div className="flex space-x-2">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleAddToCart}
-              className="flex-1 bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white py-3 px-4 rounded-lg font-semibold hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200 flex items-center justify-center space-x-2"
-            >
-              <ShoppingCart className="h-4 w-4" />
-              <span>Add to Cart</span>
-            </motion.button>
-          </div>
+          <Link
+            to={`/product/${product.id}`}
+            className="block w-full bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white py-3 px-4 rounded-lg font-semibold hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200 text-center"
+          >
+            View Details
+          </Link>
         </div>
       </Link>
     </motion.div>

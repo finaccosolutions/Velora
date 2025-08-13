@@ -68,7 +68,7 @@ export const useSupabaseWishlist = () => {
         .select('id')
         .eq('user_id', user.id)
         .eq('product_id', productId)
-        .single();
+        .maybeSingle();
 
       if (existingItem) {
         return { error: new Error('Product already in wishlist') };
@@ -115,12 +115,17 @@ export const useSupabaseWishlist = () => {
     return wishlistItems.length;
   };
 
+  const isInWishlist = (productId: string) => {
+    return wishlistItems.some(item => item.product_id === productId);
+  };
+
   return {
     wishlistItems,
     loading,
     addToWishlist,
     removeFromWishlist,
     getWishlistItemsCount,
+    isInWishlist,
     fetchWishlistItems,
   };
 };
