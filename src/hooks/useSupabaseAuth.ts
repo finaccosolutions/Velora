@@ -60,28 +60,33 @@ export const useSupabaseAuth = () => {
     };
   }, []);
 
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      console.log('fetchUserProfile: Attempting to fetch profile for userId:', userId);
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
+ const fetchUserProfile = async (userId: string) => {
+  try {
+    console.log('fetchUserProfile: Attempting to fetch profile for userId:', userId);
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
 
-      if (error) {
-        console.error('fetchUserProfile: Error fetching user profile:', error);
-      } else {
-        console.log('fetchUserProfile: User profile fetched:', data);
-        setUserProfile(data);
-      }
-    } catch (error) {
-      console.error('fetchUserProfile: Catch block error fetching user profile:', error);
-    } finally {
-      console.log('fetchUserProfile: Setting loading to false.');
-      setLoading(false);
+    // --- THESE ARE THE CRUCIAL LINES I NEED TO SEE THE OUTPUT OF ---
+    console.log('fetchUserProfile: Supabase query result - data:', data);
+    console.log('fetchUserProfile: Supabase query result - error:', error);
+    // --- END CRUCIAL LINES ---
+
+    if (error) {
+      console.error('fetchUserProfile: Error fetching user profile:', error);
+    } else {
+      console.log('fetchUserProfile: User profile fetched:', data);
+      setUserProfile(data);
     }
-  };
+  } catch (error) {
+    console.error('fetchUserProfile: Catch block error fetching user profile:', error);
+  } finally {
+    console.log('fetchUserProfile: Setting loading to false.');
+    setLoading(false);
+  }
+};
 
   const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
     try {
@@ -98,7 +103,27 @@ export const useSupabaseAuth = () => {
       });
 
       if (error) throw error;
-      console.log('signUp: User signed up successfully:', data);
+
+      // Explicitly insert user profile into public.users table
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('users')
+          .insert({
+            id: data.user.id,
+            email: data.user.email!,
+            full_name: fullName,
+            phone: phone || null,
+            is_admin: false // Default to false for new sign-ups
+          });
+
+        if (profileError) {
+          console.error('signUp: Error inserting user profile into public.users:', profileError);
+          // Optionally, you might want to roll back the auth.users entry or handle this error differently
+          throw profileError; // Re-throw to indicate overall sign-up failure
+        }
+      }
+
+      console.log('signUp: User signed up successfully and profile created:', data);
       return { data, error: null };
     } catch (error) {
       console.error('signUp: Error during sign up:', error);
@@ -128,6 +153,11 @@ export const useSupabaseAuth = () => {
       console.error('signOut: Error during sign out:', error);
     } else {
       console.log('signOut: User signed out successfully.');
+      // Explicitly clear state after successful sign out
+      setUser(null);
+      setUserProfile(null);
+      setSession(null);
+      setLoading(false);
     }
     return { error };
   };
@@ -168,3 +198,4 @@ export const useSupabaseAuth = () => {
     updateProfile,
   };
 };
+

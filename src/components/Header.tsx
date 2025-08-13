@@ -1,6 +1,7 @@
+// src/components/Header.tsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X, Heart, Search, LogOut } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Heart, Search, LogOut, Settings } from 'lucide-react'; // Added Settings import
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
 import { useAuth } from '../context/AuthContext';
 import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
@@ -14,6 +15,13 @@ const Header: React.FC = () => {
   const { user, userProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  // --- START ADDED CODE ---
+  useEffect(() => {
+    console.log('Header Component - Current User:', user);
+    console.log('Header Component - Current User Profile:', userProfile);
+  }, [user, userProfile]);
+  // --- END ADDED CODE ---
 
   const handleLogout = () => {
     signOut();
