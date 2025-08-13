@@ -1,3 +1,4 @@
+// src/components/FeaturedProducts.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -9,7 +10,8 @@ import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
 const FeaturedProducts: React.FC = () => {
   const { products, loading } = useSupabaseProducts();
   const { addToCart } = useSupabaseCart();
-  const { addToWishlist } = useSupabaseWishlist();
+  // Destructure isInWishlist from useSupabaseWishlist
+  const { wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useSupabaseWishlist();
   
   const featuredProducts = products.slice(0, 4);
 
@@ -34,14 +36,30 @@ const FeaturedProducts: React.FC = () => {
     }
   };
 
-  const handleAddToWishlist = async (productId: string, productName: string) => {
-    event?.preventDefault();
-    event?.stopPropagation();
-    const result = await addToWishlist(productId);
-    if (!result.error) {
-      showToast(`${productName} added to wishlist!`);
+  // Unified function to toggle wishlist status
+  const handleWishlistToggle = async (e: React.MouseEvent, productId: string, productName: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const isCurrentlyInWishlist = isInWishlist(productId);
+    
+    if (isCurrentlyInWishlist) {
+      const wishlistItem = wishlistItems.find(item => item.product_id === productId);
+      if (wishlistItem) {
+        const result = await removeFromWishlist(wishlistItem.id);
+        if (!result.error) {
+          showToast(`${productName} removed from wishlist!`);
+        } else {
+          showToast(result.error.message, 'error');
+        }
+      }
     } else {
-      showToast(result.error.message, 'error');
+      const result = await addToWishlist(productId);
+      if (!result.error) {
+        showToast(`${productName} added to wishlist!`);
+      } else {
+        showToast(result.error.message, 'error');
+      }
     }
   };
 
@@ -114,6 +132,21 @@ const FeaturedProducts: React.FC = () => {
                     alt={product.name}
                     className="w-full h-96 object-cover group-hover:scale-105 transition-transform duration-500"
                   />
+                  {/* NEW WISHLIST BUTTON ON IMAGE */}
+                  <button 
+                    onClick={(e) => handleWishlistToggle(e, product.id, product.name)}
+                    className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white"
+                  >
+                    <Heart 
+                      className={`h-4 w-4 ${
+                        isInWishlist(product.id) 
+                          ? 'text-red-500 fill-current' 
+                          : 'text-gray-600'
+                      }`} 
+                    />
+                  </button>
+                  {/* END NEW WISHLIST BUTTON */}
+
                   <motion.div 
                     initial={{ opacity: 0 }}
                     whileHover={{ opacity: 1 }}
@@ -140,18 +173,7 @@ const FeaturedProducts: React.FC = () => {
                           <ShoppingCart className="h-4 w-4" />
                           <span>Add to Cart</span>
                         </motion.button>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleAddToWishlist(product.id, product.name);
-                          }}
-                          className="bg-white/90 backdrop-blur-sm text-gray-900 p-2 rounded-lg hover:bg-white transition-all duration-200"
-                        >
-                          <Heart className="h-4 w-4" />
-                        </motion.button>
+                        {/* The old wishlist button that was here is now replaced by the new hoverable one */}
                       </motion.div>
                     </div>
                   </motion.div>
@@ -255,17 +277,14 @@ const FeaturedProducts: React.FC = () => {
                     <span>Add to Cart</span>
                   </motion.button>
 
+                  {/* Updated Wishlist button below product details */}
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleAddToWishlist(product.id, product.name);
-                    }}
+                    onClick={(e) => handleWishlistToggle(e, product.id, product.name)}
                     className="flex items-center space-x-2 px-6 py-3 border-2 border-[#815536] text-[#815536] font-semibold rounded-lg hover:bg-[#815536] hover:text-white transition-all duration-200"
                   >
-                    <Heart className="h-5 w-5" />
+                    <Heart className={`h-5 w-5 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
                     <span>Wishlist</span>
                   </motion.button>
 

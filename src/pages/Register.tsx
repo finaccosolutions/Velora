@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Mail, Lock, Eye, EyeOff, Phone, MapPin } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { useAuth } from '../context/AuthContext';
 
 interface RegisterForm {
   name: string;
@@ -22,7 +22,7 @@ const Register: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { signUp } = useSupabaseAuth();
+  const { signUp } = useAuth();
   const navigate = useNavigate();
   
   const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterForm>();

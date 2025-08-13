@@ -1,6 +1,7 @@
+// src/hooks/useSupabaseCart.ts
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useSupabaseAuth } from './useSupabaseAuth';
+import { useAuth } from '../context/AuthContext';
 
 interface CartItem {
   id: string;
@@ -19,7 +20,7 @@ interface CartItem {
 export const useSupabaseCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user } = useSupabaseAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
@@ -70,7 +71,7 @@ export const useSupabaseCart = () => {
         .select('id, quantity')
         .eq('user_id', user.id)
         .eq('product_id', productId)
-        .single();
+        .maybeSingle(); // Changed .single() to .maybeSingle() here
 
       if (existingItem) {
         // Update quantity

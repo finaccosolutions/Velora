@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
+import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 
 interface AdminLoginForm {
@@ -15,7 +15,7 @@ const AdminLogin: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { signIn, signOut } = useSupabaseAuth();
+  const { signIn, signOut } = useAuth();
   const navigate = useNavigate();
   
   const { register, handleSubmit, formState: { errors } } = useForm<AdminLoginForm>();

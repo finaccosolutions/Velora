@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { CreditCard, Truck, MapPin, User } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
-import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { useAuth } from '../context/AuthContext';
 
 interface CheckoutForm {
   email: string;
@@ -20,7 +20,7 @@ interface CheckoutForm {
 
 const Checkout: React.FC = () => {
   const { cartItems, getCartTotal, clearCart } = useSupabaseCart();
-  const { userProfile } = useSupabaseAuth();
+  const { userProfile } = useAuth();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   

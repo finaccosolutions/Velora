@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { ShoppingCart, User, Menu, X, Heart, Search, LogOut } from 'lucide-react';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
-import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { useAuth } from '../context/AuthContext';
 import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -11,7 +11,7 @@ const Header: React.FC = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { getCartItemsCount } = useSupabaseCart();
   const { getWishlistItemsCount } = useSupabaseWishlist();
-  const { user, userProfile, signOut } = useSupabaseAuth();
+  const { user, userProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 

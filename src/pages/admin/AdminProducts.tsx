@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
+import { useAuth } from '../../context/AuthContext';
 import { useSupabaseProducts } from '../../hooks/useSupabaseProducts';
 
 interface ProductForm {
@@ -28,7 +28,7 @@ const AdminProducts: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isLoading, setIsLoading] = useState(false);
   
-  const { userProfile } = useSupabaseAuth();
+  const { userProfile } = useAuth();
   const { products, categories, createProduct, updateProduct, deleteProduct, fetchProducts } = useSupabaseProducts();
   const navigate = useNavigate();
   

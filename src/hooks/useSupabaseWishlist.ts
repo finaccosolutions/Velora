@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useSupabaseAuth } from './useSupabaseAuth';
+import { useAuth } from '../context/AuthContext';
 
 interface WishlistItem {
   id: string;
@@ -18,7 +18,7 @@ interface WishlistItem {
 export const useSupabaseWishlist = () => {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user } = useSupabaseAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (user) {

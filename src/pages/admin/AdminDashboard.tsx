@@ -8,7 +8,7 @@ import {
   Package, Users, ShoppingCart, DollarSign, TrendingUp, 
   Eye, Plus, Settings, LogOut
 } from 'lucide-react';
-import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
+import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
 
@@ -35,7 +35,7 @@ const AdminDashboard: React.FC = () => {
     categoryData: []
   });
   const [loading, setLoading] = useState(true);
-  const { userProfile, signOut } = useSupabaseAuth();
+  const { userProfile, signOut } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {

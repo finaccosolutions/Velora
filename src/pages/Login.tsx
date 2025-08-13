@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { useAuth } from '../context/AuthContext';
 
 interface LoginForm {
   email: string;
@@ -14,7 +14,7 @@ const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { signIn } = useSupabaseAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();

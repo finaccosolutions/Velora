@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { User, Mail, Phone, MapPin, Edit, Save, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { useAuth } from '../context/AuthContext';
 
 interface ProfileForm {
   full_name: string;
@@ -13,7 +13,7 @@ const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const { userProfile, updateProfile } = useSupabaseAuth();
+  const { userProfile, updateProfile } = useAuth();
   
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ProfileForm>({
     defaultValues: {

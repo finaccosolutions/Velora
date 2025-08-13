@@ -1,3 +1,4 @@
+// src/hooks/useSupabaseAuth.ts
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
@@ -17,37 +18,51 @@ export const useSupabaseAuth = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('Auth useEffect: Initializing...');
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Auth useEffect: getSession result:', session);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        console.log('Auth useEffect: User found, fetching profile for:', session.user.id);
         fetchUserProfile(session.user.id);
       } else {
+        console.log('Auth useEffect: No user session found.');
         setLoading(false);
       }
+    }).catch(error => {
+      console.error('Auth useEffect: Error getting session:', error);
+      setLoading(false);
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth State Change:', event, session);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          console.log('Auth State Change: User found, fetching profile for:', session.user.id);
           await fetchUserProfile(session.user.id);
         } else {
+          console.log('Auth State Change: No user session found, clearing profile.');
           setUserProfile(null);
           setLoading(false);
         }
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      console.log('Auth useEffect: Cleaning up subscription.');
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchUserProfile = async (userId: string) => {
     try {
+      console.log('fetchUserProfile: Attempting to fetch profile for userId:', userId);
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -55,19 +70,22 @@ export const useSupabaseAuth = () => {
         .single();
 
       if (error) {
-        console.error('Error fetching user profile:', error);
+        console.error('fetchUserProfile: Error fetching user profile:', error);
       } else {
+        console.log('fetchUserProfile: User profile fetched:', data);
         setUserProfile(data);
       }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('fetchUserProfile: Catch block error fetching user profile:', error);
     } finally {
+      console.log('fetchUserProfile: Setting loading to false.');
       setLoading(false);
     }
   };
 
   const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
     try {
+      console.log('signUp: Attempting to sign up user:', email);
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -80,36 +98,48 @@ export const useSupabaseAuth = () => {
       });
 
       if (error) throw error;
-
-      // The user profile is now created by a Supabase database trigger
+      console.log('signUp: User signed up successfully:', data);
       return { data, error: null };
     } catch (error) {
+      console.error('signUp: Error during sign up:', error);
       return { data: null, error };
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
+      console.log('signIn: Attempting to sign in user:', email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-
+      console.log('signIn: Sign in result:', data);
       return { data, error };
     } catch (error) {
+      console.error('signIn: Error during sign in:', error);
       return { data: null, error };
     }
   };
 
   const signOut = async () => {
+    console.log('signOut: Attempting to sign out user.');
     const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('signOut: Error during sign out:', error);
+    } else {
+      console.log('signOut: User signed out successfully.');
+    }
     return { error };
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
-    if (!user) return { error: new Error('No user logged in') };
+    if (!user) {
+      console.error('updateProfile: No user logged in to update profile.');
+      return { error: new Error('No user logged in') };
+    }
 
     try {
+      console.log('updateProfile: Attempting to update profile for user:', user.id, updates);
       const { data, error } = await supabase
         .from('users')
         .update(updates)
@@ -118,10 +148,11 @@ export const useSupabaseAuth = () => {
         .single();
 
       if (error) throw error;
-
+      console.log('updateProfile: Profile updated successfully:', data);
       setUserProfile(data);
       return { data, error: null };
     } catch (error) {
+      console.error('updateProfile: Error during profile update:', error);
       return { data: null, error };
     }
   };

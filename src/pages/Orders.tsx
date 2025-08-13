@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Package, Calendar, DollarSign, MapPin, Eye } from 'lucide-react';
-import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 
 interface Order {
@@ -28,7 +28,7 @@ const Orders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const { user } = useSupabaseAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
