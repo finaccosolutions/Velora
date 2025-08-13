@@ -1,40 +1,58 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
+import { useSupabaseAuth } from '../../hooks/useSupabaseAuth';
+import { supabase } from '../../lib/supabase';
 
-interface LoginForm {
+interface AdminLoginForm {
   email: string;
   password: string;
 }
 
-const Login: React.FC = () => {
+const AdminLogin: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { signIn } = useSupabaseAuth();
+  const { signIn, signOut } = useSupabaseAuth();
   const navigate = useNavigate();
   
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
+  const { register, handleSubmit, formState: { errors } } = useForm<AdminLoginForm>();
 
-  const onSubmit = async (data: LoginForm) => {
+  const onSubmit = async (formData: AdminLoginForm) => {
     setIsLoading(true);
     setError(null);
     
-    const { data: authData, error } = await signIn(data.email, data.password);
-    setIsLoading(false);
+    const { data, error } = await signIn(formData.email, formData.password);
     
     if (error) {
       setError(error.message);
-    } else if (authData.user) {
-      navigate('/');
+      setIsLoading(false);
+      return;
     }
+
+    if (data.user) {
+      // Check if user is admin
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('is_admin')
+        .eq('id', data.user.id)
+        .single();
+
+      if (userProfile?.is_admin) {
+        navigate('/admin/dashboard');
+      } else {
+        setError('Access denied. Admin privileges required.');
+        await signOut();
+      }
+    }
+    
+    setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#815536] to-[#c9baa8] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -43,16 +61,16 @@ const Login: React.FC = () => {
         <div className="bg-white rounded-2xl shadow-2xl p-8">
           <div className="text-center">
             <div className="flex items-center justify-center space-x-2 mb-6">
-              <div className="bg-gradient-to-r from-[#815536] to-[#c9baa8] p-3 rounded-lg">
-                <span className="text-white font-bold text-2xl">V</span>
+              <div className="bg-gradient-to-r from-gray-800 to-gray-600 p-3 rounded-lg">
+                <Shield className="text-white h-8 w-8" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-[#815536]">Velora</h1>
-                <p className="text-sm text-[#c9baa8] -mt-1">TRADINGS</p>
+                <h1 className="text-3xl font-bold text-gray-900">Admin Panel</h1>
+                <p className="text-sm text-gray-600 -mt-1">Velora Tradings</p>
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-            <p className="text-gray-600">Sign in to your account</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Admin Login</h2>
+            <p className="text-gray-600">Sign in to access the admin dashboard</p>
           </div>
 
           {error && (
@@ -80,8 +98,8 @@ const Login: React.FC = () => {
                         message: 'Invalid email address'
                       }
                     })}
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
-                    placeholder="Enter your email"
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+                    placeholder="Enter admin email"
                   />
                 </div>
                 {errors.email && (
@@ -100,8 +118,8 @@ const Login: React.FC = () => {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     {...register('password', { required: 'Password is required' })}
-                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
-                    placeholder="Enter your password"
+                    className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+                    placeholder="Enter admin password"
                   />
                   <button
                     type="button"
@@ -121,43 +139,24 @@ const Login: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-[#815536] focus:ring-[#815536] border-gray-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                  Remember me
-                </label>
-              </div>
-
-              <div className="text-sm">
-                <Link to="/forgot-password" className="text-[#815536] hover:underline">
-                  Forgot your password?
-                </Link>
-              </div>
-            </div>
-
             <motion.button
               type="submit"
               disabled={isLoading}
               whileHover={{ scale: isLoading ? 1 : 1.02 }}
               whileTap={{ scale: isLoading ? 1 : 0.98 }}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-[#815536] to-[#c9baa8] hover:from-[#6d4429] hover:to-[#b8a494] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#815536] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-gray-800 to-gray-600 hover:from-gray-900 hover:to-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? 'Signing in...' : 'Sign In to Admin Panel'}
             </motion.button>
 
             <div className="text-center">
-              <p className="text-sm text-gray-600">
-                Don't have an account?{' '}
-                <Link to="/register" className="text-[#815536] hover:underline font-medium">
-                  Create one now
-                </Link>
-              </p>
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="text-gray-600 hover:text-gray-900 text-sm"
+              >
+                ← Back to Website
+              </button>
             </div>
           </form>
         </div>
@@ -166,4 +165,4 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login;
+export default AdminLogin;

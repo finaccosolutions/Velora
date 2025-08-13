@@ -10,12 +10,18 @@ import Cart from './pages/Cart';
 import Checkout from './pages/Checkout';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminProducts from './pages/admin/AdminProducts';
 
 function App() {
   return (
     <Router>
       <div className="min-h-screen flex flex-col">
-        <Header />
+        <Routes>
+          <Route path="/admin/*" element={null} />
+          <Route path="*" element={<Header />} />
+        </Routes>
         <main className="flex-1">
           <AnimatePresence mode="wait">
             <Routes>
@@ -26,6 +32,9 @@ function App() {
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/products" element={<AdminProducts />} />
               <Route path="/about" element={
                 <div className="min-h-screen flex items-center justify-center">
                   <motion.div
@@ -91,7 +100,10 @@ function App() {
             </Routes>
           </AnimatePresence>
         </main>
-        <Footer />
+        <Routes>
+          <Route path="/admin/*" element={null} />
+          <Route path="*" element={<Footer />} />
+        </Routes>
       </div>
     </Router>
   );

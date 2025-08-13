@@ -2,12 +2,9 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Star, ShoppingBag, Truck, Shield, HeadphonesIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
-import ProductCard from '../components/ProductCard';
-import { products } from '../data/products';
+import FeaturedProducts from '../components/FeaturedProducts';
 
 const Home: React.FC = () => {
-  const featuredProducts = products.slice(0, 4);
-
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -107,43 +104,7 @@ const Home: React.FC = () => {
       </section>
 
       {/* Featured Products */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Featured Fragrances</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Discover our handpicked selection of premium perfumes, each crafted to perfection 
-              and designed to make you unforgettable.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {featuredProducts.map((product, index) => (
-              <ProductCard key={product.id} product={product} index={index} />
-            ))}
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.4 }}
-            className="text-center mt-12"
-          >
-            <Link
-              to="/products"
-              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white font-semibold rounded-lg hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200 space-x-2"
-            >
-              <span>View All Products</span>
-              <ArrowRight className="h-5 w-5" />
-            </Link>
-          </motion.div>
-        </div>
-      </section>
+      <FeaturedProducts />
 
       {/* Newsletter Section */}
       <section className="py-20 bg-gradient-to-r from-[#815536] to-[#c9baa8]">

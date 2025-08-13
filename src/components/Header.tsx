@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, User, Menu, X, Heart, Search } from 'lucide-react';
-import { useCart } from '../hooks/useCart';
-import { useAuth } from '../hooks/useAuth';
+import { useSupabaseCart } from '../hooks/useSupabaseCart';
+import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const { getCartItemsCount } = useCart();
-  const { user, logout } = useAuth();
+  const { getCartItemsCount } = useSupabaseCart();
+  const { userProfile, signOut } = useSupabaseAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout();
+    signOut();
     navigate('/');
     setIsProfileOpen(false);
   };
@@ -92,8 +92,8 @@ const Header: React.FC = () => {
                     {user ? (
                       <>
                         <div className="px-4 py-2 border-b">
-                          <p className="text-sm font-medium text-gray-900">{user.name}</p>
-                          <p className="text-xs text-gray-500">{user.email}</p>
+                          <p className="text-sm font-medium text-gray-900">{userProfile?.full_name}</p>
+                          <p className="text-xs text-gray-500">{userProfile?.email}</p>
                         </div>
                         <Link
                           to="/profile"
@@ -109,6 +109,15 @@ const Header: React.FC = () => {
                         >
                           My Orders
                         </Link>
+                        {userProfile?.is_admin && (
+                          <Link
+                            to="/admin/dashboard"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            onClick={() => setIsProfileOpen(false)}
+                          >
+                            Admin Panel
+                          </Link>
+                        )}
                         <button
                           onClick={handleLogout}
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Mail, Lock, Eye, EyeOff, Phone, MapPin } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { useAuth } from '../hooks/useAuth';
+import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
 interface RegisterForm {
   name: string;
@@ -21,7 +21,8 @@ const Register: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { register: registerUser } = useAuth();
+  const [error, setError] = useState<string | null>(null);
+  const { signUp } = useSupabaseAuth();
   const navigate = useNavigate();
   
   const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterForm>();
@@ -30,21 +31,14 @@ const Register: React.FC = () => {
 
   const onSubmit = async (data: RegisterForm) => {
     setIsLoading(true);
-    const success = await registerUser({
-      name: data.name,
-      email: data.email,
-      phone: data.phone,
-      address: {
-        street: data.address,
-        city: data.city,
-        state: data.state,
-        zipCode: data.zipCode,
-        country: 'India'
-      }
-    });
+    setError(null);
+    
+    const { data: authData, error } = await signUp(data.email, data.password, data.name, data.phone);
     setIsLoading(false);
     
-    if (success) {
+    if (error) {
+      setError(error.message);
+    } else if (authData.user) {
       navigate('/');
     }
   };
@@ -70,6 +64,12 @@ const Register: React.FC = () => {
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Create Account</h2>
             <p className="text-gray-600">Join us to discover luxury fragrances</p>
           </div>
+
+          {error && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          )}
 
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             {/* Personal Information */}

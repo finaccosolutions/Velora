@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CreditCard, Truck, MapPin, User } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { useCart } from '../hooks/useCart';
-import { useAuth } from '../hooks/useAuth';
+import { useSupabaseCart } from '../hooks/useSupabaseCart';
+import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
 interface CheckoutForm {
   email: string;
@@ -19,21 +19,21 @@ interface CheckoutForm {
 }
 
 const Checkout: React.FC = () => {
-  const { cartItems, getCartTotal, clearCart } = useCart();
-  const { user } = useAuth();
+  const { cartItems, getCartTotal, clearCart } = useSupabaseCart();
+  const { userProfile } = useSupabaseAuth();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   
   const { register, handleSubmit, watch, formState: { errors } } = useForm<CheckoutForm>({
     defaultValues: {
-      email: user?.email || '',
-      firstName: user?.name?.split(' ')[0] || '',
-      lastName: user?.name?.split(' ')[1] || '',
-      phone: user?.phone || '',
-      address: user?.address?.street || '',
-      city: user?.address?.city || '',
-      state: user?.address?.state || '',
-      zipCode: user?.address?.zipCode || '',
+      email: userProfile?.email || '',
+      firstName: userProfile?.full_name?.split(' ')[0] || '',
+      lastName: userProfile?.full_name?.split(' ')[1] || '',
+      phone: userProfile?.phone || '',
+      address: '',
+      city: '',
+      state: '',
+      zipCode: '',
       paymentMethod: 'cod'
     }
   });
@@ -278,7 +278,7 @@ const Checkout: React.FC = () => {
                   {cartItems.map((item) => (
                     <div key={item.product.id} className="flex items-center space-x-3">
                       <img
-                        src={item.product.image}
+                        src={item.product.image_url}
                         alt={item.product.name}
                         className="w-12 h-12 object-cover rounded-lg"
                       />

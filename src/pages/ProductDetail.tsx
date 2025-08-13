@@ -2,18 +2,69 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Star, Minus, Plus, ArrowLeft, Shield, Truck, RotateCcw } from 'lucide-react';
-import { products } from '../data/products';
-import { useCart } from '../hooks/useCart';
+import { useSupabaseProducts } from '../hooks/useSupabaseProducts';
+import { useSupabaseCart } from '../hooks/useSupabaseCart';
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { getProductById } = useSupabaseProducts();
+  const { addToCart } = useSupabaseCart();
   const [quantity, setQuantity] = useState(1);
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'description' | 'features' | 'reviews'>('description');
 
-  const product = products.find(p => p.id === id);
+  useEffect(() => {
+    if (id) {
+      fetchProduct();
+    }
+  }, [id]);
 
+  const fetchProduct = async () => {
+    if (!id) return;
+    
+    setLoading(true);
+    const { data, error } = await getProductById(id);
+    
+    if (error) {
+      console.error('Error fetching product:', error);
+    } else {
+      setProduct(data);
+    }
+    
+    setLoading(false);
+  };
+
+  const handleAddToCart = async () => {
+    if (product) {
+      await addToCart(product.id, quantity);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="animate-pulse">
+            <div className="h-6 bg-gray-300 rounded w-32 mb-8"></div>
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                <div className="h-96 lg:h-full bg-gray-300"></div>
+                <div className="p-8 lg:p-12 space-y-6">
+                  <div className="h-6 bg-gray-300 rounded w-3/4"></div>
+                  <div className="h-8 bg-gray-300 rounded w-1/2"></div>
+                  <div className="h-4 bg-gray-300 rounded w-full"></div>
+                  <div className="h-4 bg-gray-300 rounded w-5/6"></div>
+                  <div className="h-10 bg-gray-300 rounded w-32"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (!product) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -29,11 +80,6 @@ const ProductDetail: React.FC = () => {
       </div>
     );
   }
-
-  const handleAddToCart = () => {
-    addToCart(product, quantity);
-    // You could add a toast notification here
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -59,13 +105,13 @@ const ProductDetail: React.FC = () => {
               className="relative"
             >
               <img
-                src={product.image}
+                src={product.image_url}
                 alt={product.name}
                 className="w-full h-96 lg:h-full object-cover"
               />
-              {product.originalPrice && (
+              {product.original_price && (
                 <div className="absolute top-6 left-6 bg-[#815536] text-white px-3 py-1 rounded-lg text-sm font-semibold">
-                  {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                  {Math.round(((product.original_price - product.price) / product.original_price) * 100)}% OFF
                 </div>
               )}
             </motion.div>
@@ -86,7 +132,7 @@ const ProductDetail: React.FC = () => {
                     />
                   ))}
                 </div>
-                <span className="text-gray-600">({product.reviews} reviews)</span>
+                <span className="text-gray-600">({product.reviews_count} reviews)</span>
               </div>
 
               <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
@@ -95,8 +141,8 @@ const ProductDetail: React.FC = () => {
 
               <div className="flex items-center space-x-4 mb-6">
                 <span className="text-3xl font-bold text-[#815536]">₹{product.price}</span>
-                {product.originalPrice && (
-                  <span className="text-xl text-gray-400 line-through">₹{product.originalPrice}</span>
+                {product.original_price && (
+                  <span className="text-xl text-gray-400 line-through">₹{product.original_price}</span>
                 )}
                 <span className="bg-[#c9baa8]/20 text-[#815536] px-3 py-1 rounded-full text-sm font-medium">
                   {product.category}

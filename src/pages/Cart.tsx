@@ -2,11 +2,24 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react';
-import { useCart } from '../hooks/useCart';
+import { useSupabaseCart } from '../hooks/useSupabaseCart';
 
 const Cart: React.FC = () => {
-  const { cartItems, removeFromCart, updateQuantity, getCartTotal, clearCart } = useCart();
+  const { cartItems, removeFromCart, updateQuantity, getCartTotal, clearCart, loading } = useSupabaseCart();
   const navigate = useNavigate();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center py-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#815536] mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading cart...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -76,7 +89,7 @@ const Cart: React.FC = () => {
                     className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
                   >
                     <img
-                      src={item.product.image}
+                      src={item.product.image_url}
                       alt={item.product.name}
                       className="w-20 h-20 object-cover rounded-lg"
                     />
@@ -89,14 +102,14 @@ const Cart: React.FC = () => {
 
                     <div className="flex items-center space-x-2">
                       <button
-                        onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
                         className="p-1 hover:bg-gray-100 rounded transition-colors"
                       >
                         <Minus className="h-4 w-4" />
                       </button>
                       <span className="w-8 text-center font-medium">{item.quantity}</span>
                       <button
-                        onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
                         className="p-1 hover:bg-gray-100 rounded transition-colors"
                       >
                         <Plus className="h-4 w-4" />
@@ -110,7 +123,7 @@ const Cart: React.FC = () => {
                     </div>
 
                     <button
-                      onClick={() => removeFromCart(item.product.id)}
+                      onClick={() => removeFromCart(item.id)}
                       className="p-2 text-gray-400 hover:text-red-500 transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
