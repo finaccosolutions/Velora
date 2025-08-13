@@ -9,7 +9,7 @@ const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { getCartItemsCount } = useSupabaseCart();
-  const { userProfile, signOut } = useSupabaseAuth();
+  const { user, userProfile, signOut } = useSupabaseAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -51,15 +51,35 @@ const Header: React.FC = () => {
 
           {/* Right Side Icons */}
           <div className="flex items-center space-x-4">
-            <button className="p-2 text-gray-700 hover:text-[#815536] transition-colors duration-200">
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="p-2 text-gray-700 hover:text-[#815536] transition-colors duration-200"
+            >
               <Search className="h-5 w-5" />
-            </button>
+            </motion.button>
             
-            <button className="p-2 text-gray-700 hover:text-[#815536] transition-colors duration-200">
+            <motion.button 
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="relative p-2 text-gray-700 hover:text-[#815536] transition-colors duration-200"
+            >
               <Heart className="h-5 w-5" />
-            </button>
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center"
+              >
+                0
+              </motion.span>
+            </motion.button>
 
-            <Link to="/cart" className="relative p-2 text-gray-700 hover:text-[#815536] transition-colors duration-200">
+            <Link to="/cart">
+              <motion.div 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="relative p-2 text-gray-700 hover:text-[#815536] transition-colors duration-200"
+              >
               <ShoppingCart className="h-5 w-5" />
               {getCartItemsCount() > 0 && (
                 <motion.span
@@ -70,16 +90,19 @@ const Header: React.FC = () => {
                   {getCartItemsCount()}
                 </motion.span>
               )}
+              </motion.div>
             </Link>
 
             {/* User Profile */}
             <div className="relative">
-              <button
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="p-2 text-gray-700 hover:text-[#815536] transition-colors duration-200"
               >
                 <User className="h-5 w-5" />
-              </button>
+              </motion.button>
               
               <AnimatePresence>
                 {isProfileOpen && (

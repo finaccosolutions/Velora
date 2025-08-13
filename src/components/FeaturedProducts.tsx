@@ -12,7 +12,28 @@ const FeaturedProducts: React.FC = () => {
   const featuredProducts = products.slice(0, 4);
 
   const handleAddToCart = async (productId: string) => {
-    await addToCart(productId, 1);
+    const result = await addToCart(productId, 1);
+    if (!result.error) {
+      // Show success message
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+      toast.textContent = 'Product added to cart!';
+      document.body.appendChild(toast);
+      setTimeout(() => {
+        document.body.removeChild(toast);
+      }, 3000);
+    }
+  };
+
+  const handleAddToWishlist = (productName: string) => {
+    // Show wishlist message
+    const toast = document.createElement('div');
+    toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+    toast.textContent = `${productName} added to wishlist!`;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      document.body.removeChild(toast);
+    }, 3000);
   };
 
   if (loading) {
@@ -74,24 +95,83 @@ const FeaturedProducts: React.FC = () => {
             >
               {/* Product Image */}
               <div className={`relative ${index % 2 === 1 ? 'lg:col-start-2' : ''}`}>
-                <div className="relative overflow-hidden rounded-2xl shadow-2xl group">
+                <motion.div 
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.3 }}
+                  className="relative overflow-hidden rounded-2xl shadow-2xl group"
+                >
                   <img
                     src={product.image_url}
                     alt={product.name}
-                    className="w-full h-96 object-cover group-hover:scale-110 transition-transform duration-700"
+                    className="w-full h-96 object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    whileHover={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"
+                  >
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <motion.div
+                        initial={{ y: 20, opacity: 0 }}
+                        whileHover={{ y: 0, opacity: 1 }}
+                        transition={{ duration: 0.3, delay: 0.1 }}
+                        className="flex space-x-2"
+                      >
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleAddToCart(product.id)}
+                          className="flex-1 bg-white/90 backdrop-blur-sm text-gray-900 py-2 px-4 rounded-lg font-semibold hover:bg-white transition-all duration-200 flex items-center justify-center space-x-2"
+                        >
+                          <ShoppingCart className="h-4 w-4" />
+                          <span>Add to Cart</span>
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => handleAddToWishlist(product.name)}
+                          className="bg-white/90 backdrop-blur-sm text-gray-900 p-2 rounded-lg hover:bg-white transition-all duration-200"
+                        >
+                          <Heart className="h-4 w-4" />
+                        </motion.button>
+                      </motion.div>
+                    </div>
+                  </motion.div>
                   
                   {product.original_price && (
                     <div className="absolute top-6 left-6 bg-[#815536] text-white px-3 py-1 rounded-lg text-sm font-semibold">
                       {Math.round(((product.original_price - product.price) / product.original_price) * 100)}% OFF
                     </div>
                   )}
-                </div>
+                </motion.div>
                 
                 {/* Floating decorative elements */}
-                <div className="absolute -top-4 -right-4 w-24 h-24 bg-[#c9baa8]/20 rounded-full blur-2xl"></div>
-                <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-[#815536]/10 rounded-full blur-2xl"></div>
+                <motion.div 
+                  animate={{ 
+                    scale: [1, 1.1, 1],
+                    opacity: [0.3, 0.6, 0.3]
+                  }}
+                  transition={{ 
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                  className="absolute -top-4 -right-4 w-24 h-24 bg-[#c9baa8]/20 rounded-full blur-2xl"
+                ></motion.div>
+                <motion.div 
+                  animate={{ 
+                    scale: [1, 1.2, 1],
+                    opacity: [0.2, 0.4, 0.2]
+                  }}
+                  transition={{ 
+                    duration: 5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: 1
+                  }}
+                  className="absolute -bottom-4 -left-4 w-32 h-32 bg-[#815536]/10 rounded-full blur-2xl"
+                ></motion.div>
               </div>
 
               {/* Product Details */}
@@ -157,6 +237,7 @@ const FeaturedProducts: React.FC = () => {
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
+                    onClick={() => handleAddToWishlist(product.name)}
                     className="flex items-center space-x-2 px-6 py-3 border-2 border-[#815536] text-[#815536] font-semibold rounded-lg hover:bg-[#815536] hover:text-white transition-all duration-200"
                   >
                     <Heart className="h-5 w-5" />

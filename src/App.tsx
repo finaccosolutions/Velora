@@ -13,6 +13,8 @@ import Register from './pages/Register';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProducts from './pages/admin/AdminProducts';
+import About from './pages/About';
+import Contact from './pages/Contact';
 
 function App() {
   return (
@@ -35,30 +37,8 @@ function App() {
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/products" element={<AdminProducts />} />
-              <Route path="/about" element={
-                <div className="min-h-screen flex items-center justify-center">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-center"
-                  >
-                    <h1 className="text-3xl font-bold text-gray-900 mb-4">About Velora Tradings</h1>
-                    <p className="text-xl text-gray-600">Coming Soon...</p>
-                  </motion.div>
-                </div>
-              } />
-              <Route path="/contact" element={
-                <div className="min-h-screen flex items-center justify-center">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-center"
-                  >
-                    <h1 className="text-3xl font-bold text-gray-900 mb-4">Contact Us</h1>
-                    <p className="text-xl text-gray-600">Coming Soon...</p>
-                  </motion.div>
-                </div>
-              } />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
               <Route path="/order-success" element={
                 <div className="min-h-screen flex items-center justify-center bg-gray-50">
                   <motion.div
