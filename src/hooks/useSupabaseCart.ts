@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useDocumentVisibility } from './useDocumentVisibility'; // New import
 
 interface CartItem {
   id: string;
@@ -21,6 +22,7 @@ export const useSupabaseCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
+  const isVisible = useDocumentVisibility(); // New line
 
   useEffect(() => {
     if (user) {
@@ -29,6 +31,14 @@ export const useSupabaseCart = () => {
       setCartItems([]);
     }
   }, [user]);
+
+  // New useEffect to re-fetch on tab focus
+  useEffect(() => {
+    if (isVisible && user) {
+      console.log('Tab became visible, re-fetching cart items...');
+      fetchCartItems();
+    }
+  }, [isVisible, user]);
 
   const fetchCartItems = async () => {
     if (!user) return;

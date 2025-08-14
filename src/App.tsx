@@ -1,4 +1,5 @@
-import React from 'react';
+// src/App.tsx
+import React, { useEffect } from 'react'; // ADD useEffect
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from './components/Header';
@@ -18,8 +19,28 @@ import Orders from './pages/Orders';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Wishlist from './pages/Wishlist';
+import { supabase } from './lib/supabase'; // ADD THIS IMPORT
 
 function App() {
+  // ADD THIS useEffect BLOCK
+  useEffect(() => {
+    const testSupabaseConnection = async () => {
+      console.log('Attempting direct Supabase products query...');
+      try {
+        const { data, error } = await supabase.from('products').select('*');
+        if (error) {
+          console.error('Direct products query error:', error);
+        } else {
+          console.log('Direct products query result:', data);
+        }
+      } catch (e) {
+        console.error('Direct products query caught exception:', e);
+      }
+    };
+    testSupabaseConnection();
+  }, []);
+  // END ADDED useEffect BLOCK
+
   return (
     <Router>
       <div className="min-h-screen flex flex-col">

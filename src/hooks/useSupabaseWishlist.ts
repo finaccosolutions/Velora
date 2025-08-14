@@ -1,6 +1,8 @@
+// src/hooks/useSupabaseWishlist.ts
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useDocumentVisibility } from './useDocumentVisibility'; // New import
 
 interface WishlistItem {
   id: string;
@@ -19,6 +21,7 @@ export const useSupabaseWishlist = () => {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
+  const isVisible = useDocumentVisibility(); // New line
 
   useEffect(() => {
     if (user) {
@@ -27,6 +30,14 @@ export const useSupabaseWishlist = () => {
       setWishlistItems([]);
     }
   }, [user]);
+
+  // New useEffect to re-fetch on tab focus
+  useEffect(() => {
+    if (isVisible && user) {
+      console.log('Tab became visible, re-fetching wishlist items...');
+      fetchWishlistItems();
+    }
+  }, [isVisible, user]);
 
   const fetchWishlistItems = async () => {
     if (!user) return;

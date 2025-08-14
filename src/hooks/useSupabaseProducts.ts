@@ -1,5 +1,7 @@
+// src/hooks/useSupabaseProducts.ts
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { useDocumentVisibility } from './useDocumentVisibility'; // New import
 
 interface Product {
   id: string;
@@ -22,14 +24,25 @@ export const useSupabaseProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
+  const isVisible = useDocumentVisibility(); // New line
 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
   }, []);
 
+  // New useEffect to re-fetch on tab focus
+  useEffect(() => {
+    if (isVisible) {
+      console.log('Tab became visible, re-fetching products and categories...');
+      fetchProducts();
+      fetchCategories();
+    }
+  }, [isVisible]);
+
   const fetchProducts = async () => {
     setLoading(true);
+    console.log('fetchProducts: Attempting to fetch products...'); // Added log
     try {
       const { data, error } = await supabase
         .from('products')
@@ -37,16 +50,19 @@ export const useSupabaseProducts = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      console.log('fetchProducts: Products fetched successfully:', data); // Added log
       setProducts(data || []);
     } catch (error) {
-      console.error('Error fetching products:', error);
+      console.error('fetchProducts: Error fetching products:', error); // Added log
       setProducts([]); // Set empty array on error
     } finally {
       setLoading(false);
+      console.log('fetchProducts: Setting loading to false.'); // Added log
     }
   };
 
   const fetchCategories = async () => {
+    console.log('fetchCategories: Attempting to fetch categories...'); // Added log
     try {
       const { data, error } = await supabase
         .from('products')
@@ -56,9 +72,10 @@ export const useSupabaseProducts = () => {
       if (error) throw error;
       
       const uniqueCategories = [...new Set(data?.map(item => item.category) || [])];
+      console.log('fetchCategories: Categories fetched successfully:', uniqueCategories); // Added log
       setCategories(['All', ...uniqueCategories]);
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error('fetchCategories: Error fetching categories:', error); // Added log
       setCategories(['All']); // Set default categories on error
     }
   };

@@ -1,7 +1,7 @@
 // src/components/Header.tsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X, Heart, Search, LogOut, Settings } from 'lucide-react'; // Added Settings import
+import { ShoppingCart, User, Menu, X, Heart, Search, LogOut, Settings } from 'lucide-react';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
 import { useAuth } from '../context/AuthContext';
 import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
@@ -12,16 +12,14 @@ const Header: React.FC = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { getCartItemsCount } = useSupabaseCart();
   const { getWishlistItemsCount } = useSupabaseWishlist();
-  const { user, userProfile, signOut } = useAuth();
+  const { user, userProfile, signOut, loading: authLoading } = useAuth(); // Destructure authLoading
   const navigate = useNavigate();
   const location = useLocation();
 
-  // --- START ADDED CODE ---
   useEffect(() => {
     console.log('Header Component - Current User:', user);
     console.log('Header Component - Current User Profile:', userProfile);
   }, [user, userProfile]);
-  // --- END ADDED CODE ---
 
   const handleLogout = () => {
     signOut();
@@ -224,55 +222,67 @@ const Header: React.FC = () => {
                       <>
                         {/* User Info Header */}
                         <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-[#815536]/5 to-[#c9baa8]/5">
-                          <p className="text-sm font-semibold text-gray-900 truncate">{userProfile?.full_name}</p>
-                          <p className="text-xs text-gray-500 truncate">{userProfile?.email}</p>
-                          {userProfile?.is_admin && (
-                            <span className="inline-block mt-1 px-2 py-1 bg-[#815536] text-white text-xs rounded-full">
-                              Administrator
-                            </span>
+                          {authLoading && !userProfile ? (
+                            <p className="text-sm font-semibold text-gray-900">Loading profile...</p>
+                          ) : (
+                            <>
+                              <p className="text-sm font-semibold text-gray-900 truncate">{userProfile?.full_name || 'User'}</p>
+                              <p className="text-xs text-gray-500 truncate">{userProfile?.email || user?.email}</p>
+                              {userProfile?.is_admin && (
+                                <span className="inline-block mt-1 px-2 py-1 bg-[#815536] text-white text-xs rounded-full">
+                                  Administrator
+                                </span>
+                              )}
+                            </>
                           )}
                         </div>
                         
                         {/* Menu Items */}
                         <div className="py-1">
-                          <Link
-                            to="/profile"
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
-                            onClick={() => setIsProfileOpen(false)}
-                          >
-                            <User className="h-4 w-4 mr-3" />
-                            My Profile
-                          </Link>
-                          <Link
-                            to="/orders"
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
-                            onClick={() => setIsProfileOpen(false)}
-                          >
-                            <ShoppingCart className="h-4 w-4 mr-3" />
-                            My Orders
-                          </Link>
-                          <Link
-                            to="/wishlist"
-                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
-                            onClick={() => setIsProfileOpen(false)}
-                          >
-                            <Heart className="h-4 w-4 mr-3" />
-                            My Wishlist
-                            {getWishlistItemsCount() > 0 && (
-                              <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                                {getWishlistItemsCount()}
-                              </span>
-                            )}
-                          </Link>
-                          {userProfile?.is_admin && (
-                            <Link
-                              to="/admin/dashboard"
-                              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
-                              onClick={() => setIsProfileOpen(false)}
-                            >
-                              <Settings className="h-4 w-4 mr-3" />
-                              Admin Panel
-                            </Link>
+                          {authLoading && !userProfile ? (
+                            <div className="px-4 py-2 text-sm text-gray-700">Loading menu...</div>
+                          ) : (
+                            <>
+                              <Link
+                                to="/profile"
+                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
+                                onClick={() => setIsProfileOpen(false)}
+                              >
+                                <User className="h-4 w-4 mr-3" />
+                                My Profile
+                              </Link>
+                              <Link
+                                to="/orders"
+                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
+                                onClick={() => setIsProfileOpen(false)}
+                              >
+                                <ShoppingCart className="h-4 w-4 mr-3" />
+                                My Orders
+                              </Link>
+                              <Link
+                                to="/wishlist"
+                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
+                                onClick={() => setIsProfileOpen(false)}
+                              >
+                                <Heart className="h-4 w-4 mr-3" />
+                                My Wishlist
+                                {getWishlistItemsCount() > 0 && (
+                                  <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                                    {getWishlistItemsCount()}
+                                  </span>
+                                )}
+                              </Link>
+                              {userProfile?.is_admin && (
+                                <Link
+                                  to="/admin/dashboard"
+                                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
+                                  onClick={() => setIsProfileOpen(false)}
+                                >
+                                  <Settings className="h-4 w-4 mr-3" />
+                                  Admin Panel
+                                </Link>
+                              )}
+                            </>
                           )}
                         </div>
                         
@@ -420,3 +430,4 @@ const Header: React.FC = () => {
 };
 
 export default Header;
+
