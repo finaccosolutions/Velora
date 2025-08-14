@@ -1,5 +1,5 @@
 // src/App.tsx
-import React, { useEffect } from 'react'; // ADD useEffect
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from './components/Header';
@@ -19,27 +19,61 @@ import Orders from './pages/Orders';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Wishlist from './pages/Wishlist';
-import { supabase } from './lib/supabase'; // ADD THIS IMPORT
+import { supabase } from './lib/supabase';
 
 function App() {
-  // ADD THIS useEffect BLOCK
   useEffect(() => {
     const testSupabaseConnection = async () => {
+      console.log('Starting testSupabaseConnection...');
+
+      // Test direct Supabase products query
       console.log('Attempting direct Supabase products query...');
+      console.log('Before direct products query await.');
       try {
+        // REMOVE OR COMMENT OUT THIS BLOCK
+        // const currentUser = await supabase.auth.getUser();
+        // console.log('testSupabaseConnection: Current authenticated user before products query:', currentUser.data.user?.id);
+
         const { data, error } = await supabase.from('products').select('*');
+        console.log('After direct products query await.');
         if (error) {
           console.error('Direct products query error:', error);
+          console.error('Direct products query error details:', JSON.stringify(error, null, 2));
         } else {
-          console.log('Direct products query result:', data);
+          console.log('Direct products query successful, received data.');
+          if (data && data.length > 0) {
+            console.log(`Direct products query successful, received ${data.length} products.`);
+          } else {
+            console.log('Direct products query successful, but no data returned.');
+          }
         }
-      } catch (e) {
+      } catch (e: any) {
         console.error('Direct products query caught exception:', e);
+        console.error('Direct products query caught exception details:', JSON.stringify(e, Object.getOwnPropertyNames(e), 2));
       }
+
+      // --- MODIFIED SECTION FOR GENERAL NETWORK TEST ---
+      console.log('Attempting general network fetch...');
+      console.log('Just before fetch call.'); // NEW LOG
+      try {
+        const response = await fetch('https://jsonplaceholder.typicode.com/todos/1');
+        console.log('After fetch call, before checking response.ok.'); // NEW LOG
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const json = await response.json();
+        console.log('General network fetch successful:', json);
+      } catch (e: any) {
+        console.error('General network fetch caught exception:', e);
+        console.error('General network fetch caught exception details:', JSON.stringify(e, Object.getOwnPropertyNames(e), 2));
+      }
+      console.log('End of general network fetch test.'); // NEW LOG
+      // --- END MODIFIED SECTION ---
+
+      console.log('Finished testSupabaseConnection.');
     };
     testSupabaseConnection();
   }, []);
-  // END ADDED useEffect BLOCK
 
   return (
     <Router>

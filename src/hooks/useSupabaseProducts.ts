@@ -41,25 +41,38 @@ export const useSupabaseProducts = () => {
   }, [isVisible]);
 
   const fetchProducts = async () => {
-    setLoading(true);
-    console.log('fetchProducts: Attempting to fetch products...'); // Added log
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
+  setLoading(true);
+  console.log('fetchProducts: Attempting to fetch products...');
+  console.log('fetchProducts: Before Supabase query.');
+  try {
+    // REMOVE OR COMMENT OUT THIS BLOCK
+    // const currentUser = await supabase.auth.getUser();
+    // console.log('fetchProducts: Current authenticated user before products query:', currentUser.data.user?.id);
 
-      if (error) throw error;
-      console.log('fetchProducts: Products fetched successfully:', data); // Added log
-      setProducts(data || []);
-    } catch (error) {
-      console.error('fetchProducts: Error fetching products:', error); // Added log
-      setProducts([]); // Set empty array on error
-    } finally {
-      setLoading(false);
-      console.log('fetchProducts: Setting loading to false.'); // Added log
+    console.log('fetchProducts: Executing supabase.from("products").select("*")...');
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+    // ADD THIS LOG
+    console.log('fetchProducts: Supabase query completed.');
+
+    if (error) {
+      console.error('fetchProducts: Error fetching products:', error);
+      console.error('fetchProducts: Error details:', JSON.stringify(error, null, 2)); // Ensure this line is present
+    } else {
+      console.log('fetchProducts: Products fetched successfully, data length:', data?.length); // MODIFIED LOG
     }
-  };
+    setProducts(data || []);
+  } catch (e: any) { // Catch any unexpected errors
+    console.error('fetchProducts: Caught unexpected exception during fetch:', e);
+    console.error('fetchProducts: Unexpected exception details:', JSON.stringify(e, Object.getOwnPropertyNames(e), 2));
+    setProducts([]);
+  } finally {
+    setLoading(false);
+    console.log('fetchProducts: Setting loading to false.');
+  }
+};
 
   const fetchCategories = async () => {
     console.log('fetchCategories: Attempting to fetch categories...'); // Added log
@@ -70,7 +83,7 @@ export const useSupabaseProducts = () => {
         .order('category');
 
       if (error) throw error;
-      
+
       const uniqueCategories = [...new Set(data?.map(item => item.category) || [])];
       console.log('fetchCategories: Categories fetched successfully:', uniqueCategories); // Added log
       setCategories(['All', ...uniqueCategories]);
@@ -104,10 +117,10 @@ export const useSupabaseProducts = () => {
         .single();
 
       if (error) throw error;
-      
+
       await fetchProducts();
       await fetchCategories();
-      
+
       return { data, error: null };
     } catch (error) {
       return { data: null, error };
@@ -124,10 +137,10 @@ export const useSupabaseProducts = () => {
         .single();
 
       if (error) throw error;
-      
+
       await fetchProducts();
       await fetchCategories();
-      
+
       return { data, error: null };
     } catch (error) {
       return { data: null, error };
@@ -142,10 +155,10 @@ export const useSupabaseProducts = () => {
         .eq('id', id);
 
       if (error) throw error;
-      
+
       await fetchProducts();
       await fetchCategories();
-      
+
       return { error: null };
     } catch (error) {
       return { error };
