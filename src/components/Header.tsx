@@ -21,10 +21,16 @@ const Header: React.FC = () => {
     console.log('Header Component - Current User Profile:', userProfile);
   }, [user, userProfile]);
 
-  const handleLogout = () => {
-    signOut();
-    navigate('/');
-    setIsProfileOpen(false);
+  const handleLogout = async () => { // MARKED FOR CHANGE: Add async
+    const { error } = await signOut(); // MARKED FOR CHANGE: Await signOut and capture error
+    if (error) {
+      console.error('Logout failed:', error.message);
+      // Optionally, show a toast or message to the user
+      // showToast(`Logout failed: ${error.message}`, 'error');
+    } else {
+      navigate('/');
+      setIsProfileOpen(false);
+    }
   };
 
   const handleSearchClick = () => {
@@ -430,4 +436,3 @@ const Header: React.FC = () => {
 };
 
 export default Header;
-

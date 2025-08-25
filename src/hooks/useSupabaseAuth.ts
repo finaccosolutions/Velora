@@ -1,5 +1,5 @@
 // src/hooks/useSupabaseAuth.ts
-import { useState, useEffect, useCallback } from 'react'; // Added useCallback
+import { useState, useEffect, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { useDocumentVisibility } from './useDocumentVisibility';
@@ -16,24 +16,24 @@ export const useSupabaseAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true); // Initial state is loading
+  const [loading, setLoading] = useState(true);
   const isVisible = useDocumentVisibility();
 
-  // Memoize fetchUserProfile to prevent unnecessary re-creations
   const fetchUserProfile = useCallback(async (authUser: User) => {
   try {
     console.log('fetchUserProfile: Attempting to fetch profile for userId:', authUser.id);
-    console.log('fetchUserProfile: Before Supabase query for profile.'); // ADD THIS LINE
+    console.log('fetchUserProfile: Before Supabase query for profile.');
     const { data, error } = await supabase
       .from('users')
       .select('*')
       .eq('id', authUser.id)
       .single();
-    console.log('fetchUserProfile: After Supabase query for profile.'); // ADD THIS LINE
+    console.log('fetchUserProfile: After Supabase query for profile.');
 
     if (error) {
-      if (error.code === 'PGRST116') { // "no rows found"
+      if (error.code === 'PGRST116') {
         console.warn('fetchUserProfile: No user profile found in public.users. Attempting to create one.');
+        console.log('fetchUserProfile: authUser.user_metadata:', authUser.user_metadata); // ADD THIS LOG
         console.log('fetchUserProfile: Attempting to insert new profile...');
         const { data: newProfile, error: insertError } = await supabase
           .from('users')
@@ -51,7 +51,7 @@ export const useSupabaseAuth = () => {
           console.error('fetchUserProfile: Error creating new user profile:', insertError);
           setUserProfile(null);
         } else {
-          console.log('fetchUserProfile: New user profile created successfully:', newProfile);
+          console.log('fetchUserProfile: New user profile created successfully:', newProfile); // ADD THIS LOG
           setUserProfile(newProfile);
         }
       } else {
@@ -63,7 +63,7 @@ export const useSupabaseAuth = () => {
       setUserProfile(data);
     }
   } catch (outerError: any) {
-    console.error('fetchUserProfile: Caught exception in outer catch block:', outerError.message); // MODIFIED
+    console.error('fetchUserProfile: Caught exception in outer catch block:', outerError.message);
     setUserProfile(null);
   }
 }, []);
@@ -71,7 +71,7 @@ export const useSupabaseAuth = () => {
   useEffect(() => {
     console.log('Auth useEffect: Initializing...');
     const handleAuthInitialization = async () => {
-      setLoading(true); // Ensure loading is true at the very start
+      setLoading(true);
       try {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         console.log('Auth useEffect: getSession result:', initialSession);
@@ -83,19 +83,18 @@ export const useSupabaseAuth = () => {
           await fetchUserProfile(initialSession.user);
         } else {
           console.log('Auth useEffect: No user session found.');
-          setUserProfile(null); // Explicitly set to null if no user
+          setUserProfile(null);
         }
       } catch (error) {
         console.error('Auth useEffect: Error during initial session check:', error);
-        setUserProfile(null); // Ensure null on error
+        setUserProfile(null);
       } finally {
-        setLoading(false); // Set loading false only after initial session and profile check is complete
+        setLoading(false);
       }
     };
 
     handleAuthInitialization();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth State Change:', event, session);
@@ -103,14 +102,14 @@ export const useSupabaseAuth = () => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          setLoading(true); // Set loading true when auth state changes and user is present
+          setLoading(true);
           console.log('Auth State Change: User found, fetching profile for:', session.user.id);
           await fetchUserProfile(session.user); 
-          setLoading(false); // Set loading false after profile fetch
+          setLoading(false);
         } else {
           console.log('Auth State Change: No user session found, clearing profile.');
           setUserProfile(null);
-          setLoading(false); // Set loading false when user logs out
+          setLoading(false);
         }
       }
     );
@@ -119,18 +118,29 @@ export const useSupabaseAuth = () => {
       console.log('Auth useEffect: Cleaning up subscription.');
       subscription.unsubscribe();
     };
-  }, [fetchUserProfile]); // Add fetchUserProfile to dependencies because it's used inside
+  }, [fetchUserProfile]);
 
   // New useEffect to refresh session when tab becomes visible
   useEffect(() => {
     if (isVisible && session) {
       console.log('Tab became visible and session exists, attempting to refresh session...');
-      supabase.auth.refreshSession().then(({ data, error }) => {
+      setLoading(true); // Set loading to true before starting the refresh process
+      supabase.auth.refreshSession().then(async ({ data, error }) => {
         if (error) {
           console.error('Error refreshing session:', error);
+          // If there's an error refreshing, it might mean the session is truly invalid.
+          // Clear state and set loading to false.
+          setUser(null);
+          setUserProfile(null);
+          setSession(null);
+          setLoading(false);
         } else if (data.session) {
           console.log('Session refreshed successfully:', data.session);
-          // The onAuthStateChange listener should pick this up and update state
+          // Explicitly update state and fetch profile
+          setSession(data.session);
+          setUser(data.session.user);
+          await fetchUserProfile(data.session.user); // Call fetchUserProfile directly
+          setLoading(false); // Set loading to false after profile fetch
         } else {
           console.log('Session refresh returned no session, user might be logged out.');
           // If refresh returns no session, it implies the session is truly invalid or expired.
@@ -142,9 +152,11 @@ export const useSupabaseAuth = () => {
         }
       }).catch(err => {
         console.error('Caught error during session refresh:', err);
+        // Ensure loading is set to false even if an unexpected error occurs
+        setLoading(false);
       });
     }
-  }, [isVisible, session]);
+  }, [isVisible, session, fetchUserProfile]);
 
   const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
     try {
@@ -160,29 +172,17 @@ export const useSupabaseAuth = () => {
         }
       });
 
-      if (error) throw error;
+      // If there's a direct error from Supabase (e.g., invalid email format)
+      if (error) {
+        console.error('signUp: Error during sign up:', error);
+        return { data: null, error };
+      }
 
-      // Explicitly insert user profile into public.users table
-      // This part is now somewhat redundant with the fetchUserProfile fallback,
-      // but it's good to keep for immediate profile creation on sign-up.
-      if (data.user) {
-        console.log('signUp: Attempting to insert user profile into public.users...');
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert({
-            id: data.user.id,
-            email: data.user.email!,
-            full_name: fullName,
-            phone: phone || null,
-            is_admin: false // Default to false for new sign-ups
-          });
-
-        if (profileError) {
-          console.error('signUp: Error inserting user profile into public.users:', profileError);
-          // --- MODIFIED: Re-throw error to make profile creation mandatory ---
-          throw profileError; 
-        }
-        console.log('signUp: User profile inserted into public.users successfully.');
+      // If no user data is returned and no explicit error, it means the email already exists
+      // Supabase intentionally doesn't return an error here for security reasons (email enumeration prevention)
+      if (!data.user) {
+        console.warn('signUp: Attempted to sign up with existing email. Returning custom error.');
+        return { data: null, error: new Error('An account with this email already exists. Please try logging in or resetting your password.') };
       }
 
       console.log('signUp: User signed up successfully and profile created (or attempted):', data);
@@ -209,27 +209,30 @@ export const useSupabaseAuth = () => {
   };
 
   const signOut = async () => {
-  try {
-    console.log('signOut: Attempting to sign out user.'); // Add this log
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('signOut: Error during sign out:', error);
-      console.error('signOut: Error details:', JSON.stringify(error, null, 2)); // Add this log
-    } else {
-      console.log('signOut: User signed out successfully.'); // Add this log
+    let signOutError = null;
+    try {
+      console.log('signOut: Attempting to sign out user.');
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('signOut: Error during sign out:', error);
+        console.error('signOut: Error details:', JSON.stringify(error, null, 2));
+        signOutError = error;
+      } else {
+        console.log('signOut: User signed out successfully.');
+      }
+    } catch (error: any) {
+      console.error('signOut: Caught error during sign out:', error);
+      console.error('signOut: Caught error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      signOutError = error;
+    } finally {
+      console.log('signOut: Clearing local state and setting loading to false.');
+      setUser(null);
+      setUserProfile(null);
+      setSession(null);
+      setLoading(false);
     }
-  } catch (error: any) {
-    console.error('signOut: Caught error during sign out:', error); // Add this log
-    console.error('signOut: Caught error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2)); // Add this log
-  } finally {
-    console.log('signOut: Clearing local state and setting loading to false.'); // Add this log
-    setUser(null);
-    setUserProfile(null);
-    setSession(null);
-    setLoading(false);
-  }
-  return { error: null };
-};
+    return { error: signOutError };
+  };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) {

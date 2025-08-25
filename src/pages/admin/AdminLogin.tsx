@@ -1,3 +1,4 @@
+// src/pages/admin/AdminLogin.tsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -43,8 +44,11 @@ const AdminLogin: React.FC = () => {
       if (userProfile?.is_admin) {
         navigate('/admin/dashboard');
       } else {
-        setError('Access denied. Admin privileges required.');
-        await signOut();
+        // If not an admin, redirect to regular login and show a message
+        setError('Access denied. Admin privileges required. Please use the regular login page.');
+        // Do NOT call signOut() here, as the user might want to log in as a regular user.
+        // Instead, you can navigate them to the regular login page.
+        navigate('/login'); // Redirect to the regular login page
       }
     }
     
