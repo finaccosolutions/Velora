@@ -1,5 +1,5 @@
 // src/hooks/useSupabaseAuth.ts
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { useDocumentVisibility } from './useDocumentVisibility';
@@ -19,99 +19,112 @@ export const useSupabaseAuth = () => {
   const [loading, setLoading] = useState(true);
   const isVisible = useDocumentVisibility();
 
-  const fetchUserProfile = useCallback(async (authUser: User) => {
+  // Internal helper function to fetch user profile
+  const _fetchUserProfile = async (authUser: User) => {
     try {
       console.log('fetchUserProfile: Attempting to fetch profile for userId:', authUser.id);
       console.log('fetchUserProfile: Before Supabase query for profile.');
-      const { data, error } = await supabase
+      console.log('fetchUserProfile: About to execute supabase.from("users").select("*")...');
+
+      // Diagnostic: Log current Supabase auth state before query
+      const { data: currentSessionData } = await supabase.auth.getSession();
+      const { data: currentUserData } = await supabase.auth.getUser();
+      console.log('fetchUserProfile: Supabase.auth.getSession() result before query:', currentSessionData.session);
+      console.log('fetchUserProfile: Supabase.auth.getUser() result before query:', currentUserData.user);
+
+      // Diagnostic: Introduce a small delay to check for race conditions
+      await new Promise(resolve => setTimeout(resolve, 100)); // 100ms delay
+
+      // Wrap the Supabase query in a Promise.race with a timeout
+      const queryPromise = supabase
         .from('users')
         .select('*')
         .eq('id', authUser.id)
-        .single();
-      // THIS IS THE CRITICAL LINE WE NEED TO SEE OUTPUT FROM:
+        .limit(1); // Use limit(1) for robustness
+
+      const timeoutPromise = new Promise((resolve, reject) =>
+        setTimeout(() => reject(new Error('Supabase profile query timed out after 5 seconds')), 5000)
+      );
+
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+
+      console.log('fetchUserProfile: Supabase query executed for profile.');
       console.log('fetchUserProfile: Supabase query result for profile - Data:', data, 'Error:', error);
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          console.warn('fetchUserProfile: No user profile found in public.users. Attempting to create one.');
-          console.log('fetchUserProfile: authUser.user_metadata:', authUser.user_metadata);
-          console.log('fetchUserProfile: Attempting to insert new profile...');
-          const { data: newProfile, error: insertError } = await supabase
-            .from('users')
-            .insert({
-              id: authUser.id,
-              email: authUser.email!,
-              full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'New User',
-              phone: authUser.user_metadata?.phone || null,
-              is_admin: false,
-            })
-            .select()
-            .single();
+        // This will catch both Supabase errors and our timeout error
+        console.error('fetchUserProfile: Error or Timeout during profile fetch:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+        setUserProfile(null);
+      } else if (!data || data.length === 0) {
+        console.warn('fetchUserProfile: No user profile found in public.users. Attempting to create one.');
+        console.log('fetchUserProfile: authUser.user_metadata:', authUser.user_metadata);
+        console.log('fetchUserProfile: Attempting to insert new profile...');
 
-          if (insertError) {
-            console.error('fetchUserProfile: Error creating new user profile:', JSON.stringify(insertError, null, 2));
-            setUserProfile(null);
-          } else {
-            console.log('fetchUserProfile: New user profile created successfully:', newProfile);
-            setUserProfile(newProfile);
-          }
-        } else {
-          console.error('fetchUserProfile: Error fetching user profile:', error);
+        const { data: newProfile, error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: authUser.id,
+            email: authUser.email!,
+            full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'New User',
+            phone: authUser.user_metadata?.phone || null,
+            is_admin: false,
+          })
+          .select()
+          .single(); // Keep .single() here as we expect exactly one new row
+
+        if (insertError) {
+          console.error('fetchUserProfile: Error creating new user profile:', JSON.stringify(insertError, null, 2));
           setUserProfile(null);
+        } else {
+          console.log('fetchUserProfile: New user profile created successfully:', newProfile);
+          setUserProfile(newProfile);
         }
-      } else {
-        console.log('fetchUserProfile: User profile fetched successfully:', data);
-        setUserProfile(data);
+      } else { // Check if data exists and is not empty
+        console.log('fetchUserProfile: User profile fetched successfully:', data[0]);
+        setUserProfile(data[0]);
       }
     } catch (outerError: any) {
-      console.error('fetchUserProfile: Caught exception in outer catch block:', outerError.message);
+      console.error('fetchUserProfile: Caught unexpected exception in outer catch block:', JSON.stringify(outerError, Object.getOwnPropertyNames(outerError), 2)); // Log full error object
       setUserProfile(null);
     }
-  }, []);
+  };
 
+  // Unified function to handle auth state changes and fetch user profile
+  const handleAuth = async (currentSession: Session | null) => {
+    setLoading(true);
+    setSession(currentSession);
+    setUser(currentSession?.user ?? null);
+
+    if (currentSession?.user) {
+      console.log('handleAuth: User found, fetching profile for:', currentSession.user.id);
+      await _fetchUserProfile(currentSession.user);
+    } else {
+      console.log('handleAuth: No user session found, clearing profile.');
+      setUserProfile(null);
+    }
+    setLoading(false);
+  };
+
+  // Effect for initial session check and subscribing to auth state changes
   useEffect(() => {
     console.log('Auth useEffect: Initializing...');
-    const handleAuthInitialization = async () => {
-      setLoading(true);
+    const setupAuth = async () => {
       try {
         const { data: { session: initialSession } } = await supabase.auth.getSession();
         console.log('Auth useEffect: getSession result:', initialSession);
-        setSession(initialSession);
-        setUser(initialSession?.user ?? null);
-
-        if (initialSession?.user) {
-          console.log('Auth useEffect: User found, fetching profile for:', initialSession.user.id);
-          await fetchUserProfile(initialSession.user);
-        } else {
-          console.log('Auth useEffect: No user session found.');
-          setUserProfile(null);
-        }
+        await handleAuth(initialSession);
       } catch (error) {
         console.error('Auth useEffect: Error during initial session check:', error);
-        setUserProfile(null);
-      } finally {
-        setLoading(false);
+        await handleAuth(null);
       }
     };
 
-    handleAuthInitialization();
+    setupAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth State Change:', event, session);
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          setLoading(true);
-          console.log('Auth State Change: User found, fetching profile for:', session.user.id);
-          await fetchUserProfile(session.user); 
-          setLoading(false);
-        } else {
-          console.log('Auth State Change: No user session found, clearing profile.');
-          setUserProfile(null);
-          setLoading(false);
-        }
+        await handleAuth(session);
       }
     );
 
@@ -119,45 +132,28 @@ export const useSupabaseAuth = () => {
       console.log('Auth useEffect: Cleaning up subscription.');
       subscription.unsubscribe();
     };
-  }, [fetchUserProfile]);
+  }, []);
 
-  // New useEffect to refresh session when tab becomes visible
+  // Effect to refresh session when tab becomes visible
   useEffect(() => {
     if (isVisible && session) {
       console.log('Tab became visible and session exists, attempting to refresh session...');
-      setLoading(true); // Set loading to true before starting the refresh process
       supabase.auth.refreshSession().then(async ({ data, error }) => {
         if (error) {
           console.error('Error refreshing session:', error);
-          // If there's an error refreshing, it might mean the session is truly invalid.
-          // Clear state and set loading to false.
-          setUser(null);
-          setUserProfile(null);
-          setSession(null);
-          setLoading(false);
+          await handleAuth(null);
         } else if (data.session) {
           console.log('Session refreshed successfully:', data.session);
-          // Explicitly update state and fetch profile
-          setSession(data.session);
-          setUser(data.session.user);
-          await fetchUserProfile(data.session.user); // Call fetchUserProfile directly
-          setLoading(false); // Set loading to false after profile fetch
+          await handleAuth(data.session);
         } else {
           console.log('Session refresh returned no session, user might be logged out.');
-          // If refresh returns no session, it implies the session is truly invalid or expired.
-          // Explicitly clear state to reflect logged-out status.
-          setUser(null);
-          setUserProfile(null);
-          setSession(null);
-          setLoading(false);
+          await handleAuth(null);
         }
       }).catch(err => {
         console.error('Caught error during session refresh:', err);
-        // Ensure loading is set to false even if an unexpected error occurs
-        setLoading(false);
       });
     }
-  }, [isVisible, session, fetchUserProfile]);
+  }, [isVisible, session]);
 
   const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
     try {
@@ -173,14 +169,11 @@ export const useSupabaseAuth = () => {
         }
       });
 
-      // If there's a direct error from Supabase (e.g., invalid email format)
       if (error) {
         console.error('signUp: Error during sign up:', error);
         return { data: null, error };
       }
 
-      // If no user data is returned and no explicit error, it means the email already exists
-      // Supabase intentionally doesn't return an error here for security reasons (email enumeration prevention)
       if (!data.user) {
         console.warn('signUp: Attempted to sign up with existing email. Returning custom error.');
         return { data: null, error: new Error('An account with this email already exists. Please try logging in or resetting your password.') };
@@ -210,31 +203,24 @@ export const useSupabaseAuth = () => {
   };
 
   const signOut = async () => {
-  let signOutError = null;
-  try {
-    console.log('signOut: Attempting to sign out user.');
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      console.error('signOut: Error during sign out:', error);
-      console.error('signOut: Error details:', JSON.stringify(error, null, 2));
+    let signOutError = null;
+    try {
+      console.log('signOut: Attempting to sign out user.');
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('signOut: Error during sign out:', error);
+        console.error('signOut: Error details:', JSON.stringify(error, null, 2));
+        signOutError = error;
+      } else {
+        console.log('signOut: User signed out successfully from Supabase.');
+      }
+    } catch (error: any) {
+      console.error('signOut: Caught unexpected error during sign out:', error);
+      console.error('signOut: Caught unexpected error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
       signOutError = error;
-    } else {
-      console.log('signOut: User signed out successfully from Supabase.');
     }
-  } catch (error: any) {
-    console.error('signOut: Caught unexpected error during sign out:', error);
-    console.error('signOut: Caught unexpected error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-    signOutError = error;
-  } finally {
-    console.log('signOut: Clearing local state (user, userProfile, session, loading).');
-    setUser(null);
-    setUserProfile(null);
-    setSession(null);
-    setLoading(false);
-    console.log('signOut: Local state cleared.');
-  }
-  return { error: signOutError };
-};
+    return { error: signOutError };
+  };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) {

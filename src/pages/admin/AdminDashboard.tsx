@@ -35,7 +35,7 @@ const AdminDashboard: React.FC = () => {
     categoryData: []
   });
   const [loading, setLoading] = useState(true);
-  const { userProfile, signOut } = useAuth();
+  const { userProfile, signOut, loading: authLoading } = useAuth(); // Destructure authLoading
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,30 +43,47 @@ const AdminDashboard: React.FC = () => {
       navigate('/');
       return;
     }
-    fetchDashboardData();
-  }, [userProfile]);
+    // Only fetch if auth is not loading and userProfile is available (for admin check)
+    if (!authLoading && userProfile) { // Add authLoading check
+      fetchDashboardData();
+    } else if (!authLoading && !userProfile) {
+      // If auth is done loading and no user profile, or not admin, set loading to false
+      setLoading(false);
+    }
+  }, [userProfile, authLoading]); // Add authLoading to dependencies
 
   const fetchDashboardData = async () => {
+    setLoading(true); // Ensure loading is true when fetch starts
     try {
       // Fetch products count
-      const { count: productsCount } = await supabase
+      console.log('fetchDashboardData: Fetching products count...');
+      const { count: productsCount, error: productsCountError } = await supabase
         .from('products')
         .select('*', { count: 'exact', head: true });
+      console.log('fetchDashboardData: Products count result:', productsCount, 'Error:', productsCountError);
+      if (productsCountError) throw productsCountError;
 
       // Fetch users count
-      const { count: usersCount } = await supabase
+      console.log('fetchDashboardData: Fetching users count...');
+      const { count: usersCount, error: usersCountError } = await supabase
         .from('users')
         .select('*', { count: 'exact', head: true });
+      console.log('fetchDashboardData: Users count result:', usersCount, 'Error:', usersCountError);
+      if (usersCountError) throw usersCountError;
 
       // Fetch orders count and revenue
-      const { data: orders } = await supabase
+      console.log('fetchDashboardData: Fetching orders...');
+      const { data: orders, error: ordersError } = await supabase
         .from('orders')
         .select('total_amount, created_at, status');
+      console.log('fetchDashboardData: Orders result:', orders, 'Error:', ordersError);
+      if (ordersError) throw ordersError;
 
       const totalRevenue = orders?.reduce((sum, order) => sum + order.total_amount, 0) || 0;
 
       // Fetch recent orders with user details
-      const { data: recentOrders } = await supabase
+      console.log('fetchDashboardData: Fetching recent orders...');
+      const { data: recentOrders, error: recentOrdersError } = await supabase
         .from('orders')
         .select(`
           id,
@@ -77,26 +94,34 @@ const AdminDashboard: React.FC = () => {
         `)
         .order('created_at', { ascending: false })
         .limit(5);
+      console.log('fetchDashboardData: Recent orders result:', recentOrders, 'Error:', recentOrdersError);
+      if (recentOrdersError) throw recentOrdersError;
 
       // Fetch top products
-      const { data: topProducts } = await supabase
+      console.log('fetchDashboardData: Fetching top products...');
+      const { data: topProducts, error: topProductsError } = await supabase
         .from('products')
         .select('name, price, category')
         .order('rating', { ascending: false })
         .limit(5);
+      console.log('fetchDashboardData: Top products result:', topProducts, 'Error:', topProductsError);
+      if (topProductsError) throw topProductsError;
 
-      // Generate mock sales data for chart
+      // Generate mock sales data for chart (no Supabase call here)
       const salesData = Array.from({ length: 7 }, (_, i) => ({
         day: new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).toLocaleDateString('en', { weekday: 'short' }),
         sales: Math.floor(Math.random() * 50000) + 10000
       }));
 
       // Fetch category distribution
-      const { data: products } = await supabase
+      console.log('fetchDashboardData: Fetching product categories for distribution...');
+      const { data: productsData, error: productsDataError } = await supabase
         .from('products')
         .select('category');
+      console.log('fetchDashboardData: Product categories result:', productsData, 'Error:', productsDataError);
+      if (productsDataError) throw productsDataError;
 
-      const categoryCount = products?.reduce((acc: any, product) => {
+      const categoryCount = productsData?.reduce((acc: any, product) => {
         acc[product.category] = (acc[product.category] || 0) + 1;
         return acc;
       }, {}) || {};
@@ -116,8 +141,19 @@ const AdminDashboard: React.FC = () => {
         salesData,
         categoryData
       });
-    } catch (error) {
+    } catch (error: any) { // Explicitly type error as any
       console.error('Error fetching dashboard data:', error);
+      // Set stats to default values on error to prevent app from crashing
+      setStats({
+        totalProducts: 0,
+        totalUsers: 0,
+        totalOrders: 0,
+        totalRevenue: 0,
+        recentOrders: [],
+        topProducts: [],
+        salesData: [],
+        categoryData: []
+      });
     } finally {
       setLoading(false);
     }

@@ -28,18 +28,26 @@ const Orders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (user) {
+    if (!authLoading && user) {
       fetchOrders();
+    } else if (!authLoading && !user) {
+      setOrders([]);
+      setLoading(false);
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   const fetchOrders = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('fetchOrders: No user, returning.');
+      return;
+    }
 
+    setLoading(true);
     try {
+      console.log('fetchOrders: About to execute Supabase orders query...');
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -63,11 +71,13 @@ const Orders: React.FC = () => {
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+      console.log('fetchOrders: Supabase orders query executed.');
+      console.log('fetchOrders: Supabase query result for orders - Data:', data, 'Error:', error);
 
       if (error) throw error;
       setOrders(data || []);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
+    } catch (error: any) { // Explicitly type error as any
+      console.error('Error fetching orders:', error.message); // Log error message
     } finally {
       setLoading(false);
     }

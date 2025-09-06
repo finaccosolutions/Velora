@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { useDocumentVisibility } from './useDocumentVisibility'; // New import
+import { useDocumentVisibility } from './useDocumentVisibility';
 
 interface WishlistItem {
   id: string;
@@ -20,52 +20,56 @@ interface WishlistItem {
 export const useSupabaseWishlist = () => {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
-  const isVisible = useDocumentVisibility(); // New line
+  const { user, loading: authLoading } = useAuth();
+  const isVisible = useDocumentVisibility();
 
   useEffect(() => {
-    if (user) {
+    if (!authLoading && user) {
       fetchWishlistItems();
-    } else {
+    } else if (!authLoading && !user) {
       setWishlistItems([]);
     }
-  }, [user]);
+  }, [user, authLoading]);
 
-  // New useEffect to re-fetch on tab focus
   useEffect(() => {
-    if (isVisible && user) {
+    if (isVisible && user && !authLoading) {
       console.log('Tab became visible, re-fetching wishlist items...');
       fetchWishlistItems();
     }
-  }, [isVisible, user]);
+  }, [isVisible, user, authLoading]);
 
- const fetchWishlistItems = async () => {
-    if (!user) return;
+  const fetchWishlistItems = async () => {
+    console.log('fetchWishlistItems: Current user:', user);
+    if (!user) {
+      console.log('fetchWishlistItems: No user, returning.');
+      return;
+    }
 
     setLoading(true);
     try {
+      console.log('fetchWishlistItems: About to execute Supabase wishlist query...');
       const { data, error } = await supabase
-  .from('wishlist_items')
-  .select(`
-    id,
-    product_id,
-    created_at,
-    product:products (
-      id,
-      name,
-      price,
-      image_url,
-      category
-    )
-  `)
-  .eq('user_id', user.id);
-// CRITICAL LOG: This line MUST be present and its output provided
-console.log('fetchWishlistItems: Supabase query result for wishlist items - Data:', data, 'Error:', error);
+        .from('wishlist_items')
+        .select(`
+          id,
+          product_id,
+          created_at,
+          product:products (
+            id,
+            name,
+            price,
+            image_url,
+            category
+          )
+        `)
+        .eq('user_id', user.id);
+      console.log('fetchWishlistItems: Supabase wishlist query executed.');
+      console.log('fetchWishlistItems: Supabase query result for wishlist items - Data:', data, 'Error:', error);
 
       if (error) throw error;
       setWishlistItems(data || []);
-    } catch (error) {
-      console.error('Error fetching wishlist items:', error);
+    } catch (error: any) { // Explicitly type error as any
+      console.error('Error fetching wishlist items:', error.message); // Log error message
     } finally {
       setLoading(false);
     }
@@ -75,7 +79,6 @@ console.log('fetchWishlistItems: Supabase query result for wishlist items - Data
     if (!user) return { error: new Error('Please login to add items to wishlist') };
 
     try {
-      // Check if item already exists in wishlist
       const { data: existingItem } = await supabase
         .from('wishlist_items')
         .select('id')
@@ -87,7 +90,6 @@ console.log('fetchWishlistItems: Supabase query result for wishlist items - Data
         return { error: new Error('Product already in wishlist') };
       }
 
-      // Insert new item
       const { error } = await supabase
         .from('wishlist_items')
         .insert({
@@ -99,8 +101,8 @@ console.log('fetchWishlistItems: Supabase query result for wishlist items - Data
 
       await fetchWishlistItems();
       return { error: null };
-    } catch (error) {
-      console.error('Error adding to wishlist:', error);
+    } catch (error: any) { // Explicitly type error as any
+      console.error('Error adding to wishlist:', error.message); // Log error message
       return { error };
     }
   };
@@ -119,7 +121,8 @@ console.log('fetchWishlistItems: Supabase query result for wishlist items - Data
 
       await fetchWishlistItems();
       return { error: null };
-    } catch (error) {
+    } catch (error: any) { // Explicitly type error as any
+      console.error('Error removing from wishlist:', error.message); // Log error message
       return { error };
     }
   };

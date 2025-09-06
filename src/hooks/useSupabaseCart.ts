@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { useDocumentVisibility } from './useDocumentVisibility'; // New import
+import { useDocumentVisibility } from './useDocumentVisibility';
 
 interface CartItem {
   id: string;
@@ -21,53 +21,57 @@ interface CartItem {
 export const useSupabaseCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
-  const isVisible = useDocumentVisibility(); // New line
+  const { user, loading: authLoading } = useAuth();
+  const isVisible = useDocumentVisibility();
 
   useEffect(() => {
-    if (user) {
+    if (!authLoading && user) {
       fetchCartItems();
-    } else {
+    } else if (!authLoading && !user) {
       setCartItems([]);
     }
-  }, [user]);
+  }, [user, authLoading]);
 
-  // New useEffect to re-fetch on tab focus
   useEffect(() => {
-    if (isVisible && user) {
+    if (isVisible && user && !authLoading) {
       console.log('Tab became visible, re-fetching cart items...');
       fetchCartItems();
     }
-  }, [isVisible, user]);
+  }, [isVisible, user, authLoading]);
 
   const fetchCartItems = async () => {
-    if (!user) return;
+    console.log('fetchCartItems: Current user:', user);
+    if (!user) {
+      console.log('fetchCartItems: No user, returning.');
+      return;
+    }
 
     setLoading(true);
     try {
+      console.log('fetchCartItems: About to execute Supabase cart query...');
       const { data, error } = await supabase
-  .from('cart_items')
-  .select(`
-    id,
-    product_id,
-    quantity,
-    product:products (
-      id,
-      name,
-      price,
-      image_url,
-      category,
-      in_stock
-    )
-  `)
-  .eq('user_id', user.id);
-// CRITICAL LOG: This line MUST be present and its output provided
-console.log('fetchCartItems: Supabase query result for cart items - Data:', data, 'Error:', error);
+        .from('cart_items')
+        .select(`
+          id,
+          product_id,
+          quantity,
+          product:products (
+            id,
+            name,
+            price,
+            image_url,
+            category,
+            in_stock
+          )
+        `)
+        .eq('user_id', user.id);
+      console.log('fetchCartItems: Supabase cart query executed.');
+      console.log('fetchCartItems: Supabase query result for cart items - Data:', data, 'Error:', error);
 
       if (error) throw error;
       setCartItems(data || []);
-    } catch (error) {
-      console.error('Error fetching cart items:', error);
+    } catch (error: any) { // Explicitly type error as any
+      console.error('Error fetching cart items:', error.message); // Log error message
     } finally {
       setLoading(false);
     }
@@ -77,16 +81,14 @@ console.log('fetchCartItems: Supabase query result for cart items - Data:', data
     if (!user) return { error: new Error('Please login to add items to cart') };
 
     try {
-      // Check if item already exists in cart
       const { data: existingItem } = await supabase
         .from('cart_items')
         .select('id, quantity')
         .eq('user_id', user.id)
         .eq('product_id', productId)
-        .maybeSingle(); // Changed .single() to .maybeSingle() here
+        .maybeSingle();
 
       if (existingItem) {
-        // Update quantity
         const { error } = await supabase
           .from('cart_items')
           .update({ quantity: existingItem.quantity + quantity })
@@ -94,7 +96,6 @@ console.log('fetchCartItems: Supabase query result for cart items - Data:', data
 
         if (error) throw error;
       } else {
-        // Insert new item
         const { error } = await supabase
           .from('cart_items')
           .insert({
@@ -108,8 +109,8 @@ console.log('fetchCartItems: Supabase query result for cart items - Data:', data
 
       await fetchCartItems();
       return { error: null };
-    } catch (error) {
-      console.error('Error adding to cart:', error);
+    } catch (error: any) { // Explicitly type error as any
+      console.error('Error adding to cart:', error.message); // Log error message
       return { error };
     }
   };
@@ -132,7 +133,8 @@ console.log('fetchCartItems: Supabase query result for cart items - Data:', data
 
       await fetchCartItems();
       return { error: null };
-    } catch (error) {
+    } catch (error: any) { // Explicitly type error as any
+      console.error('Error updating quantity:', error.message); // Log error message
       return { error };
     }
   };
@@ -151,7 +153,8 @@ console.log('fetchCartItems: Supabase query result for cart items - Data:', data
 
       await fetchCartItems();
       return { error: null };
-    } catch (error) {
+    } catch (error: any) { // Explicitly type error as any
+      console.error('Error removing from cart:', error.message); // Log error message
       return { error };
     }
   };
@@ -169,7 +172,8 @@ console.log('fetchCartItems: Supabase query result for cart items - Data:', data
 
       setCartItems([]);
       return { error: null };
-    } catch (error) {
+    } catch (error: any) { // Explicitly type error as any
+      console.error('Error clearing cart:', error.message); // Log error message
       return { error };
     }
   };

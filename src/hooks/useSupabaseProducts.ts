@@ -1,7 +1,8 @@
 // src/hooks/useSupabaseProducts.ts
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useDocumentVisibility } from './useDocumentVisibility'; // New import
+import { useDocumentVisibility } from './useDocumentVisibility';
+import { useAuth } from '../context/AuthContext'; // Import useAuth
 
 interface Product {
   id: string;
@@ -24,32 +25,38 @@ export const useSupabaseProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
-  const isVisible = useDocumentVisibility(); // New line
+  const isVisible = useDocumentVisibility();
+  const { user, loading: authLoading } = useAuth(); // Get user and authLoading from useAuth
 
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-  }, []);
+    // Only fetch if auth is not loading
+    if (!authLoading) {
+      fetchProducts();
+      fetchCategories();
+    }
+  }, [authLoading, user]); // Add user and authLoading as dependencies
 
   // New useEffect to re-fetch on tab focus
   useEffect(() => {
-    if (isVisible) {
+    if (isVisible && !authLoading) { // Add authLoading check
       console.log('Tab became visible, re-fetching products and categories...');
       fetchProducts();
       fetchCategories();
     }
-  }, [isVisible]);
+  }, [isVisible, authLoading]); // Add authLoading to dependencies
 
- const fetchProducts = async () => {
+  const fetchProducts = async () => {
     setLoading(true);
     console.log('fetchProducts: Attempting to fetch products...');
+    console.log('fetchProducts: Current user:', user); // Log current user state
     console.log('fetchProducts: Before Supabase query.');
     try {
       console.log('fetchProducts: Executing supabase.from("products").select("*")...');
       const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false });
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false });
+      console.log('fetchProducts: Supabase products query executed.');
       // CRITICAL LOG: This line MUST be present and its output provided
       console.log('fetchProducts: Supabase query result for products - Data:', data, 'Error:', error);
 
@@ -71,21 +78,24 @@ export const useSupabaseProducts = () => {
   };
 
   const fetchCategories = async () => {
-    console.log('fetchCategories: Attempting to fetch categories...'); // Added log
+    console.log('fetchCategories: Attempting to fetch categories...');
     try {
+      console.log('fetchCategories: Executing supabase.from("products").select("category")...');
       const { data, error } = await supabase
         .from('products')
         .select('category')
         .order('category');
+      console.log('fetchCategories: Supabase query result for categories - Data:', data, 'Error:', error);
 
       if (error) throw error;
 
       const uniqueCategories = [...new Set(data?.map(item => item.category) || [])];
-      console.log('fetchCategories: Categories fetched successfully:', uniqueCategories); // Added log
+      console.log('fetchCategories: Categories fetched successfully:', uniqueCategories);
       setCategories(['All', ...uniqueCategories]);
-    } catch (error) {
-      console.error('fetchCategories: Error fetching categories:', error); // Added log
-      setCategories(['All']); // Set default categories on error
+    } catch (error: any) {
+      console.error('fetchCategories: Error fetching categories:', error);
+      console.error('fetchCategories: Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+      setCategories(['All']);
     }
   };
 
