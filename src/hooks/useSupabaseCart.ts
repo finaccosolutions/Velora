@@ -46,21 +46,23 @@ export const useSupabaseCart = () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('cart_items')
-        .select(`
-          id,
-          product_id,
-          quantity,
-          product:products (
-            id,
-            name,
-            price,
-            image_url,
-            category,
-            in_stock
-          )
-        `)
-        .eq('user_id', user.id);
+  .from('cart_items')
+  .select(`
+    id,
+    product_id,
+    quantity,
+    product:products (
+      id,
+      name,
+      price,
+      image_url,
+      category,
+      in_stock
+    )
+  `)
+  .eq('user_id', user.id);
+// CRITICAL LOG: This line MUST be present and its output provided
+console.log('fetchCartItems: Supabase query result for cart items - Data:', data, 'Error:', error);
 
       if (error) throw error;
       setCartItems(data || []);

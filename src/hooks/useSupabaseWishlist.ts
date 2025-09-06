@@ -39,26 +39,28 @@ export const useSupabaseWishlist = () => {
     }
   }, [isVisible, user]);
 
-  const fetchWishlistItems = async () => {
+ const fetchWishlistItems = async () => {
     if (!user) return;
 
     setLoading(true);
     try {
       const { data, error } = await supabase
-        .from('wishlist_items')
-        .select(`
-          id,
-          product_id,
-          created_at,
-          product:products (
-            id,
-            name,
-            price,
-            image_url,
-            category
-          )
-        `)
-        .eq('user_id', user.id);
+  .from('wishlist_items')
+  .select(`
+    id,
+    product_id,
+    created_at,
+    product:products (
+      id,
+      name,
+      price,
+      image_url,
+      category
+    )
+  `)
+  .eq('user_id', user.id);
+// CRITICAL LOG: This line MUST be present and its output provided
+console.log('fetchWishlistItems: Supabase query result for wishlist items - Data:', data, 'Error:', error);
 
       if (error) throw error;
       setWishlistItems(data || []);
