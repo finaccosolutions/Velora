@@ -30,9 +30,12 @@ export const useSupabaseProducts = () => {
 
   useEffect(() => {
     console.log('useSupabaseProducts useEffect (primary): Triggering fetch. authLoading:', authLoading, 'user:', user);
-    fetchProducts();
-    fetchCategories();
-  }, [user]);
+    // Only fetch if auth is not loading
+    if (!authLoading) {
+      fetchProducts();
+      fetchCategories();
+    }
+  }, [user, authLoading]);
 
   useEffect(() => {
     if (isVisible) {
@@ -46,36 +49,23 @@ export const useSupabaseProducts = () => {
     setLoading(true);
     console.log('fetchProducts: Attempting to fetch products...');
     console.log('fetchProducts: Current user:', user);
-    console.log('fetchProducts: Before Supabase query execution.'); // More specific log
+    console.log('fetchProducts: Before Supabase query execution.');
     try {
-      // MODIFIED QUERY: Select specific columns, excluding description, features, and ingredients
-      const queryPromise = supabase
+      const { data, error } = await supabase
         .from('products')
-        .select('id, name, price, original_price, image_url, category, in_stock, rating, reviews_count, created_at, updated_at') // Exclude description, features, ingredients
-        .order('created_at', { ascending: false }); // Re-added order by for consistency, but can be removed if still problematic
-
-      const timeoutPromise = new Promise((resolve, reject) =>
-        setTimeout(() => reject(new Error('Supabase products query timed out')), 10000) // 10 seconds timeout
-      );
-
-      const result = await Promise.race([queryPromise, timeoutPromise]);
-      console.log('fetchProducts: Raw query result:', result); // NEW LOG HERE
-      
-      // Check if the result is an error from the timeoutPromise
-      if (result instanceof Error) {
-        throw result; // Re-throw the timeout error
-      }
-
-      const { data, error } = result as { data: any[] | null; error: any }; // Type assertion for clarity
+        .select('id, name, price, original_price, image_url, category, in_stock, rating, reviews_count, created_at, updated_at')
+        .order('created_at', { ascending: false });
 
       console.log('fetchProducts: Supabase query call completed.');
+      console.log('fetchProducts: Data received:', data); // NEW LOG
+      console.log('fetchProducts: Error received:', error); // NEW LOG
 
       if (error) {
         console.error('fetchProducts: Error fetching products:', error);
         console.error('fetchProducts: Error details:', JSON.stringify(error, null, 2));
         setProducts([]);
       } else {
-        console.log('fetchProducts: Supabase query result for products - Data:', data, 'Error: null'); // Explicitly log null error
+        console.log('fetchProducts: Supabase query result for products - Data:', data, 'Error: null');
         console.log('fetchProducts: Products fetched successfully, data length:', data?.length);
         setProducts(data || []);
       }

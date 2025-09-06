@@ -89,6 +89,7 @@ export const useSupabaseAuth = () => {
       setUserProfile(null);
     }
     setLoading(false); // Set loading to false AFTER profile handling is complete
+    console.log('handleAuth: Auth process completed. Loading set to false. User is now:', currentSession?.user ? 'logged in' : 'logged out'); // ADDED LOG
   };
 
   // Effect for initial session check and subscribing to auth state changes
@@ -241,3 +242,4 @@ export const useSupabaseAuth = () => {
     updateProfile,
   };
 };
+
