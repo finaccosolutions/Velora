@@ -17,8 +17,11 @@ const Header: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
-    console.log('Header Component - Current User:', user);
-    console.log('Header Component - Current User Profile:', userProfile);
+    console.log('Header Component - Current User (from useEffect):', user);
+    console.log('Header Component - Current User Profile (from useEffect):', userProfile);
+    if (userProfile) {
+      console.log('Header Component - userProfile is now AVAILABLE:', userProfile); // NEW LOG
+    }
   }, [user, userProfile]);
 
   const handleLogout = async () => { // MARKED FOR CHANGE: Add async

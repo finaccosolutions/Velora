@@ -29,44 +29,57 @@ export const useSupabaseProducts = () => {
   const { user, loading: authLoading } = useAuth(); // Get user and authLoading from useAuth
 
   useEffect(() => {
-    // Only fetch if auth is not loading
-    if (!authLoading) {
-      fetchProducts();
-      fetchCategories();
-    }
-  }, [authLoading, user]); // Add user and authLoading as dependencies
+    console.log('useSupabaseProducts useEffect (primary): Triggering fetch. authLoading:', authLoading, 'user:', user);
+    fetchProducts();
+    fetchCategories();
+  }, [user]);
 
-  // New useEffect to re-fetch on tab focus
   useEffect(() => {
-    if (isVisible && !authLoading) { // Add authLoading check
+    if (isVisible) {
       console.log('Tab became visible, re-fetching products and categories...');
       fetchProducts();
       fetchCategories();
     }
-  }, [isVisible, authLoading]); // Add authLoading to dependencies
+  }, [isVisible]);
 
   const fetchProducts = async () => {
     setLoading(true);
     console.log('fetchProducts: Attempting to fetch products...');
-    console.log('fetchProducts: Current user:', user); // Log current user state
-    console.log('fetchProducts: Before Supabase query.');
+    console.log('fetchProducts: Current user:', user);
+    console.log('fetchProducts: Before Supabase query execution.'); // More specific log
     try {
-      console.log('fetchProducts: Executing supabase.from("products").select("*")...');
-      const { data, error } = await supabase
+      // MODIFIED QUERY: Select specific columns, excluding description, features, and ingredients
+      const queryPromise = supabase
         .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
-      console.log('fetchProducts: Supabase products query executed.');
-      // CRITICAL LOG: This line MUST be present and its output provided
-      console.log('fetchProducts: Supabase query result for products - Data:', data, 'Error:', error);
+        .select('id, name, price, original_price, image_url, category, in_stock, rating, reviews_count, created_at, updated_at') // Exclude description, features, ingredients
+        .order('created_at', { ascending: false }); // Re-added order by for consistency, but can be removed if still problematic
+
+      const timeoutPromise = new Promise((resolve, reject) =>
+        setTimeout(() => reject(new Error('Supabase products query timed out')), 10000) // 10 seconds timeout
+      );
+
+      const result = await Promise.race([queryPromise, timeoutPromise]);
+      console.log('fetchProducts: Raw query result:', result); // NEW LOG HERE
+      
+      // Check if the result is an error from the timeoutPromise
+      if (result instanceof Error) {
+        throw result; // Re-throw the timeout error
+      }
+
+      const { data, error } = result as { data: any[] | null; error: any }; // Type assertion for clarity
+
+      console.log('fetchProducts: Supabase query call completed.');
 
       if (error) {
         console.error('fetchProducts: Error fetching products:', error);
         console.error('fetchProducts: Error details:', JSON.stringify(error, null, 2));
+        setProducts([]);
       } else {
+        console.log('fetchProducts: Supabase query result for products - Data:', data, 'Error: null'); // Explicitly log null error
         console.log('fetchProducts: Products fetched successfully, data length:', data?.length);
+        setProducts(data || []);
       }
-      setProducts(data || []);
+      console.log('fetchProducts: Products state updated with data (from query result):', data);
     } catch (e: any) {
       console.error('fetchProducts: Caught unexpected exception during fetch:', e);
       console.error('fetchProducts: Unexpected exception details:', JSON.stringify(e, Object.getOwnPropertyNames(e), 2));
