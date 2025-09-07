@@ -25,16 +25,19 @@ const FeaturedProducts: React.FC = () => {
     }, 3000);
   };
 
-  const handleAddToCart = async (productId: string) => {
-    event?.preventDefault();
-    event?.stopPropagation();
-    const result = await addToCart(productId, 1);
-    if (!result.error) {
-      showToast('Product added to cart!');
-    } else {
-      showToast(result.error.message, 'error');
-    }
-  };
+const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
+  if (event) {
+    event.preventDefault();
+    event.stopPropagation();
+  }
+   
+  const result = await addToCart(productId, 1);
+  if (!result.error) {
+    showToast('Product added to cart!');
+  } else {
+    showToast(result.error.message, 'error');
+  }
+};
 
   // Unified function to toggle wishlist status
   const handleWishlistToggle = async (e: React.MouseEvent, productId: string, productName: string) => {
@@ -166,7 +169,7 @@ const FeaturedProducts: React.FC = () => {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            handleAddToCart(product.id);
+                            handleAddToCart(product.id, e); // Add 'e' parameter here
                           }}
                           className="flex-1 bg-white/90 backdrop-blur-sm text-gray-900 py-2 px-4 rounded-lg font-semibold hover:bg-white transition-all duration-200 flex items-center justify-center space-x-2"
                         >
@@ -264,18 +267,18 @@ const FeaturedProducts: React.FC = () => {
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-4">
                   <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleAddToCart(product.id);
-                    }}
-                    className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white font-semibold rounded-lg hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200"
-                  >
-                    <ShoppingCart className="h-5 w-5" />
-                    <span>Add to Cart</span>
-                  </motion.button>
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleAddToCart(product.id, e); // Add 'e' parameter here
+                      }}
+                      className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white font-semibold rounded-lg hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200"
+                    >
+                      <ShoppingCart className="h-5 w-5" />
+                      <span>Add to Cart</span>
+                    </motion.button>
 
                   {/* Updated Wishlist button below product details */}
                   <motion.button

@@ -1,5 +1,5 @@
 // src/hooks/useSupabaseCart.ts
-import { useState, useEffect, useCallback, useRef } from 'react'; // Add useCallback, useRef
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useDocumentVisibility } from './useDocumentVisibility';
@@ -11,26 +11,13 @@ interface CartItem {
 export const useSupabaseCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth(); // Destructure userProfile
   const isVisible = useDocumentVisibility();
-  const isFetchingRef = useRef(false); // Change to useRef
+  const isFetchingRef = useRef(false);
 
-  // Wrap fetchCartItems in useCallback
   const fetchCartItems = useCallback(async () => {
-    if (isFetchingRef.current) { // Use .current
-      console.log('fetchCartItems: Fetch already in progress, skipping.');
-      return;
-    }
-
-    if (!user) {
-      console.log('fetchCartItems: No user, returning.');
-      setCartItems([]);
-      setLoading(false);
-      return;
-    }
-
-    isFetchingRef.current = true; // Use .current
-    setLoading(true);
+    // isFetchingRef.current is managed by the useEffect now
+    setLoading(true); // Set loading true when the fetch actually starts
     console.time('fetchCartItemsQuery');
     try {
       console.log('fetchCartItems: Current authLoading state:', authLoading);
@@ -55,7 +42,7 @@ export const useSupabaseCart = () => {
               in_stock
             )
           `)
-          .eq('user_id', user.id);
+          .eq('user_id', user?.id); // Use optional chaining for user?.id
 
       console.log('fetchCartItems: Supabase cart query executed.');
       console.timeEnd('fetchCartItemsQuery');
@@ -72,17 +59,40 @@ export const useSupabaseCart = () => {
       setCartItems([]);
     } finally {
       setLoading(false);
-      isFetchingRef.current = false; // Use .current
+      isFetchingRef.current = false; // Reset ref in finally block
     }
-  }, [user, authLoading]); // Add user and authLoading to dependencies
+  }, [user, authLoading]); // Keep user and authLoading as dependencies for fetchCartItems
 
   useEffect(() => {
-    if (!authLoading && isVisible) {
-      fetchCartItems();
+    console.log('useSupabaseCart useEffect: authLoading:', authLoading, 'user:', user, 'userProfile:', userProfile, 'isVisible:', isVisible);
+    let timeoutId: NodeJS.Timeout;
+
+    // Only fetch if auth is not loading, userProfile is available, and document is visible
+    if (!authLoading && userProfile && isVisible) {
+      if (isFetchingRef.current) {
+        console.log('useSupabaseCart useEffect: Fetch already in progress, skipping scheduling.');
+        return;
+      }
+      
+      isFetchingRef.current = true; // Set ref to true before scheduling
+      console.log('useSupabaseCart useEffect: Triggering fetchCartItems with debounce.');
+      timeoutId = setTimeout(() => {
+        fetchCartItems();
+      }, 50); // Small delay to allow state to settle
     } else if (!authLoading && !user) {
+      // If auth is done loading and no user, clear cart items immediately
+      console.log('useSupabaseCart useEffect: No user and auth done loading, clearing cart items.');
       setCartItems([]);
+    } else {
+      console.log('useSupabaseCart useEffect: Skipping scheduling fetch. authLoading:', authLoading, 'userProfile:', userProfile, 'isVisible:', isVisible);
     }
-  }, [user, authLoading, isVisible]); // Removed fetchCartItems from dependencies
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [user, userProfile, authLoading, isVisible, fetchCartItems]); // Add userProfile to dependencies
 
   const addToCart = async (productId: string, quantity: number = 1) => {
     if (!user) return { error: new Error('Please login to add items to cart') };
@@ -111,7 +121,6 @@ export const useSupabaseCart = () => {
           .insert({
             user_id: user.id,
             product_id: productId,
-            quantity,
           });
 
         if (error) throw error;

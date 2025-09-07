@@ -1,5 +1,5 @@
 // src/hooks/useSupabaseWishlist.ts
-import { useState, useEffect, useCallback, useRef } from 'react'; // Add useCallback, useRef
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useDocumentVisibility } from './useDocumentVisibility';
@@ -11,26 +11,13 @@ interface WishlistItem {
 export const useSupabaseWishlist = () => {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user, loading: authLoading } = useAuth();
+  const { user, userProfile, loading: authLoading } = useAuth(); // Destructure userProfile
   const isVisible = useDocumentVisibility();
-  const isFetchingRef = useRef(false); // Change to useRef
+  const isFetchingRef = useRef(false);
 
-  // Wrap fetchWishlistItems in useCallback
   const fetchWishlistItems = useCallback(async () => {
-    if (isFetchingRef.current) { // Use .current
-      console.log('fetchWishlistItems: Fetch already in progress, skipping.');
-      return;
-    }
-
-    if (!user) {
-      console.log('fetchWishlistItems: No user, returning.');
-      setWishlistItems([]);
-      setLoading(false);
-      return;
-    }
-
-    isFetchingRef.current = true; // Use .current
-    setLoading(true);
+    // isFetchingRef.current is managed by the useEffect now
+    setLoading(true); // Set loading true when the fetch actually starts
     console.time('fetchWishlistItemsQuery');
     try {
       console.log('fetchWishlistItems: Current authLoading state:', authLoading);
@@ -54,7 +41,7 @@ export const useSupabaseWishlist = () => {
               category
             )
           `)
-          .eq('user_id', user.id);
+          .eq('user_id', user?.id); // Use optional chaining for user?.id
 
       console.log('fetchWishlistItems: Supabase wishlist query executed.');
       console.timeEnd('fetchWishlistItemsQuery');
@@ -71,17 +58,40 @@ export const useSupabaseWishlist = () => {
       setWishlistItems([]);
     } finally {
       setLoading(false);
-      isFetchingRef.current = false; // Use .current
+      isFetchingRef.current = false; // Reset ref in finally block
     }
-  }, [user, authLoading]); // Add user and authLoading to dependencies
+  }, [user, authLoading]); // Keep user and authLoading as dependencies for fetchWishlistItems
 
   useEffect(() => {
-    if (!authLoading && isVisible) {
-      fetchWishlistItems();
+    console.log('useSupabaseWishlist useEffect: authLoading:', authLoading, 'user:', user, 'userProfile:', userProfile, 'isVisible:', isVisible);
+    let timeoutId: NodeJS.Timeout;
+
+    // Only fetch if auth is not loading, userProfile is available, and document is visible
+    if (!authLoading && userProfile && isVisible) {
+      if (isFetchingRef.current) {
+        console.log('useSupabaseWishlist useEffect: Fetch already in progress, skipping scheduling.');
+        return;
+      }
+      
+      isFetchingRef.current = true; // Set ref to true before scheduling
+      console.log('useSupabaseWishlist useEffect: Triggering fetchWishlistItems with debounce.');
+      timeoutId = setTimeout(() => {
+        fetchWishlistItems();
+      }, 50); // Small delay to allow state to settle
     } else if (!authLoading && !user) {
+      // If auth is done loading and no user, clear wishlist items immediately
+      console.log('useSupabaseWishlist useEffect: No user and auth done loading, clearing wishlist items.');
       setWishlistItems([]);
+    } else {
+      console.log('useSupabaseWishlist useEffect: Skipping scheduling fetch. authLoading:', authLoading, 'userProfile:', userProfile, 'isVisible:', isVisible);
     }
-  }, [user, authLoading, isVisible]); // Removed fetchWishlistItems from dependencies
+
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [user, userProfile, authLoading, isVisible, fetchWishlistItems]); // Add userProfile to dependencies
 
   const addToWishlist = async (productId: string) => {
     if (!user) return { error: new Error('Please login to add items to wishlist') };
