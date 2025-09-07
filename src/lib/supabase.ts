@@ -1,20 +1,24 @@
 // src/lib/supabase.ts
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 console.log('VITE_SUPABASE_URL:', supabaseUrl ? 'Loaded' : 'NOT LOADED');
 console.log('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Loaded' : 'NOT LOADED');
 console.log('Supabase URL being used:', supabaseUrl);
-console.log('Supabase Anon Key being used (first 5 chars):', supabaseAnonKey ? supabaseAnonKey.substring(0, 5) + '...' : 'NOT LOADED'); // ADD THIS LINE
+console.log('Supabase Anon Key being used (first 5 chars):', supabaseAnonKey ? supabaseAnonKey.substring(0, 5) + '...' : 'NOT LOADED');
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-console.log('Supabase client created successfully.'); // ADD THIS LINE
+// Create and export the anonSupabase client here as a singleton
+export const anonSupabase = createClient(supabaseUrl, supabaseAnonKey);
+
+console.log('Supabase client created successfully.');
+
 
 
 // Database types

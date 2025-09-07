@@ -1,6 +1,6 @@
 // src/hooks/useSupabaseCart.ts
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, anonSupabase } from '../lib/supabase'; // Import anonSupabase
 import { useAuth } from '../context/AuthContext';
 import { useDocumentVisibility } from './useDocumentVisibility';
 
@@ -47,9 +47,10 @@ export const useSupabaseCart = () => {
     }
 
     setLoading(true);
+    console.time('fetchCartItemsQuery');
     try {
-      console.log('fetchCartItems: About to execute Supabase cart query...');
-      const { data, error } = await supabase
+      console.log('fetchCartItems: Using anonSupabase to fetch cart items...'); // NEW LOG
+      const { data, error } = await anonSupabase
         .from('cart_items')
         .select(`
           id,
@@ -65,13 +66,16 @@ export const useSupabaseCart = () => {
           )
         `)
         .eq('user_id', user.id);
+
       console.log('fetchCartItems: Supabase cart query executed.');
+      console.timeEnd('fetchCartItemsQuery');
       console.log('fetchCartItems: Supabase query result for cart items - Data:', data, 'Error:', error);
 
       if (error) throw error;
       setCartItems(data || []);
-    } catch (error: any) { // Explicitly type error as any
-      console.error('Error fetching cart items:', error.message); // Log error message
+    } catch (error: any) {
+      console.error('Error fetching cart items:', error.message);
+      console.timeEnd('fetchCartItemsQuery');
     } finally {
       setLoading(false);
     }
@@ -81,6 +85,7 @@ export const useSupabaseCart = () => {
     if (!user) return { error: new Error('Please login to add items to cart') };
 
     try {
+      console.log('addToCart: Using supabase (authenticated) client to check for existing item...'); // NEW LOG
       const { data: existingItem } = await supabase
         .from('cart_items')
         .select('id, quantity')
@@ -89,6 +94,7 @@ export const useSupabaseCart = () => {
         .maybeSingle();
 
       if (existingItem) {
+        console.log('addToCart: Using supabase (authenticated) client to update existing item quantity...'); // NEW LOG
         const { error } = await supabase
           .from('cart_items')
           .update({ quantity: existingItem.quantity + quantity })
@@ -96,6 +102,7 @@ export const useSupabaseCart = () => {
 
         if (error) throw error;
       } else {
+        console.log('addToCart: Using supabase (authenticated) client to insert new item...'); // NEW LOG
         const { error } = await supabase
           .from('cart_items')
           .insert({
@@ -109,8 +116,8 @@ export const useSupabaseCart = () => {
 
       await fetchCartItems();
       return { error: null };
-    } catch (error: any) { // Explicitly type error as any
-      console.error('Error adding to cart:', error.message); // Log error message
+    } catch (error: any) {
+      console.error('Error adding to cart:', error.message);
       return { error };
     }
   };
@@ -122,7 +129,7 @@ export const useSupabaseCart = () => {
       if (quantity <= 0) {
         return await removeFromCart(cartItemId);
       }
-
+      console.log('updateQuantity: Using supabase (authenticated) client to update item quantity...'); // NEW LOG
       const { error } = await supabase
         .from('cart_items')
         .update({ quantity })
@@ -133,8 +140,8 @@ export const useSupabaseCart = () => {
 
       await fetchCartItems();
       return { error: null };
-    } catch (error: any) { // Explicitly type error as any
-      console.error('Error updating quantity:', error.message); // Log error message
+    } catch (error: any) {
+      console.error('Error updating quantity:', error.message);
       return { error };
     }
   };
@@ -143,6 +150,7 @@ export const useSupabaseCart = () => {
     if (!user) return { error: new Error('Please login') };
 
     try {
+      console.log('removeFromCart: Using supabase (authenticated) client to delete item...'); // NEW LOG
       const { error } = await supabase
         .from('cart_items')
         .delete()
@@ -153,8 +161,8 @@ export const useSupabaseCart = () => {
 
       await fetchCartItems();
       return { error: null };
-    } catch (error: any) { // Explicitly type error as any
-      console.error('Error removing from cart:', error.message); // Log error message
+    } catch (error: any) {
+      console.error('Error removing from cart:', error.message);
       return { error };
     }
   };
@@ -163,6 +171,7 @@ export const useSupabaseCart = () => {
     if (!user) return { error: new Error('Please login') };
 
     try {
+      console.log('clearCart: Using supabase (authenticated) client to delete all items...'); // NEW LOG
       const { error } = await supabase
         .from('cart_items')
         .delete()
@@ -172,8 +181,8 @@ export const useSupabaseCart = () => {
 
       setCartItems([]);
       return { error: null };
-    } catch (error: any) { // Explicitly type error as any
-      console.error('Error clearing cart:', error.message); // Log error message
+    } catch (error: any) {
+      console.error('Error clearing cart:', error.message);
       return { error };
     }
   };

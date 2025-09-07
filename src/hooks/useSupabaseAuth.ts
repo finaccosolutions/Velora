@@ -68,6 +68,25 @@ export const useSupabaseAuth = () => {
       } else { // Profile found
         console.log('fetchUserProfile: User profile fetched successfully. Setting userProfile to:', data);
         setUserProfile(data);
+
+        // --- REMOVED TEST QUERY ---
+        // console.log('fetchUserProfile: Running authenticated test query for products...');
+        // try {
+        //   const { data: testData, error: testError } = await supabase
+        //     .from('products')
+        //     .select('id')
+        //     .limit(1);
+          
+        //   if (testError) {
+        //     console.error('fetchUserProfile: Authenticated test query FAILED:', testError);
+        //   } else {
+        //     console.log('fetchUserProfile: Authenticated test query SUCCESS. Data:', testData);
+        //   }
+        // } catch (testCatchError: any) {
+        //   console.error('fetchUserProfile: Authenticated test query caught unexpected error:', testCatchError);
+        // }
+        // console.log('fetchUserProfile: Finished authenticated test query.');
+        // --- END REMOVED TEST QUERY ---
       }
     } catch (outerError: any) {
       console.error('fetchUserProfile: Caught unexpected exception in outer catch block:', JSON.stringify(outerError, Object.getOwnPropertyNames(outerError), 2));
@@ -242,4 +261,3 @@ export const useSupabaseAuth = () => {
     updateProfile,
   };
 };
-

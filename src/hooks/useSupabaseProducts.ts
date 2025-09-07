@@ -1,8 +1,8 @@
 // src/hooks/useSupabaseProducts.ts
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, anonSupabase } from '../lib/supabase'; // Import anonSupabase
 import { useDocumentVisibility } from './useDocumentVisibility';
-import { useAuth } from '../context/AuthContext'; // Import useAuth
+import { useAuth } from '../context/AuthContext';
 
 interface Product {
   id: string;
@@ -26,11 +26,10 @@ export const useSupabaseProducts = () => {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
   const isVisible = useDocumentVisibility();
-  const { user, loading: authLoading } = useAuth(); // Get user and authLoading from useAuth
+  const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     console.log('useSupabaseProducts useEffect (primary): Triggering fetch. authLoading:', authLoading, 'user:', user);
-    // Only fetch if auth is not loading
     if (!authLoading) {
       fetchProducts();
       fetchCategories();
@@ -50,15 +49,18 @@ export const useSupabaseProducts = () => {
     console.log('fetchProducts: Attempting to fetch products...');
     console.log('fetchProducts: Current user:', user);
     console.log('fetchProducts: Before Supabase query execution.');
+    console.time('fetchProductsQuery');
     try {
-      const { data, error } = await supabase
+      console.log('fetchProducts: Using anonSupabase to fetch products...'); // NEW LOG
+      const { data, error } = await anonSupabase
         .from('products')
-        .select('id, name, price, original_price, image_url, category, in_stock, rating, reviews_count, created_at, updated_at')
+        .select('*')
         .order('created_at', { ascending: false });
 
       console.log('fetchProducts: Supabase query call completed.');
-      console.log('fetchProducts: Data received:', data); // NEW LOG
-      console.log('fetchProducts: Error received:', error); // NEW LOG
+      console.timeEnd('fetchProductsQuery');
+      console.log('fetchProducts: Data received:', data);
+      console.log('fetchProducts: Error received:', error);
 
       if (error) {
         console.error('fetchProducts: Error fetching products:', error);
@@ -74,6 +76,7 @@ export const useSupabaseProducts = () => {
       console.error('fetchProducts: Caught unexpected exception during fetch:', e);
       console.error('fetchProducts: Unexpected exception details:', JSON.stringify(e, Object.getOwnPropertyNames(e), 2));
       setProducts([]);
+      console.timeEnd('fetchProductsQuery');
     } finally {
       setLoading(false);
       console.log('fetchProducts: Setting loading to false.');
@@ -83,8 +86,8 @@ export const useSupabaseProducts = () => {
   const fetchCategories = async () => {
     console.log('fetchCategories: Attempting to fetch categories...');
     try {
-      console.log('fetchCategories: Executing supabase.from("products").select("category")...');
-      const { data, error } = await supabase
+      console.log('fetchCategories: Using anonSupabase to fetch categories...'); // NEW LOG
+      const { data, error } = await anonSupabase
         .from('products')
         .select('category')
         .order('category');
@@ -104,7 +107,8 @@ export const useSupabaseProducts = () => {
 
   const getProductById = async (id: string) => {
     try {
-      const { data, error } = await supabase
+      console.log('getProductById: Using anonSupabase to get product by ID...'); // NEW LOG
+      const { data, error } = await anonSupabase
         .from('products')
         .select('*')
         .eq('id', id)
@@ -119,6 +123,7 @@ export const useSupabaseProducts = () => {
 
   const createProduct = async (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      console.log('createProduct: Using supabase (authenticated) client to insert product...'); // NEW LOG
       const { data, error } = await supabase
         .from('products')
         .insert(product)
@@ -138,6 +143,7 @@ export const useSupabaseProducts = () => {
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
+      console.log('updateProduct: Using supabase (authenticated) client to update product...'); // NEW LOG
       const { data, error } = await supabase
         .from('products')
         .update(updates)
@@ -158,6 +164,7 @@ export const useSupabaseProducts = () => {
 
   const deleteProduct = async (id: string) => {
     try {
+      console.log('deleteProduct: Using supabase (authenticated) client to delete product...'); // NEW LOG
       const { error } = await supabase
         .from('products')
         .delete()

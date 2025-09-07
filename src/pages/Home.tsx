@@ -1,10 +1,54 @@
-import React from 'react';
+import React from 'react'; // Remove useState
 import { Link } from 'react-router-dom';
 import { ArrowRight, Star, ShoppingBag, Truck, Shield, HeadphonesIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FeaturedProducts from '../components/FeaturedProducts';
+// Remove import { supabase } from '../lib/supabase';
 
 const Home: React.FC = () => {
+  // Remove useState for directProducts and handleDirectFetchProducts
+  // const [directProducts, setDirectProducts] = useState<any[] | null>(null); 
+
+  // const handleDirectFetchProducts = async () => {
+  //   console.log('Attempting direct product fetch...');
+  //   try {
+  //     // Get the current session to extract the access token
+  //     const { data: { session } } = await supabase.auth.getSession();
+
+  //     if (!session) {
+  //       console.error('No active session found. Please log in.');
+  //       return;
+  //     }
+
+  //     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  //     const productsEndpoint = `${supabaseUrl}/rest/v1/products?select=*`;
+
+  //     console.log('Attempting raw fetch to:', productsEndpoint);
+  //     console.log('Using access token (first 5 chars):', session.access_token.substring(0, 5) + '...');
+
+  //     const response = await fetch(productsEndpoint, {
+  //       method: 'GET',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY, // Your anon key
+  //         'Authorization': `Bearer ${session.access_token}`, // The authenticated token
+  //       },
+  //     });
+
+  //     if (!response.ok) {
+  //       const errorText = await response.text();
+  //       throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+  //     }
+
+  //     const data = await response.json();
+  //     console.log('Raw fetch successful:', data);
+  //     setDirectProducts(data);
+
+  //   } catch (e: any) {
+  //     console.error('Direct product fetch caught exception:', e.message);
+  //   }
+  // };
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -102,6 +146,22 @@ const Home: React.FC = () => {
           </div>
         </div>
       </section>
+
+      {/* Temporary Direct Fetch Button */}
+      {/* Remove this section */}
+      {/* <section className="py-8 bg-gray-100 text-center">
+        <button
+          onClick={handleDirectFetchProducts}
+          className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          Fetch Products Directly (Debug)
+        </button>
+        {directProducts && (
+          <div className="mt-4 text-gray-800">
+            <p>Directly fetched {directProducts.length} products.</p>
+          </div>
+        )}
+      </section> */}
 
       {/* Featured Products */}
       <FeaturedProducts />

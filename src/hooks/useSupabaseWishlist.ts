@@ -1,6 +1,6 @@
 // src/hooks/useSupabaseWishlist.ts
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, anonSupabase } from '../lib/supabase'; // Import anonSupabase
 import { useAuth } from '../context/AuthContext';
 import { useDocumentVisibility } from './useDocumentVisibility';
 
@@ -46,30 +46,34 @@ export const useSupabaseWishlist = () => {
     }
 
     setLoading(true);
+    console.time('fetchWishlistItemsQuery');
     try {
-      console.log('fetchWishlistItems: About to execute Supabase wishlist query...');
-      const { data, error } = await supabase
-        .from('wishlist_items')
-        .select(`
-          id,
-          product_id,
-          created_at,
-          product:products (
+      console.log('fetchWishlistItems: Using anonSupabase to fetch wishlist items...'); // NEW LOG
+        const { data, error } = await anonSupabase
+          .from('wishlist_items')
+          .select(`
             id,
-            name,
-            price,
-            image_url,
-            category
-          )
-        `)
-        .eq('user_id', user.id);
+            product_id,
+            created_at,
+            product:products (
+              id,
+              name,
+              price,
+              image_url,
+              category
+            )
+          `)
+          .eq('user_id', user.id);
+
       console.log('fetchWishlistItems: Supabase wishlist query executed.');
+      console.timeEnd('fetchWishlistItemsQuery');
       console.log('fetchWishlistItems: Supabase query result for wishlist items - Data:', data, 'Error:', error);
 
       if (error) throw error;
       setWishlistItems(data || []);
-    } catch (error: any) { // Explicitly type error as any
-      console.error('Error fetching wishlist items:', error.message); // Log error message
+    } catch (error: any) {
+      console.error('Error fetching wishlist items:', error.message);
+      console.timeEnd('fetchWishlistItemsQuery');
     } finally {
       setLoading(false);
     }
@@ -79,6 +83,7 @@ export const useSupabaseWishlist = () => {
     if (!user) return { error: new Error('Please login to add items to wishlist') };
 
     try {
+      console.log('addToWishlist: Using supabase (authenticated) client to check for existing item...'); // NEW LOG
       const { data: existingItem } = await supabase
         .from('wishlist_items')
         .select('id')
@@ -89,7 +94,7 @@ export const useSupabaseWishlist = () => {
       if (existingItem) {
         return { error: new Error('Product already in wishlist') };
       }
-
+      console.log('addToWishlist: Using supabase (authenticated) client to insert new item...'); // NEW LOG
       const { error } = await supabase
         .from('wishlist_items')
         .insert({
@@ -101,8 +106,8 @@ export const useSupabaseWishlist = () => {
 
       await fetchWishlistItems();
       return { error: null };
-    } catch (error: any) { // Explicitly type error as any
-      console.error('Error adding to wishlist:', error.message); // Log error message
+    } catch (error: any) {
+      console.error('Error adding to wishlist:', error.message);
       return { error };
     }
   };
@@ -111,6 +116,7 @@ export const useSupabaseWishlist = () => {
     if (!user) return { error: new Error('Please login') };
 
     try {
+      console.log('removeFromWishlist: Using supabase (authenticated) client to delete item...'); // NEW LOG
       const { error } = await supabase
         .from('wishlist_items')
         .delete()
@@ -121,8 +127,8 @@ export const useSupabaseWishlist = () => {
 
       await fetchWishlistItems();
       return { error: null };
-    } catch (error: any) { // Explicitly type error as any
-      console.error('Error removing from wishlist:', error.message); // Log error message
+    } catch (error: any) {
+      console.error('Error removing from wishlist:', error.message);
       return { error };
     }
   };
