@@ -22,23 +22,23 @@ import Wishlist from './pages/Wishlist';
 import { supabase } from './lib/supabase'; // Import supabase client
 
 function App() {
-  // Direct connectivity test - Keep this for initial debugging if needed, but it should work if public products load.
-  React.useEffect(() => {
-    const testSupabaseConnection = async () => {
-      console.log('App.tsx: Running direct Supabase connectivity test...');
-      try {
-        const { data, error } = await supabase.from('products').select('id, name').limit(1);
-        if (error) {
-          console.error('App.tsx: Direct Supabase test FAILED:', error);
-        } else {
-          console.log('App.tsx: Direct Supabase test SUCCESS. Data:', data);
-        }
-      } catch (e) {
-        console.error('App.tsx: Direct Supabase test caught unexpected error:', e);
-      }
-    };
-    testSupabaseConnection();
-  }, []);
+  // REMOVED Direct connectivity test block
+  // React.useEffect(() => {
+  //   const testSupabaseConnection = async () => {
+  //     console.log('App.tsx: Running direct Supabase connectivity test...');
+  //     try {
+  //       const { data, error } = await supabase.from('products').select('id, name').limit(1);
+  //       if (error) {
+  //         console.error('App.tsx: Direct Supabase test FAILED:', error);
+  //       } else {
+  //         console.log('App.tsx: Direct Supabase test SUCCESS. Data:', data);
+  //       }
+  //     } catch (e) {
+  //       console.error('App.tsx: Direct Supabase test caught unexpected error:', e);
+  //     }
+  //   };
+  //   testSupabaseConnection();
+  // }, []);
 
   return (
     <Router>
@@ -116,4 +116,3 @@ function App() {
 }
 
 export default App;
-

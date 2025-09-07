@@ -1,10 +1,10 @@
 // src/hooks/useSupabaseCart.ts
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react'; // Removed useRef
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useDocumentVisibility } from './useDocumentVisibility';
 
-interface CartItem { // Re-adding for clarity, assuming it's needed for state typing
+interface CartItem {
   id: string; product_id: string; quantity: number; product: { id: string; name: string; price: number; image_url: string; category: string; in_stock: boolean; };
 }
 
@@ -13,54 +13,56 @@ export const useSupabaseCart = () => {
   const [loading, setLoading] = useState(false);
   const { user, loading: authLoading } = useAuth();
   const isVisible = useDocumentVisibility();
+  const [isFetching, setIsFetching] = useState(false); // ADD THIS LINE
 
   useEffect(() => {
-    if (!authLoading && user) {
+    if (!authLoading && isVisible) {
       fetchCartItems();
     } else if (!authLoading && !user) {
       setCartItems([]);
     }
-  }, [user, authLoading]);
-
-  useEffect(() => {
-    if (isVisible && user && !authLoading) {
-      console.log('Tab became visible, re-fetching cart items...');
-      fetchCartItems();
-    }
-  }, [isVisible, user, authLoading]);
+  }, [user, authLoading, isVisible]);
 
   const fetchCartItems = async () => {
-    console.log('fetchCartItems: Current user:', user);
+    if (isFetching) { // ADD THIS CHECK
+      console.log('fetchCartItems: Fetch already in progress, skipping.');
+      return;
+    }
+
     if (!user) {
       console.log('fetchCartItems: No user, returning.');
-      setCartItems([]); // Ensure cart is empty if no user
+      setCartItems([]);
       setLoading(false);
       return;
     }
- 
+
+    setIsFetching(true); // Set fetching to true
     setLoading(true);
     console.time('fetchCartItemsQuery');
-    // Add a small delay to allow Supabase session to fully propagate
-    await new Promise(resolve => setTimeout(resolve, 100)); 
     try {
+      console.log('fetchCartItems: Current authLoading state:', authLoading);
+      const { data: currentSessionData } = await supabase.auth.getSession();
+      console.log('fetchCartItems: Supabase client session at query time:', currentSessionData.session);
+      console.log('fetchCartItems: Supabase client user at query time:', currentSessionData.session?.user);
+      console.log('fetchCartItems: Supabase client access token at query time (first 5 chars):', currentSessionData.session?.access_token?.substring(0, 5) + '...');
       console.log('Debug: Supabase client in fetchCartItems:', supabase);
       console.log('fetchCartItems: Using supabase to fetch cart items...');
       const { data, error } = await supabase
         .from('cart_items')
         .select(`
-          id,
-          product_id,
-          quantity,
-          product:products (
             id,
-            name,
-            price,
-            image_url,
-            category,
-            in_stock
-          )
-        `)
-        .eq('user_id', user.id);
+            product_id,
+            quantity,
+            product:products (
+              id,
+              name,
+              price,
+              image_url,
+              category,
+              in_stock
+            )
+          `)
+          .eq('user_id', user.id);
 
       console.log('fetchCartItems: Supabase cart query executed.');
       console.timeEnd('fetchCartItemsQuery');
@@ -68,15 +70,16 @@ export const useSupabaseCart = () => {
 
       if (error) {
         console.error('Error fetching cart items:', error.message);
-        setCartItems([]); // Clear cart on error
+        setCartItems([]);
       } else {
         setCartItems(data || []);
       }
     } catch (error: any) {
       console.error('Error fetching cart items (caught exception):', error.message);
-      setCartItems([]); // Clear cart on exception
+      setCartItems([]);
     } finally {
       setLoading(false);
+      setIsFetching(false); // Set fetching to false
     }
   };
 
@@ -84,7 +87,7 @@ export const useSupabaseCart = () => {
     if (!user) return { error: new Error('Please login to add items to cart') };
 
     try {
-      console.log('addToCart: Using supabase (authenticated) client to check for existing item...'); // NEW LOG
+      console.log('addToCart: Using supabase (authenticated) client to check for existing item...');
       const { data: existingItem } = await supabase
         .from('cart_items')
         .select('id, quantity')
@@ -93,7 +96,7 @@ export const useSupabaseCart = () => {
         .maybeSingle();
 
       if (existingItem) {
-        console.log('addToCart: Using supabase (authenticated) client to update existing item quantity...'); // NEW LOG
+        console.log('addToCart: Using supabase (authenticated) client to update existing item quantity...');
         const { error } = await supabase
           .from('cart_items')
           .update({ quantity: existingItem.quantity + quantity })
@@ -101,7 +104,7 @@ export const useSupabaseCart = () => {
 
         if (error) throw error;
       } else {
-        console.log('addToCart: Using supabase (authenticated) client to insert new item...'); // NEW LOG
+        console.log('addToCart: Using supabase (authenticated) client to insert new item...');
         const { error } = await supabase
           .from('cart_items')
           .insert({
@@ -128,7 +131,7 @@ export const useSupabaseCart = () => {
       if (quantity <= 0) {
         return await removeFromCart(cartItemId);
       }
-      console.log('updateQuantity: Using supabase (authenticated) client to update item quantity...'); // NEW LOG
+      console.log('updateQuantity: Using supabase (authenticated) client to update item quantity...');
       const { error } = await supabase
         .from('cart_items')
         .update({ quantity })
@@ -149,7 +152,7 @@ export const useSupabaseCart = () => {
     if (!user) return { error: new Error('Please login') };
 
     try {
-      console.log('removeFromCart: Using supabase (authenticated) client to delete item...'); // NEW LOG
+      console.log('removeFromCart: Using supabase (authenticated) client to delete item...');
       const { error } = await supabase
         .from('cart_items')
         .delete()
@@ -170,7 +173,7 @@ export const useSupabaseCart = () => {
     if (!user) return { error: new Error('Please login') };
 
     try {
-      console.log('clearCart: Using supabase (authenticated) client to delete all items...'); // NEW LOG
+      console.log('clearCart: Using supabase (authenticated) client to delete all items...');
       const { error } = await supabase
         .from('cart_items')
         .delete()
@@ -208,4 +211,3 @@ export const useSupabaseCart = () => {
     fetchCartItems,
   };
 };
-

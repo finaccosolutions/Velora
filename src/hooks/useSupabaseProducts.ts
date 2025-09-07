@@ -1,5 +1,5 @@
 // src/hooks/useSupabaseProducts.ts
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Removed useRef
 import { supabase } from '../lib/supabase';
 import { useDocumentVisibility } from './useDocumentVisibility';
 import { useAuth } from '../context/AuthContext';
@@ -23,30 +23,29 @@ interface Product {
 
 export const useSupabaseProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true); // Set to true initially
+  const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<string[]>([]);
   const isVisible = useDocumentVisibility();
   const { user, loading: authLoading } = useAuth();
+  const [isFetching, setIsFetching] = useState(false); // ADD THIS LINE
 
-  useEffect(() => {
-      fetchProducts();
-      fetchCategories();
-  }, [user, authLoading]);
-
-  useEffect(() => {
-    if (isVisible) {
-      console.log('Tab became visible, re-fetching products and categories...');
-      fetchProducts();
-      fetchCategories();
+  // Wrap fetchProducts and fetchCategories in useCallback to prevent unnecessary re-creations
+  const fetchProducts = useCallback(async () => {
+    if (isFetching) { // ADD THIS CHECK
+      console.log('fetchProducts: Fetch already in progress, skipping.');
+      return;
     }
-  }, [isVisible]);
 
-  const fetchProducts = async () => {
+    setIsFetching(true); // Set fetching to true
     setLoading(true);
-    console.log('fetchProducts: Attempting to fetch products...');
-    console.log('fetchProducts: Current user:', user);
     console.time('fetchProductsQuery');
     try {
+      console.log('fetchProducts: Current user (from hook state):', user);
+      console.log('fetchProducts: Current authLoading state:', authLoading);
+      const { data: currentSessionData } = await supabase.auth.getSession();
+      console.log('fetchProducts: Supabase client session at query time:', currentSessionData.session);
+      console.log('fetchProducts: Supabase client user at query time:', currentSessionData.session?.user);
+      console.log('fetchProducts: Supabase client access token at query time (first 5 chars):', currentSessionData.session?.access_token?.substring(0, 5) + '...');
       console.log('fetchProducts: Using supabase to fetch products...');
       const { data, error } = await supabase
         .from('products')
@@ -61,29 +60,25 @@ export const useSupabaseProducts = () => {
       if (error) {
         console.error('fetchProducts: Error fetching products:', error);
         console.error('fetchProducts: Error details:', JSON.stringify(error, null, 2));
-        console.log('fetchProducts: Supabase query result for products - Data: null, Error:', error); // New log
         setProducts([]);
       } else {
-        console.log('fetchProducts: Supabase query result for products - Data:', data, 'Error: null');
-        console.log('fetchProducts: Products fetched successfully, data length:', data?.length);
         setProducts(data || []);
       }
-      console.log('fetchProducts: Products state updated with data (from query result):', data);
     } catch (e: any) {
       console.error('fetchProducts: Caught unexpected exception during fetch:', e);
       console.error('fetchProducts: Unexpected exception details:', JSON.stringify(e, Object.getOwnPropertyNames(e), 2));
       setProducts([]);
-      console.timeEnd('fetchProductsQuery');
     } finally {
       setLoading(false);
+      setIsFetching(false); // Set fetching to false
       console.log('fetchProducts: Setting loading to false.');
     }
-  };
+  }, [user, authLoading, isFetching]); // Add isFetching to dependencies
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
+    // No isFetching check needed here as it's called alongside fetchProducts
     console.log('fetchCategories: Attempting to fetch categories...');
     try {
-      console.log('fetchCategories: Using supabase to fetch categories...');
       const { data, error } = await supabase
         .from('products')
         .select('category')
@@ -100,7 +95,21 @@ export const useSupabaseProducts = () => {
       console.error('fetchCategories: Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
       setCategories(['All']);
     }
-  };
+  }, []); // No dependencies needed for categories if they are static or fetched once
+
+  // Consolidated useEffect for data fetching
+  useEffect(() => {
+    console.log('useSupabaseProducts useEffect: authLoading:', authLoading, 'user:', user, 'isVisible:', isVisible);
+    if (!authLoading && isVisible) {
+      console.log('useSupabaseProducts useEffect: Triggering fetchProducts and fetchCategories.');
+      fetchProducts();
+      fetchCategories();
+    } else if (!authLoading && !user) { // Clear products if user logs out
+      setProducts([]);
+    } else {
+      console.log('useSupabaseProducts useEffect: Skipping fetch. authLoading:', authLoading, 'isVisible:', isVisible);
+    }
+  }, [authLoading, isVisible, user, fetchProducts, fetchCategories]); // Dependencies for this useEffect
 
   const getProductById = async (id: string) => {
     try {
@@ -120,7 +129,7 @@ export const useSupabaseProducts = () => {
 
   const createProduct = async (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      console.log('createProduct: Using supabase (authenticated) client to insert product...'); // NEW LOG
+      console.log('createProduct: Using supabase (authenticated) client to insert product...');
       const { data, error } = await supabase
         .from('products')
         .insert(product)
@@ -140,7 +149,7 @@ export const useSupabaseProducts = () => {
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
     try {
-      console.log('updateProduct: Using supabase (authenticated) client to update product...'); // NEW LOG
+      console.log('updateProduct: Using supabase (authenticated) client to update product...');
       const { data, error } = await supabase
         .from('products')
         .update(updates)
@@ -161,7 +170,7 @@ export const useSupabaseProducts = () => {
 
   const deleteProduct = async (id: string) => {
     try {
-      console.log('deleteProduct: Using supabase (authenticated) client to delete product...'); // NEW LOG
+      console.log('deleteProduct: Using supabase (authenticated) client to delete product...');
       const { error } = await supabase
         .from('products')
         .delete()
@@ -189,4 +198,3 @@ export const useSupabaseProducts = () => {
     deleteProduct,
   };
 };
-
