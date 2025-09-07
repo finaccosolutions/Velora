@@ -16,7 +16,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 console.log('Supabase client created successfully.');
-
+supabase.auth.getSession().then(({ data: { session } }) => {
+  console.log('Supabase client initial session:', session);
+});
 
 
 // Database types
@@ -277,3 +279,4 @@ export interface Database {
     };
   };
 }
+

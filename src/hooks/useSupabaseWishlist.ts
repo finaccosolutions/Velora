@@ -4,17 +4,8 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useDocumentVisibility } from './useDocumentVisibility';
 
-interface WishlistItem {
-  id: string;
-  product_id: string;
-  created_at: string;
-  product: {
-    id: string;
-    name: string;
-    price: number;
-    image_url: string;
-    category: string;
-  };
+interface WishlistItem { // Re-adding for clarity, assuming it's needed for state typing
+  id: string; product_id: string; created_at: string; product: { id: string; name: string; price: number; image_url: string; category: string; };
 }
 
 export const useSupabaseWishlist = () => {
@@ -42,12 +33,17 @@ export const useSupabaseWishlist = () => {
     console.log('fetchWishlistItems: Current user:', user);
     if (!user) {
       console.log('fetchWishlistItems: No user, returning.');
+      setWishlistItems([]); // Ensure wishlist is empty if no user
+      setLoading(false);
       return;
     }
 
     setLoading(true);
     console.time('fetchWishlistItemsQuery');
+    // Add a small delay to allow Supabase session to fully propagate
+    await new Promise(resolve => setTimeout(resolve, 100));
     try {
+      console.log('Debug: Supabase client in fetchWishlistItems:', supabase);
       console.log('fetchWishlistItems: Using supabase to fetch wishlist items...');
         const { data, error } = await supabase
           .from('wishlist_items')
@@ -69,11 +65,15 @@ export const useSupabaseWishlist = () => {
       console.timeEnd('fetchWishlistItemsQuery');
       console.log('fetchWishlistItems: Supabase query result for wishlist items - Data:', data, 'Error:', error);
 
-      if (error) throw error;
-      setWishlistItems(data || []);
+      if (error) {
+        console.error('Error fetching wishlist items:', error.message);
+        setWishlistItems([]); // Clear wishlist on error
+      } else {
+        setWishlistItems(data || []);
+      }
     } catch (error: any) {
-      console.error('Error fetching wishlist items:', error.message);
-      console.timeEnd('fetchWishlistItemsQuery');
+      console.error('Error fetching wishlist items (caught exception):', error.message);
+      setWishlistItems([]); // Clear wishlist on exception
     } finally {
       setLoading(false);
     }
@@ -151,3 +151,4 @@ export const useSupabaseWishlist = () => {
     fetchWishlistItems,
   };
 };
+

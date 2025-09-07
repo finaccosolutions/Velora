@@ -40,12 +40,17 @@ const Orders: React.FC = () => {
   }, [user, authLoading]);
 
   const fetchOrders = async () => {
+    console.log('fetchOrders: Current user:', user);
     if (!user) {
       console.log('fetchOrders: No user, returning.');
+      setOrders([]); // Ensure orders are empty if no user
+      setLoading(false);
       return;
     }
 
     setLoading(true);
+    // Add a small delay to allow Supabase session to fully propagate
+    await new Promise(resolve => setTimeout(resolve, 100));
     try {
       console.log('fetchOrders: About to execute Supabase orders query...');
       const { data, error } = await supabase
@@ -74,10 +79,15 @@ const Orders: React.FC = () => {
       console.log('fetchOrders: Supabase orders query executed.');
       console.log('fetchOrders: Supabase query result for orders - Data:', data, 'Error:', error);
 
-      if (error) throw error;
-      setOrders(data || []);
+      if (error) {
+        console.error('Error fetching orders:', error.message); // Log error message
+        setOrders([]); // Clear orders on error
+      } else {
+        setOrders(data || []);
+      }
     } catch (error: any) { // Explicitly type error as any
-      console.error('Error fetching orders:', error.message); // Log error message
+      console.error('Error fetching orders (caught exception):', error.message); // Log error message
+      setOrders([]); // Clear orders on exception
     } finally {
       setLoading(false);
     }
@@ -268,3 +278,4 @@ const Orders: React.FC = () => {
 };
 
 export default Orders;
+

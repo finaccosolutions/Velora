@@ -4,18 +4,8 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useDocumentVisibility } from './useDocumentVisibility';
 
-interface CartItem {
-  id: string;
-  product_id: string;
-  quantity: number;
-  product: {
-    id: string;
-    name: string;
-    price: number;
-    image_url: string;
-    category: string;
-    in_stock: boolean;
-  };
+interface CartItem { // Re-adding for clarity, assuming it's needed for state typing
+  id: string; product_id: string; quantity: number; product: { id: string; name: string; price: number; image_url: string; category: string; in_stock: boolean; };
 }
 
 export const useSupabaseCart = () => {
@@ -43,12 +33,17 @@ export const useSupabaseCart = () => {
     console.log('fetchCartItems: Current user:', user);
     if (!user) {
       console.log('fetchCartItems: No user, returning.');
+      setCartItems([]); // Ensure cart is empty if no user
+      setLoading(false);
       return;
     }
-
+ 
     setLoading(true);
     console.time('fetchCartItemsQuery');
+    // Add a small delay to allow Supabase session to fully propagate
+    await new Promise(resolve => setTimeout(resolve, 100)); 
     try {
+      console.log('Debug: Supabase client in fetchCartItems:', supabase);
       console.log('fetchCartItems: Using supabase to fetch cart items...');
       const { data, error } = await supabase
         .from('cart_items')
@@ -71,11 +66,15 @@ export const useSupabaseCart = () => {
       console.timeEnd('fetchCartItemsQuery');
       console.log('fetchCartItems: Supabase query result for cart items - Data:', data, 'Error:', error);
 
-      if (error) throw error;
-      setCartItems(data || []);
+      if (error) {
+        console.error('Error fetching cart items:', error.message);
+        setCartItems([]); // Clear cart on error
+      } else {
+        setCartItems(data || []);
+      }
     } catch (error: any) {
-      console.error('Error fetching cart items:', error.message);
-      console.timeEnd('fetchCartItemsQuery');
+      console.error('Error fetching cart items (caught exception):', error.message);
+      setCartItems([]); // Clear cart on exception
     } finally {
       setLoading(false);
     }
@@ -209,3 +208,4 @@ export const useSupabaseCart = () => {
     fetchCartItems,
   };
 };
+

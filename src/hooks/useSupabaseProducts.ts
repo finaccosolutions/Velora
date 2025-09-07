@@ -23,17 +23,14 @@ interface Product {
 
 export const useSupabaseProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Set to true initially
   const [categories, setCategories] = useState<string[]>([]);
   const isVisible = useDocumentVisibility();
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    console.log('useSupabaseProducts useEffect (primary): Triggering fetch. authLoading:', authLoading, 'user:', user);
-    if (!authLoading) {
       fetchProducts();
       fetchCategories();
-    }
   }, [user, authLoading]);
 
   useEffect(() => {
@@ -48,7 +45,6 @@ export const useSupabaseProducts = () => {
     setLoading(true);
     console.log('fetchProducts: Attempting to fetch products...');
     console.log('fetchProducts: Current user:', user);
-    console.log('fetchProducts: Before Supabase query execution.');
     console.time('fetchProductsQuery');
     try {
       console.log('fetchProducts: Using supabase to fetch products...');
@@ -65,6 +61,7 @@ export const useSupabaseProducts = () => {
       if (error) {
         console.error('fetchProducts: Error fetching products:', error);
         console.error('fetchProducts: Error details:', JSON.stringify(error, null, 2));
+        console.log('fetchProducts: Supabase query result for products - Data: null, Error:', error); // New log
         setProducts([]);
       } else {
         console.log('fetchProducts: Supabase query result for products - Data:', data, 'Error: null');
@@ -192,3 +189,4 @@ export const useSupabaseProducts = () => {
     deleteProduct,
   };
 };
+

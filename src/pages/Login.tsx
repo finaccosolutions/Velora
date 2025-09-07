@@ -1,5 +1,5 @@
 // src/pages/Login.tsx
-import React, { useState, useEffect } from 'react'; // Add useEffect here
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
@@ -13,7 +13,6 @@ interface LoginForm {
 
 const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Destructure user, userProfile, and loading (aliased as authLoading) from useAuth
   const { signIn, user, userProfile, loading: authLoading } = useAuth();
@@ -22,24 +21,23 @@ const Login: React.FC = () => {
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
 
   const onSubmit = async (data: LoginForm) => {
-    setIsLoading(true); // Set local loading state to true
     setError(null);
     
     const { data: authData, error } = await signIn(data.email, data.password);
     
     if (error) {
       setError(error.message);
-      setIsLoading(false); // Set local loading state to false on error
     }
     // Do NOT navigate here. The useEffect below will handle navigation once profile is loaded.
   };
 
   // New useEffect to handle navigation after successful login and profile load
   useEffect(() => {
+    console.log('Login useEffect: authLoading:', authLoading, 'user:', user, 'userProfile:', userProfile);
     // Check if authentication is not loading, a user is present, AND userProfile is loaded
     if (!authLoading && user && userProfile) {
-      navigate('/'); // Navigate to the home page
-      setIsLoading(false); // Set local loading state to false after navigation
+      console.log('Login useEffect: Navigation condition met. Navigating to /'); // New log
+      navigate('/');
     }
   }, [authLoading, user, userProfile, navigate]); // Dependencies for this effect
 
@@ -153,12 +151,12 @@ const Login: React.FC = () => {
 
             <motion.button
               type="submit"
-              disabled={isLoading} // Use the local isLoading state
-              whileHover={{ scale: isLoading ? 1 : 1.02 }}
-              whileTap={{ scale: isLoading ? 1 : 0.98 }}
+              disabled={authLoading} // Use authLoading from useAuth
+              whileHover={{ scale: authLoading ? 1 : 1.02 }}
+              whileTap={{ scale: authLoading ? 1 : 0.98 }}
               className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-[#815536] to-[#c9baa8] hover:from-[#6d4429] hover:to-[#b8a494] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#815536] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {authLoading ? 'Signing in...' : 'Sign In'}
             </motion.button>
 
             <div className="text-center">
@@ -177,3 +175,4 @@ const Login: React.FC = () => {
 };
 
 export default Login;
+
