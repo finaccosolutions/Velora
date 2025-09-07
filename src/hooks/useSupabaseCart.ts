@@ -1,6 +1,6 @@
 // src/hooks/useSupabaseCart.ts
 import { useState, useEffect } from 'react';
-import { supabase, anonSupabase } from '../lib/supabase'; // Import anonSupabase
+import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useDocumentVisibility } from './useDocumentVisibility';
 
@@ -49,8 +49,8 @@ export const useSupabaseCart = () => {
     setLoading(true);
     console.time('fetchCartItemsQuery');
     try {
-      console.log('fetchCartItems: Using anonSupabase to fetch cart items...'); // NEW LOG
-      const { data, error } = await anonSupabase
+      console.log('fetchCartItems: Using supabase to fetch cart items...');
+      const { data, error } = await supabase
         .from('cart_items')
         .select(`
           id,

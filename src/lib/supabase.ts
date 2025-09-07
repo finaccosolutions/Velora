@@ -14,8 +14,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-// Create and export the anonSupabase client here as a singleton
-export const anonSupabase = createClient(supabaseUrl, supabaseAnonKey);
 
 console.log('Supabase client created successfully.');
 

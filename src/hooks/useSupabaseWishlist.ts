@@ -1,6 +1,6 @@
 // src/hooks/useSupabaseWishlist.ts
 import { useState, useEffect } from 'react';
-import { supabase, anonSupabase } from '../lib/supabase'; // Import anonSupabase
+import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useDocumentVisibility } from './useDocumentVisibility';
 
@@ -48,8 +48,8 @@ export const useSupabaseWishlist = () => {
     setLoading(true);
     console.time('fetchWishlistItemsQuery');
     try {
-      console.log('fetchWishlistItems: Using anonSupabase to fetch wishlist items...'); // NEW LOG
-        const { data, error } = await anonSupabase
+      console.log('fetchWishlistItems: Using supabase to fetch wishlist items...');
+        const { data, error } = await supabase
           .from('wishlist_items')
           .select(`
             id,

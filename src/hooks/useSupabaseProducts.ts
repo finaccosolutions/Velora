@@ -1,6 +1,6 @@
 // src/hooks/useSupabaseProducts.ts
 import { useState, useEffect } from 'react';
-import { supabase, anonSupabase } from '../lib/supabase'; // Import anonSupabase
+import { supabase } from '../lib/supabase';
 import { useDocumentVisibility } from './useDocumentVisibility';
 import { useAuth } from '../context/AuthContext';
 
@@ -51,8 +51,8 @@ export const useSupabaseProducts = () => {
     console.log('fetchProducts: Before Supabase query execution.');
     console.time('fetchProductsQuery');
     try {
-      console.log('fetchProducts: Using anonSupabase to fetch products...'); // NEW LOG
-      const { data, error } = await anonSupabase
+      console.log('fetchProducts: Using supabase to fetch products...');
+      const { data, error } = await supabase
         .from('products')
         .select('*')
         .order('created_at', { ascending: false });
@@ -86,8 +86,8 @@ export const useSupabaseProducts = () => {
   const fetchCategories = async () => {
     console.log('fetchCategories: Attempting to fetch categories...');
     try {
-      console.log('fetchCategories: Using anonSupabase to fetch categories...'); // NEW LOG
-      const { data, error } = await anonSupabase
+      console.log('fetchCategories: Using supabase to fetch categories...');
+      const { data, error } = await supabase
         .from('products')
         .select('category')
         .order('category');
@@ -107,8 +107,8 @@ export const useSupabaseProducts = () => {
 
   const getProductById = async (id: string) => {
     try {
-      console.log('getProductById: Using anonSupabase to get product by ID...'); // NEW LOG
-      const { data, error } = await anonSupabase
+      console.log('getProductById: Using supabase to get product by ID...');
+      const { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('id', id)
