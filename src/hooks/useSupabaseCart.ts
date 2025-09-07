@@ -1,5 +1,5 @@
 // src/hooks/useSupabaseCart.ts
-import { useState, useEffect } from 'react'; // Removed useRef
+import { useState, useEffect, useCallback, useRef } from 'react'; // Add useCallback, useRef
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useDocumentVisibility } from './useDocumentVisibility';
@@ -13,18 +13,11 @@ export const useSupabaseCart = () => {
   const [loading, setLoading] = useState(false);
   const { user, loading: authLoading } = useAuth();
   const isVisible = useDocumentVisibility();
-  const [isFetching, setIsFetching] = useState(false); // ADD THIS LINE
+  const isFetchingRef = useRef(false); // Change to useRef
 
-  useEffect(() => {
-    if (!authLoading && isVisible) {
-      fetchCartItems();
-    } else if (!authLoading && !user) {
-      setCartItems([]);
-    }
-  }, [user, authLoading, isVisible]);
-
-  const fetchCartItems = async () => {
-    if (isFetching) { // ADD THIS CHECK
+  // Wrap fetchCartItems in useCallback
+  const fetchCartItems = useCallback(async () => {
+    if (isFetchingRef.current) { // Use .current
       console.log('fetchCartItems: Fetch already in progress, skipping.');
       return;
     }
@@ -36,7 +29,7 @@ export const useSupabaseCart = () => {
       return;
     }
 
-    setIsFetching(true); // Set fetching to true
+    isFetchingRef.current = true; // Use .current
     setLoading(true);
     console.time('fetchCartItemsQuery');
     try {
@@ -79,9 +72,17 @@ export const useSupabaseCart = () => {
       setCartItems([]);
     } finally {
       setLoading(false);
-      setIsFetching(false); // Set fetching to false
+      isFetchingRef.current = false; // Use .current
     }
-  };
+  }, [user, authLoading]); // Add user and authLoading to dependencies
+
+  useEffect(() => {
+    if (!authLoading && isVisible) {
+      fetchCartItems();
+    } else if (!authLoading && !user) {
+      setCartItems([]);
+    }
+  }, [user, authLoading, isVisible]); // Removed fetchCartItems from dependencies
 
   const addToCart = async (productId: string, quantity: number = 1) => {
     if (!user) return { error: new Error('Please login to add items to cart') };

@@ -1,5 +1,5 @@
 // src/hooks/useSupabaseWishlist.ts
-import { useState, useEffect } from 'react'; // Removed useRef
+import { useState, useEffect, useCallback, useRef } from 'react'; // Add useCallback, useRef
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useDocumentVisibility } from './useDocumentVisibility';
@@ -13,18 +13,11 @@ export const useSupabaseWishlist = () => {
   const [loading, setLoading] = useState(false);
   const { user, loading: authLoading } = useAuth();
   const isVisible = useDocumentVisibility();
-  const [isFetching, setIsFetching] = useState(false); // ADD THIS LINE
+  const isFetchingRef = useRef(false); // Change to useRef
 
-  useEffect(() => {
-    if (!authLoading && isVisible) {
-      fetchWishlistItems();
-    } else if (!authLoading && !user) {
-      setWishlistItems([]);
-    }
-  }, [user, authLoading, isVisible]);
-
-  const fetchWishlistItems = async () => {
-    if (isFetching) { // ADD THIS CHECK
+  // Wrap fetchWishlistItems in useCallback
+  const fetchWishlistItems = useCallback(async () => {
+    if (isFetchingRef.current) { // Use .current
       console.log('fetchWishlistItems: Fetch already in progress, skipping.');
       return;
     }
@@ -36,7 +29,7 @@ export const useSupabaseWishlist = () => {
       return;
     }
 
-    setIsFetching(true); // Set fetching to true
+    isFetchingRef.current = true; // Use .current
     setLoading(true);
     console.time('fetchWishlistItemsQuery');
     try {
@@ -78,9 +71,17 @@ export const useSupabaseWishlist = () => {
       setWishlistItems([]);
     } finally {
       setLoading(false);
-      setIsFetching(false); // Set fetching to false
+      isFetchingRef.current = false; // Use .current
     }
-  };
+  }, [user, authLoading]); // Add user and authLoading to dependencies
+
+  useEffect(() => {
+    if (!authLoading && isVisible) {
+      fetchWishlistItems();
+    } else if (!authLoading && !user) {
+      setWishlistItems([]);
+    }
+  }, [user, authLoading, isVisible]); // Removed fetchWishlistItems from dependencies
 
   const addToWishlist = async (productId: string) => {
     if (!user) return { error: new Error('Please login to add items to wishlist') };

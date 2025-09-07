@@ -1,5 +1,5 @@
 // src/hooks/useSupabaseProducts.ts
-import { useState, useEffect, useCallback } from 'react'; // Removed useRef
+import { useState, useEffect, useCallback, useRef } from 'react'; // Add useRef
 import { supabase } from '../lib/supabase';
 import { useDocumentVisibility } from './useDocumentVisibility';
 import { useAuth } from '../context/AuthContext';
@@ -27,16 +27,16 @@ export const useSupabaseProducts = () => {
   const [categories, setCategories] = useState<string[]>([]);
   const isVisible = useDocumentVisibility();
   const { user, loading: authLoading } = useAuth();
-  const [isFetching, setIsFetching] = useState(false); // ADD THIS LINE
+  const isFetchingRef = useRef(false); // Change to useRef
 
   // Wrap fetchProducts and fetchCategories in useCallback to prevent unnecessary re-creations
   const fetchProducts = useCallback(async () => {
-    if (isFetching) { // ADD THIS CHECK
+    if (isFetchingRef.current) { // Use .current
       console.log('fetchProducts: Fetch already in progress, skipping.');
       return;
     }
 
-    setIsFetching(true); // Set fetching to true
+    isFetchingRef.current = true; // Use .current
     setLoading(true);
     console.time('fetchProductsQuery');
     try {
@@ -70,10 +70,10 @@ export const useSupabaseProducts = () => {
       setProducts([]);
     } finally {
       setLoading(false);
-      setIsFetching(false); // Set fetching to false
+      isFetchingRef.current = false; // Use .current
       console.log('fetchProducts: Setting loading to false.');
     }
-  }, [user, authLoading, isFetching]); // Add isFetching to dependencies
+  }, [user, authLoading]); // Remove isFetching from dependencies
 
   const fetchCategories = useCallback(async () => {
     // No isFetching check needed here as it's called alongside fetchProducts
