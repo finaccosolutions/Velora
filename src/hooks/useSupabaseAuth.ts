@@ -17,7 +17,7 @@ export const useSupabaseAuth = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const isVisible = useDocumentVisibility();
+  const isVisible = useDocumentVisibility(); // Call useDocumentVisibility here
 
   // Internal helper function to fetch user profile
   const _fetchUserProfile = async (authUser: User) => {
@@ -244,5 +244,6 @@ export const useSupabaseAuth = () => {
     signIn,
     signOut,
     updateProfile,
+    isVisible, // Return isVisible
   };
 };

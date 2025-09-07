@@ -1,7 +1,7 @@
 // src/hooks/useSupabaseProducts.ts
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { useDocumentVisibility } from './useDocumentVisibility';
+import { useAuth } from '../context/AuthContext';
 
 interface Product {
   id: string;
@@ -24,47 +24,72 @@ export const useSupabaseProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<string[]>([]);
-  const isVisible = useDocumentVisibility();
+  const [error, setError] = useState<string | null>(null);
+  const { isVisible, user } = useAuth(); // ADDED 'user' here
   const isFetchingRef = useRef(false);
 
   const fetchProducts = async () => {
-    if (isFetchingRef.current) return;
-    
-    isFetchingRef.current = true;
-    console.log('fetchProducts: Starting fetch...');
+    console.log('fetchProducts: Starting fetch...'); 
     
     try {
-      const { data, error } = await supabase
+      // Get current session to check authentication status
+      console.log('fetchProducts: Before getSession()'); // New log
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log('fetchProducts: After getSession(). Current session exists:', !!sessionData.session); // New log
+      
+      console.log('fetchProducts: Before products select query.'); // New log
+      const { data, error: fetchError } = await supabase
         .from('products')
-        .select('*')
+        .select(`
+          id,
+          name,
+          description,
+          price,
+          original_price,
+          image_url,
+          category,
+          in_stock,
+          rating,
+          reviews_count,
+          features,
+          ingredients,
+          created_at,
+          updated_at
+        `)
         .order('created_at', { ascending: false });
 
-      console.log('fetchProducts: Query completed. Data length:', data?.length, 'Error:', error);
+      console.log('fetchProducts: Supabase query result - Data:', data, 'Error:', fetchError);
 
-      if (error) {
-        console.error('fetchProducts: Error fetching products:', error);
+      if (fetchError) {
+        console.error('fetchProducts: Error fetching products:', fetchError);
+        setError(fetchError.message);
         setProducts([]);
       } else {
         setProducts(data || []);
+        setError(null);
         console.log('fetchProducts: Successfully set products');
       }
     } catch (e: any) {
       console.error('fetchProducts: Caught unexpected exception:', e);
+      setError(e.message);
       setProducts([]);
-    } finally {
-      isFetchingRef.current = false;
     }
   };
 
   const fetchCategories = async () => {
     console.log('fetchCategories: Attempting to fetch categories...');
     try {
-      const { data, error } = await supabase
+      const { data, error: fetchError } = await supabase
         .from('products')
         .select('category')
         .order('category');
 
-      if (error) throw error;
+      console.log('fetchCategories: Supabase query result - Data:', data, 'Error:', fetchError);
+
+      if (fetchError) {
+        console.error('fetchCategories: Error:', fetchError);
+        throw fetchError;
+      }
 
       const uniqueCategories = [...new Set(data?.map(item => item.category) || [])];
       console.log('fetchCategories: Categories fetched successfully:', uniqueCategories);
@@ -77,7 +102,7 @@ export const useSupabaseProducts = () => {
 
   // Main useEffect for initial fetch
   useEffect(() => {
-    console.log('useSupabaseProducts useEffect: isVisible:', isVisible);
+    console.log('useSupabaseProducts useEffect: isVisible:', isVisible, 'user:', user); // Added user to log
     
     let timeoutId: NodeJS.Timeout;
     let isMounted = true;
@@ -106,21 +131,15 @@ export const useSupabaseProducts = () => {
     if (isVisible) {
       console.log('useSupabaseProducts: Scheduling fetch with debounce');
       timeoutId = setTimeout(executeFetch, 100);
+    } else {
+      setLoading(false);
     }
 
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
       isMounted = false;
     };
-  }, [isVisible]);
-
-  // Simple refetch function that can be called manually if needed
-  const refetch = async () => {
-    setLoading(true);
-    await fetchProducts();
-    await fetchCategories();
-    setLoading(false);
-  };
+  }, [isVisible, user]); // ADDED 'user' to dependency array
 
   const getProductById = async (id: string) => {
     try {
@@ -147,7 +166,9 @@ export const useSupabaseProducts = () => {
 
       if (error) throw error;
 
-      await refetch();
+      // Refetch after creation
+      await fetchProducts();
+      await fetchCategories();
 
       return { data, error: null };
     } catch (error) {
@@ -166,9 +187,11 @@ export const useSupabaseProducts = () => {
 
       if (error) throw error;
 
-      await refetch();
+      // Refetch after update
+      await fetchProducts();
+      await fetchCategories();
 
-      return { data, error: null };
+      return { data: null, error };
     } catch (error) {
       return { data: null, error };
     }
@@ -183,7 +206,9 @@ export const useSupabaseProducts = () => {
 
       if (error) throw error;
 
-      await refetch();
+      // Refetch after deletion
+      await fetchProducts();
+      await fetchCategories();
 
       return { error: null };
     } catch (error) {
@@ -194,11 +219,12 @@ export const useSupabaseProducts = () => {
   return {
     products,
     loading,
+    error,
     categories,
-    refetch,
+    fetchProducts,
     getProductById,
     createProduct,
     updateProduct,
     deleteProduct,
   };
-}; 
+};

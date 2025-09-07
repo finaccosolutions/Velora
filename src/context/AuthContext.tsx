@@ -12,6 +12,7 @@ interface AuthContextType {
   signIn: ReturnType<typeof useSupabaseAuth>['signIn'];
   signOut: ReturnType<typeof useSupabaseAuth>['signOut'];
   updateProfile: ReturnType<typeof useSupabaseAuth>['updateProfile'];
+  isVisible: ReturnType<typeof useSupabaseAuth>['isVisible']; // Add isVisible here
 }
 
 // Create the context with a default undefined value

@@ -1,8 +1,7 @@
 // src/hooks/useSupabaseCart.ts
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
-import { useDocumentVisibility } from './useDocumentVisibility';
+import { useAuth } from '../context/AuthContext'; // Import useAuth
 
 interface CartItem {
   id: string; product_id: string; quantity: number; product: { id: string; name: string; price: number; image_url: string; category: string; in_stock: boolean; };
@@ -11,8 +10,7 @@ interface CartItem {
 export const useSupabaseCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user, userProfile, loading: authLoading } = useAuth(); // Destructure userProfile
-  const isVisible = useDocumentVisibility();
+  const { user, userProfile, loading: authLoading, isVisible } = useAuth(); // Destructure userProfile and isVisible
   const isFetchingRef = useRef(false);
 
   const fetchCartItems = useCallback(async () => {
@@ -92,7 +90,7 @@ export const useSupabaseCart = () => {
         clearTimeout(timeoutId);
       }
     };
-  }, [user, userProfile, authLoading, isVisible, fetchCartItems]); // Add userProfile to dependencies
+  }, [user, userProfile, authLoading, isVisible, fetchCartItems]); // Add userProfile and isVisible to dependencies
 
   const addToCart = async (productId: string, quantity: number = 1) => {
     if (!user) return { error: new Error('Please login to add items to cart') };

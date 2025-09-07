@@ -1,8 +1,7 @@
 // src/hooks/useSupabaseWishlist.ts
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../context/AuthContext';
-import { useDocumentVisibility } from './useDocumentVisibility';
+import { useAuth } from '../context/AuthContext'; // Import useAuth
 
 interface WishlistItem {
   id: string; product_id: string; created_at: string; product: { id: string; name: string; price: number; image_url: string; category: string; };
@@ -11,8 +10,7 @@ interface WishlistItem {
 export const useSupabaseWishlist = () => {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user, userProfile, loading: authLoading } = useAuth(); // Destructure userProfile
-  const isVisible = useDocumentVisibility();
+  const { user, userProfile, loading: authLoading, isVisible } = useAuth(); // Destructure userProfile and isVisible
   const isFetchingRef = useRef(false);
 
   const fetchWishlistItems = useCallback(async () => {
@@ -91,7 +89,7 @@ export const useSupabaseWishlist = () => {
         clearTimeout(timeoutId);
       }
     };
-  }, [user, userProfile, authLoading, isVisible, fetchWishlistItems]); // Add userProfile to dependencies
+  }, [user, userProfile, authLoading, isVisible, fetchWishlistItems]); // Add userProfile and isVisible to dependencies
 
   const addToWishlist = async (productId: string) => {
     if (!user) return { error: new Error('Please login to add items to wishlist') };

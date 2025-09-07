@@ -157,27 +157,19 @@ const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
                     className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"
                   >
                     <div className="absolute bottom-4 left-4 right-4">
-                      <motion.div
-                        initial={{ y: 20, opacity: 0 }}
-                        whileHover={{ y: 0, opacity: 1 }}
-                        transition={{ duration: 0.3, delay: 0.1 }}
-                        className="flex space-x-2"
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleAddToCart(product.id, e); // Add 'e' parameter here
+                        }}
+                        className="flex-1 bg-white/90 backdrop-blur-sm text-gray-900 py-2 px-4 rounded-lg font-semibold hover:bg-white transition-all duration-200 flex items-center justify-center space-x-2"
                       >
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            handleAddToCart(product.id, e); // Add 'e' parameter here
-                          }}
-                          className="flex-1 bg-white/90 backdrop-blur-sm text-gray-900 py-2 px-4 rounded-lg font-semibold hover:bg-white transition-all duration-200 flex items-center justify-center space-x-2"
-                        >
-                          <ShoppingCart className="h-4 w-4" />
-                          <span>Add to Cart</span>
-                        </motion.button>
-                        {/* The old wishlist button that was here is now replaced by the new hoverable one */}
-                      </motion.div>
+                        <ShoppingCart className="h-4 w-4" />
+                        <span>Add to Cart</span>
+                      </motion.button>
                     </div>
                   </motion.div>
                   
