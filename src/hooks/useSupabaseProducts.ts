@@ -1,6 +1,6 @@
 // src/hooks/useSupabaseProducts.ts
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseUrl, supabaseAnonKey } from '../lib/supabase'; // Import supabaseUrl and supabaseAnonKey
 import { useAuth } from '../context/AuthContext';
 
 interface Product {
@@ -25,60 +25,73 @@ export const useSupabaseProducts = () => {
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const { isVisible, user } = useAuth(); // ADDED 'user' here
+  const { isVisible, user, session } = useAuth(); // Get session from useAuth
   const isFetchingRef = useRef(false);
 
   const fetchProducts = async () => {
-    console.log('fetchProducts: Starting fetch...'); 
-    
+    console.log('fetchProducts: Starting fetch...');
+
+    // Ensure user and session are available before proceeding
+    if (!user || !session) {
+      console.log('fetchProducts: No user or session available, skipping fetch.');
+      setProducts([]);
+      setLoading(false);
+      return;
+    }
+
     try {
-      // Get current session to check authentication status
-      console.log('fetchProducts: Before getSession()'); // New log
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log('fetchProducts: After getSession(). Current session exists:', !!sessionData.session); // New log
-      
-      console.log('fetchProducts: Before products select query.'); // New log
-      const { data, error: fetchError } = await supabase
-        .from('products')
-        .select(`
-          id,
-          name,
-          description,
-          price,
-          original_price,
-          image_url,
-          category,
-          in_stock,
-          rating,
-          reviews_count,
-          features,
-          ingredients,
-          created_at,
-          updated_at
-        `)
-        .order('created_at', { ascending: false });
+      console.log('fetchProducts: User and session available. Proceeding with raw fetch.');
+      const productsEndpoint = `${supabaseUrl}/rest/v1/products?select=*`;
+      console.log('fetchProducts: Attempting raw fetch to:', productsEndpoint);
+      console.log('fetchProducts: Using access token (first 5 chars):', session.access_token.substring(0, 5) + '...');
 
-      console.log('fetchProducts: Supabase query result - Data:', data, 'Error:', fetchError);
+      const response = await Promise.race([
+        fetch(productsEndpoint, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabaseAnonKey,
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Products raw fetch timed out after 5 seconds')), 5000)
+        )
+      ]);
 
-      if (fetchError) {
-        console.error('fetchProducts: Error fetching products:', fetchError);
-        setError(fetchError.message);
-        setProducts([]);
-      } else {
-        setProducts(data || []);
-        setError(null);
-        console.log('fetchProducts: Successfully set products');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
       }
+
+      const data = await response.json();
+      console.log('fetchProducts: Raw fetch successful:', data);
+      setProducts(data || []);
+      setError(null);
+      console.log('fetchProducts: Successfully set products state.');
+
     } catch (e: any) {
-      console.error('fetchProducts: Caught unexpected exception:', e);
+      console.error('fetchProducts: Caught unexpected exception during raw product fetch:', e.message);
       setError(e.message);
       setProducts([]);
+    } finally {
+      setLoading(false);
+      isFetchingRef.current = false; // Reset ref in finally block
     }
   };
 
   const fetchCategories = async () => {
     console.log('fetchCategories: Attempting to fetch categories...');
     try {
+      // Ensure user and session are available for this too if RLS is enabled for categories
+      if (!user || !session) {
+        console.log('fetchCategories: No user or session available, skipping category fetch.');
+        setCategories(['All']);
+        return;
+      }
+
+      // This still uses the Supabase client, which might also hang.
+      // If this also hangs, we might need to convert this to raw fetch too.
       const { data, error: fetchError } = await supabase
         .from('products')
         .select('category')
@@ -102,18 +115,18 @@ export const useSupabaseProducts = () => {
 
   // Main useEffect for initial fetch
   useEffect(() => {
-    console.log('useSupabaseProducts useEffect: isVisible:', isVisible, 'user:', user); // Added user to log
-    
+    console.log('useSupabaseProducts useEffect: isVisible:', isVisible, 'user:', user, 'session:', session);
+
     let timeoutId: NodeJS.Timeout;
     let isMounted = true;
 
     const executeFetch = async () => {
       if (!isMounted || isFetchingRef.current) return;
-      
+
       isFetchingRef.current = true;
       setLoading(true);
       console.log('useSupabaseProducts: Starting fetch operations...');
-      
+
       try {
         await fetchProducts();
         await fetchCategories();
@@ -122,36 +135,53 @@ export const useSupabaseProducts = () => {
       } finally {
         if (isMounted) {
           isFetchingRef.current = false;
-          setLoading(false);
+          setLoading(false); // Ensure loading is set to false
           console.log('useSupabaseProducts: Fetch operations completed');
         }
       }
     };
 
-    if (isVisible) {
-      console.log('useSupabaseProducts: Scheduling fetch with debounce');
+    // Only trigger fetch if user and session are available and visible
+    if (isVisible && user && session) {
+      console.log('useSupabaseProducts: User, session, and visibility present. Scheduling fetch with debounce');
       timeoutId = setTimeout(executeFetch, 100);
-    } else {
+    } else if (!user || !session) {
+      // If no user/session, ensure loading is false and products/categories are cleared/defaulted
+      console.log('useSupabaseProducts: No user or session. Clearing products/categories and setting loading to false.');
+      setProducts([]);
+      setCategories(['All']);
       setLoading(false);
+    } else {
+      console.log('useSupabaseProducts: Skipping scheduling fetch. isVisible:', isVisible, 'user:', user, 'session:', session);
+      setLoading(false); // Ensure loading is false if not fetching
     }
+
 
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
       isMounted = false;
     };
-  }, [isVisible, user]); // ADDED 'user' to dependency array
+  }, [isVisible, user, session]); // ADDED 'session' to dependency array
 
+  // NOTE: getProductById, createProduct, updateProduct, deleteProduct still use the supabase client.
+  // If these also exhibit hanging behavior, they would need similar raw fetch implementations.
   const getProductById = async (id: string) => {
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const { data, error } = await Promise.race([
+        supabase
+          .from('products')
+          .select('*')
+          .eq('id', id)
+          .single(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error(`Product ${id} fetch timed out after 5 seconds`)), 5000)
+        )
+      ]);
 
       if (error) throw error;
       return { data, error: null };
-    } catch (error) {
+    } catch (error: any) {
+      console.error('getProductById: Caught unexpected exception:', error.message);
       return { data: null, error };
     }
   };
@@ -166,8 +196,7 @@ export const useSupabaseProducts = () => {
 
       if (error) throw error;
 
-      // Refetch after creation
-      await fetchProducts();
+      await fetchProducts(); // This will now use the raw fetch
       await fetchCategories();
 
       return { data, error: null };
@@ -187,8 +216,7 @@ export const useSupabaseProducts = () => {
 
       if (error) throw error;
 
-      // Refetch after update
-      await fetchProducts();
+      await fetchProducts(); // This will now use the raw fetch
       await fetchCategories();
 
       return { data: null, error };
@@ -206,8 +234,7 @@ export const useSupabaseProducts = () => {
 
       if (error) throw error;
 
-      // Refetch after deletion
-      await fetchProducts();
+      await fetchProducts(); // This will now use the raw fetch
       await fetchCategories();
 
       return { error: null };

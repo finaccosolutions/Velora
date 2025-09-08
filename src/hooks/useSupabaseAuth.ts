@@ -19,6 +19,11 @@ export const useSupabaseAuth = () => {
   const [loading, setLoading] = useState(true);
   const isVisible = useDocumentVisibility(); // Call useDocumentVisibility here
 
+    useEffect(() => {
+    console.log('useSupabaseAuth: User state changed:', user);
+    console.log('useSupabaseAuth: UserProfile state changed:', userProfile);
+  }, [user, userProfile]);
+
   // Internal helper function to fetch user profile
   const _fetchUserProfile = async (authUser: User) => {
     console.log('_fetchUserProfile: Attempting to fetch profile for userId:', authUser.id);
@@ -189,21 +194,31 @@ export const useSupabaseAuth = () => {
     let signOutError = null;
     try {
       console.log('signOut: Attempting to sign out user from Supabase.');
-      const { error } = await supabase.auth.signOut();
+      console.log('signOut: ABOUT TO EXECUTE SUPABASE AUTH SIGN OUT.');
+
+      // ADD TIMEOUT FOR SIGN OUT
+      const { error } = await Promise.race([
+        supabase.auth.signOut(),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Sign out timed out after 5 seconds')), 5000)
+        )
+      ]);
+      // END TIMEOUT
+
+      console.log('signOut: Result of supabase.auth.signOut() - Error:', error);
       if (error) {
         console.error('signOut: Error during sign out:', error);
         console.error('signOut: Error details:', JSON.stringify(error, null, 2));
         signOutError = error;
       } else {
         console.log('signOut: User signed out successfully from Supabase. Clearing local state.');
-        // Manually clear state here to ensure immediate UI update
         setUser(null);
         setSession(null);
         setUserProfile(null);
-        setLoading(false); // Ensure loading is false after sign out
+        setLoading(false);
       }
     } catch (error: any) {
-      console.error('signOut: Caught unexpected error during sign out:', error);
+      console.error('signOut: Caught unexpected error during sign out:', error.message); // Log the message
       console.error('signOut: Caught unexpected error details:', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
       signOutError = error;
     }

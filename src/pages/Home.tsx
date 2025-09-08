@@ -1,53 +1,62 @@
-import React from 'react'; // Remove useState
+// src/pages/Home.tsx
+import React, { useEffect } from 'react'; // Add useEffect
 import { Link } from 'react-router-dom';
 import { ArrowRight, Star, ShoppingBag, Truck, Shield, HeadphonesIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FeaturedProducts from '../components/FeaturedProducts';
-// Remove import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext'; // Import useAuth
+import { supabaseUrl, supabaseAnonKey } from '../lib/supabase'; // Import Supabase config
 
 const Home: React.FC = () => {
-  // Remove useState for directProducts and handleDirectFetchProducts
-  // const [directProducts, setDirectProducts] = useState<any[] | null>(null); 
+  const { user, session, loading: authLoading } = useAuth(); // Get user and session from useAuth
 
-  // const handleDirectFetchProducts = async () => {
-  //   console.log('Attempting direct product fetch...');
-  //   try {
-  //     // Get the current session to extract the access token
-  //     const { data: { session } } = await supabase.auth.getSession();
+  // NEW: Direct fetch test
+  const handleDirectFetchProducts = async () => {
+    console.log('Attempting direct product fetch...');
+    if (!user || !session) {
+      console.error('No active user or session found for direct fetch.');
+      return;
+    }
 
-  //     if (!session) {
-  //       console.error('No active session found. Please log in.');
-  //       return;
-  //     }
+    try {
+      const productsEndpoint = `${supabaseUrl}/rest/v1/products?select=*`;
+      console.log('Attempting raw fetch to:', productsEndpoint);
+      console.log('Using access token (first 5 chars):', session.access_token.substring(0, 5) + '...');
 
-  //     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  //     const productsEndpoint = `${supabaseUrl}/rest/v1/products?select=*`;
+      const response = await Promise.race([
+        fetch(productsEndpoint, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabaseAnonKey, // Your anon key
+            'Authorization': `Bearer ${session.access_token}`, // The authenticated token
+          },
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Direct fetch timed out after 5 seconds')), 5000)
+        )
+      ]);
 
-  //     console.log('Attempting raw fetch to:', productsEndpoint);
-  //     console.log('Using access token (first 5 chars):', session.access_token.substring(0, 5) + '...');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+      }
 
-  //     const response = await fetch(productsEndpoint, {
-  //       method: 'GET',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //         'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY, // Your anon key
-  //         'Authorization': `Bearer ${session.access_token}`, // The authenticated token
-  //       },
-  //     });
+      const data = await response.json();
+      console.log('Raw fetch successful:', data);
 
-  //     if (!response.ok) {
-  //       const errorText = await response.text();
-  //       throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-  //     }
+    } catch (e: any) {
+      console.error('Direct product fetch caught exception:', e.message);
+    }
+  };
 
-  //     const data = await response.json();
-  //     console.log('Raw fetch successful:', data);
-  //     setDirectProducts(data);
-
-  //   } catch (e: any) {
-  //     console.error('Direct product fetch caught exception:', e.message);
-  //   }
-  // };
+  // Optional: Trigger direct fetch on component mount if user is logged in
+  useEffect(() => {
+    if (!authLoading && user && session) {
+      console.log('Home.tsx: User and session available, attempting direct fetch on mount.');
+      handleDirectFetchProducts();
+    }
+  }, [user, session, authLoading]); // Dependencies
 
   return (
     <div className="min-h-screen">
@@ -68,7 +77,7 @@ const Home: React.FC = () => {
                 </span>
               </h1>
               <p className="text-xl text-[#c9baa8] mb-8 leading-relaxed">
-                Experience luxury fragrances that define your personality. From fresh daily wear 
+                Experience luxury fragrances that define your personality. From fresh daily wear
                 to sophisticated evening scents, find your perfect match at Velora Tradings.
               </p>
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
@@ -147,21 +156,15 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* Temporary Direct Fetch Button */}
-      {/* Remove this section */}
-      {/* <section className="py-8 bg-gray-100 text-center">
+      {/* NEW: Temporary Direct Fetch Button for testing */}
+      <section className="py-8 bg-gray-100 text-center">
         <button
           onClick={handleDirectFetchProducts}
           className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
         >
           Fetch Products Directly (Debug)
         </button>
-        {directProducts && (
-          <div className="mt-4 text-gray-800">
-            <p>Directly fetched {directProducts.length} products.</p>
-          </div>
-        )}
-      </section> */}
+      </section>
 
       {/* Featured Products */}
       <FeaturedProducts />

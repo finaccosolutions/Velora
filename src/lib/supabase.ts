@@ -4,10 +4,12 @@ import { createClient } from '@supabase/supabase-js';
 export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// ADD THESE NEW LOGS
 console.log('VITE_SUPABASE_URL:', supabaseUrl ? 'Loaded' : 'NOT LOADED');
 console.log('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'Loaded' : 'NOT LOADED');
 console.log('Supabase URL being used:', supabaseUrl);
 console.log('Supabase Anon Key being used (first 5 chars):', supabaseAnonKey ? supabaseAnonKey.substring(0, 5) + '...' : 'NOT LOADED');
+// END NEW LOGS
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
