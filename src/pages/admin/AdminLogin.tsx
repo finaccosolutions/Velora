@@ -1,5 +1,5 @@
 // src/pages/admin/AdminLogin.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Ensure useEffect is imported
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react';
@@ -16,8 +16,8 @@ const AdminLogin: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { signIn, isAdmin } = useAuth(); // ADD isAdmin from useAuth
   const navigate = useNavigate();
+  const { signIn, isAdmin, user, userProfile, loading: authLoading } = useAuth();
 
   const { register, handleSubmit, formState: { errors } } = useForm<AdminLoginForm>();
 
@@ -29,22 +29,36 @@ const AdminLogin: React.FC = () => {
 
     if (authError) {
       setError(authError.message);
-      setIsLoading(false);
-      return;
     }
-
-    // Give a small delay to allow isAdmin to update in AuthContext
-    await new Promise(resolve => setTimeout(resolve, 100));
-
-    if (isAdmin) { // USE isAdmin here
-      navigate('/admin/dashboard');
-    } else {
-      setError('Access denied. Admin privileges required. Please use the regular login page.');
-      navigate('/login');
-    }
-
+    // Do NOT navigate here. The useEffect below will handle navigation once profile is loaded.
     setIsLoading(false);
   };
+
+  // -------------------------------------------------------------------
+  // THIS IS WHERE YOU SHOULD ADD THE NEW useEffect BLOCK
+  // -------------------------------------------------------------------
+  useEffect(() => {
+    console.log('AdminLogin useEffect: authLoading:', authLoading, 'user:', user, 'userProfile:', userProfile, 'isAdmin:', isAdmin);
+    // Only proceed if authentication status has been determined (authLoading is false)
+    if (!authLoading) {
+      if (user && userProfile) { // Check if a user is logged in and their profile is loaded
+        if (isAdmin) {
+          // If the user is an admin, navigate to the admin dashboard
+          console.log('AdminLogin useEffect: User is admin, navigating to /admin/dashboard');
+          navigate('/admin/dashboard');
+        } else {
+          // If the user is logged in but NOT an admin, show an error and redirect to the regular login
+          console.log('AdminLogin useEffect: User is NOT admin, setting error and navigating to /login');
+          setError('Access denied. Admin privileges required. Please use the regular login page.');
+          navigate('/login');
+        }
+      }
+      // If authLoading is false but no user (e.g., login failed),
+      // the error would have been set by onSubmit, so no further navigation is needed here.
+    }
+  }, [authLoading, user, userProfile, isAdmin, navigate]); // Dependencies for the useEffect
+  // -------------------------------------------------------------------
+
 
   return (
     <div className="min-h-screen bg-admin-background flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
