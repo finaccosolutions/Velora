@@ -1,11 +1,12 @@
+// src/pages/admin/AdminDashboard.tsx
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
+import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell
 } from 'recharts';
-import { 
-  Package, Users, ShoppingCart, DollarSign, TrendingUp, 
+import {
+  Package, Users, ShoppingCart, DollarSign, TrendingUp,
   Eye, Plus, Settings, LogOut
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -35,25 +36,23 @@ const AdminDashboard: React.FC = () => {
     categoryData: []
   });
   const [loading, setLoading] = useState(true);
-  const { userProfile, signOut, loading: authLoading } = useAuth(); // Destructure authLoading
+  const { userProfile, signOut, loading: authLoading, isAdmin } = useAuth(); // ADD isAdmin from useAuth
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (userProfile && !userProfile.is_admin) {
+    if (!authLoading && !isAdmin) { // USE isAdmin here
       navigate('/');
       return;
     }
-    // Only fetch if auth is not loading and userProfile is available (for admin check)
-    if (!authLoading && userProfile) { // Add authLoading check
+    if (!authLoading && isAdmin) { // USE isAdmin here
       fetchDashboardData();
     } else if (!authLoading && !userProfile) {
-      // If auth is done loading and no user profile, or not admin, set loading to false
       setLoading(false);
     }
-  }, [userProfile, authLoading]); // Add authLoading to dependencies
+  }, [userProfile, authLoading, isAdmin]); // Add isAdmin to dependencies
 
   const fetchDashboardData = async () => {
-    setLoading(true); // Ensure loading is true when fetch starts
+    setLoading(true);
     try {
       // Fetch products count
       console.log('fetchDashboardData: Fetching products count...');
@@ -141,9 +140,8 @@ const AdminDashboard: React.FC = () => {
         salesData,
         categoryData
       });
-    } catch (error: any) { // Explicitly type error as any
+    } catch (error: any) {
       console.error('Error fetching dashboard data:', error);
-      // Set stats to default values on error to prevent app from crashing
       setStats({
         totalProducts: 0,
         totalUsers: 0,
@@ -192,7 +190,7 @@ const AdminDashboard: React.FC = () => {
                 <p className="text-sm text-gray-600">Velora Tradings</p>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate('/admin/products')}
@@ -220,7 +218,7 @@ const AdminDashboard: React.FC = () => {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[

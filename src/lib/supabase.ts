@@ -43,7 +43,7 @@ export interface Database {
           ingredients: string[] | null;
           created_at: string;
           updated_at: string;
-        };
+        }; 
         Insert: {
           id?: string;
           name: string;
@@ -82,7 +82,6 @@ export interface Database {
           email: string;
           full_name: string;
           phone: string | null;
-          is_admin: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -91,7 +90,6 @@ export interface Database {
           email: string;
           full_name: string;
           phone?: string | null;
-          is_admin?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -100,8 +98,25 @@ export interface Database {
           email?: string;
           full_name?: string;
           phone?: string | null;
-          is_admin?: boolean;
           updated_at?: string;
+        };
+      };
+      // ADD NEW TABLE DEFINITION
+      admin_users: {
+        Row: {
+          id: string;
+          user_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          created_at?: string;
         };
       };
       addresses: {

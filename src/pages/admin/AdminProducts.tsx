@@ -1,6 +1,7 @@
+// src/pages/admin/AdminProducts.tsx
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
   Plus, Edit, Trash2, Search, Filter, ArrowLeft, Save, X,
   Package, DollarSign, Tag, Image as ImageIcon
 } from 'lucide-react';
@@ -27,22 +28,22 @@ const AdminProducts: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isLoading, setIsLoading] = useState(false);
-  
-  const { userProfile } = useAuth();
+
+  const { userProfile, isAdmin } = useAuth(); // ADD isAdmin from useAuth
   const { products, categories, createProduct, updateProduct, deleteProduct, fetchProducts } = useSupabaseProducts();
   const navigate = useNavigate();
-  
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ProductForm>();
 
   useEffect(() => {
-    if (userProfile && !userProfile.is_admin) {
+    if (!isAdmin) { // USE isAdmin here
       navigate('/');
     }
-  }, [userProfile]);
+  }, [isAdmin]); // Add isAdmin to dependencies
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchTerm.toLowerCase());
+                       product.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -59,7 +60,7 @@ const AdminProducts: React.FC = () => {
         category: product.category,
         in_stock: product.in_stock,
         features: product.features?.join(', ') || '',
-        ingredients: product.ingredients?.join(', ') || ''
+        ingredients: product.ingredients ? product.ingredients.join(', ') : ''
       });
     } else {
       reset({
@@ -85,7 +86,7 @@ const AdminProducts: React.FC = () => {
 
   const onSubmit = async (data: ProductForm) => {
     setIsLoading(true);
-    
+
     const productData = {
       ...data,
       features: data.features.split(',').map(f => f.trim()).filter(f => f),
@@ -130,7 +131,7 @@ const AdminProducts: React.FC = () => {
               <div className="h-6 w-px bg-gray-300"></div>
               <h1 className="text-xl font-bold text-gray-900">Product Management</h1>
             </div>
-            
+
             <button
               onClick={() => openModal()}
               className="flex items-center space-x-2 px-4 py-2 bg-[#815536] text-white rounded-lg hover:bg-[#6d4429] transition-colors"
@@ -155,7 +156,7 @@ const AdminProducts: React.FC = () => {
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
             />
           </div>
-          
+
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
@@ -188,7 +189,7 @@ const AdminProducts: React.FC = () => {
                     onClick={() => openModal(product)}
                     className="p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors"
                   >
-                    <Edit className="h-4 w-4 text-gray-600" />
+                    <Edit className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(product.id)}
@@ -203,11 +204,11 @@ const AdminProducts: React.FC = () => {
                   </div>
                 )}
               </div>
-              
+
               <div className="p-4">
                 <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{product.name}</h3>
                 <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
-                
+
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <span className="text-lg font-bold text-[#815536]">₹{product.price}</span>
@@ -219,7 +220,7 @@ const AdminProducts: React.FC = () => {
                     {product.category}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center justify-between text-sm text-gray-600">
                   <span>Rating: {product.rating}/5</span>
                   <span>{product.reviews_count} reviews</span>
@@ -319,7 +320,7 @@ const AdminProducts: React.FC = () => {
                       <input
                         type="number"
                         step="0.01"
-                        {...register('price', { 
+                        {...register('price', {
                           required: 'Price is required',
                           min: { value: 0, message: 'Price must be positive' }
                         })}

@@ -9,7 +9,7 @@ interface UserProfile {
   email: string;
   full_name: string;
   phone: string | null;
-  is_admin: boolean;
+  // REMOVE: is_admin: boolean;
 }
 
 export const useSupabaseAuth = () => {
@@ -17,16 +17,17 @@ export const useSupabaseAuth = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false); // ADD new state for isAdmin
   const isVisible = useDocumentVisibility();
 
-  // ADDED: Ref to throttle session refresh attempts
   const lastRefreshAttempt = useRef(0);
   const REFRESH_COOLDOWN_MS = 60 * 1000; // 1 minute cooldown
 
   useEffect(() => {
     console.log('useSupabaseAuth: User state changed:', user);
     console.log('useSupabaseAuth: UserProfile state changed:', userProfile);
-  }, [user, userProfile]);
+    console.log('useSupabaseAuth: isAdmin state changed:', isAdmin); // Log isAdmin
+  }, [user, userProfile, isAdmin]); // Add isAdmin to dependencies
 
   // Internal helper function to fetch user profile
   const _fetchUserProfile = async (authUser: User, currentSession: Session | null): Promise<UserProfile | null> => {
@@ -85,7 +86,7 @@ export const useSupabaseAuth = () => {
             email: authUser.email!,
             full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'New User',
             phone: authUser.user_metadata?.phone || null,
-            is_admin: false,
+            // REMOVE: is_admin: false,
           })
           .select()
           .single();
@@ -111,6 +112,44 @@ export const useSupabaseAuth = () => {
     }
   };
 
+  // NEW: Function to check if user is an admin
+  const checkAdminStatus = async (userId: string, currentSession: Session | null) => {
+    console.log('checkAdminStatus: Checking admin status for userId:', userId);
+    try {
+      const adminCheckEndpoint = `${supabaseUrl}/rest/v1/admin_users?user_id=eq.${userId}&select=id`;
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'apikey': supabaseAnonKey,
+      };
+      if (currentSession?.access_token) {
+        headers['Authorization'] = `Bearer ${currentSession.access_token}`;
+      }
+
+      const response = await Promise.race([
+        fetch(adminCheckEndpoint, {
+          method: 'GET',
+          headers: headers,
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Admin check timed out after 5 seconds')), 5000)
+        )
+      ]);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+      }
+
+      const data = await response.json();
+      const isUserAdmin = data && data.length > 0;
+      console.log('checkAdminStatus: User is admin:', isUserAdmin);
+      setIsAdmin(isUserAdmin);
+    } catch (error) {
+      console.error('checkAdminStatus: Error checking admin status:', error);
+      setIsAdmin(false); // Default to false on error
+    }
+  };
+
   const handleAuth = async (currentSession: Session | null, eventType: string = 'INITIAL_LOAD') => {
     console.log(`handleAuth: Event Type: ${eventType}, Session received:`, currentSession);
     setLoading(true);
@@ -122,8 +161,14 @@ export const useSupabaseAuth = () => {
     if (currentSession?.user) {
       console.log('handleAuth: User present, proceeding to fetch profile.');
       profile = await _fetchUserProfile(currentSession.user, currentSession);
+      if (profile) {
+        await checkAdminStatus(currentSession.user.id, currentSession); // Check admin status after profile is fetched
+      } else {
+        setIsAdmin(false); // Clear admin status if profile fetch fails
+      }
     } else {
-      console.log('handleAuth: No user session found, clearing profile.');
+      console.log('handleAuth: No user session found, clearing profile and admin status.');
+      setIsAdmin(false); // Clear admin status if no user
     }
     setUserProfile(profile);
 
@@ -131,6 +176,7 @@ export const useSupabaseAuth = () => {
     console.log('handleAuth: Auth process completed. Loading set to false.');
     console.log('handleAuth: Final user state (from currentSession):', currentSession?.user ?? null);
     console.log('handleAuth: Final userProfile state (from local variable):', profile);
+    console.log('handleAuth: Final isAdmin state:', isAdmin); // Log final isAdmin state
     console.log('handleAuth: After setLoading(false) - Current user state:', user, 'Current userProfile state:', userProfile);
   };
 
@@ -162,13 +208,12 @@ export const useSupabaseAuth = () => {
     };
   }, []);
 
-  // MODIFIED: Effect to refresh session when tab becomes visible with throttling
   useEffect(() => {
     console.log('Visibility useEffect: isVisible:', isVisible, 'session:', session);
     const now = Date.now();
     if (isVisible && session && (now - lastRefreshAttempt.current > REFRESH_COOLDOWN_MS)) {
       console.log('Visibility useEffect: Tab became visible and session exists, attempting to refresh session...');
-      lastRefreshAttempt.current = now; // Update last attempt time
+      lastRefreshAttempt.current = now;
       supabase.auth.refreshSession().then(async ({ data, error }) => {
         if (error) {
           console.error('Visibility useEffect: Error refreshing session:', error);
@@ -240,6 +285,7 @@ export const useSupabaseAuth = () => {
       setSession(null);
       setUserProfile(null);
       setLoading(false);
+      setIsAdmin(false); // Clear isAdmin status on logout
 
       const { error } = await supabase.auth.signOut();
 
@@ -294,5 +340,6 @@ export const useSupabaseAuth = () => {
     signOut,
     updateProfile,
     isVisible,
+    isAdmin, // RETURN isAdmin
   };
 };

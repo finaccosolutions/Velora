@@ -1,6 +1,6 @@
 // src/context/AuthContext.tsx
 import React, { createContext, useContext } from 'react';
-import { useSupabaseAuth } from '../hooks/useSupabaseAuth'; // Import the original hook
+import { useSupabaseAuth } from '../hooks/useSupabaseAuth';
 
 // Define the shape of your authentication context
 interface AuthContextType {
@@ -12,7 +12,8 @@ interface AuthContextType {
   signIn: ReturnType<typeof useSupabaseAuth>['signIn'];
   signOut: ReturnType<typeof useSupabaseAuth>['signOut'];
   updateProfile: ReturnType<typeof useSupabaseAuth>['updateProfile'];
-  isVisible: ReturnType<typeof useSupabaseAuth>['isVisible']; // Add isVisible here
+  isVisible: ReturnType<typeof useSupabaseAuth>['isVisible'];
+  isAdmin: ReturnType<typeof useSupabaseAuth>['isAdmin']; // ADD isAdmin here
 }
 
 // Create the context with a default undefined value

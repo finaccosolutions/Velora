@@ -12,24 +12,23 @@ const Header: React.FC = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const { getCartItemsCount } = useSupabaseCart();
   const { getWishlistItemsCount } = useSupabaseWishlist();
-  const { user, userProfile, signOut, loading: authLoading } = useAuth(); // Destructure authLoading
+  const { user, userProfile, signOut, loading: authLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
     console.log('Header Component - Current User (from useEffect):', user);
     console.log('Header Component - Current User Profile (from useEffect):', userProfile);
+    console.log('Header Component - isAdmin (from useEffect):', isAdmin);
     if (userProfile) {
-      console.log('Header Component - userProfile is now AVAILABLE:', userProfile); // NEW LOG
+      console.log('Header Component - userProfile is now AVAILABLE:', userProfile);
     }
-  }, [user, userProfile]);
+  }, [user, userProfile, isAdmin]);
 
-  const handleLogout = async () => { // MARKED FOR CHANGE: Add async
-    const { error } = await signOut(); // MARKED FOR CHANGE: Await signOut and capture error
+  const handleLogout = async () => {
+    const { error } = await signOut();
     if (error) {
       console.error('Logout failed:', error.message);
-      // Optionally, show a toast or message to the user
-      // showToast(`Logout failed: ${error.message}`, 'error');
     } else {
       navigate('/');
       setIsProfileOpen(false);
@@ -69,300 +68,303 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="bg-white shadow-lg sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2 group">
-            <motion.div 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="bg-gradient-to-r from-[#815536] to-[#c9baa8] p-2 rounded-lg group-hover:shadow-lg transition-all duration-200"
-            >
-              <span className="text-white font-bold text-xl">V</span>
-            </motion.div>
-            <div className="group-hover:scale-105 transition-transform duration-200">
-              <h1 className="text-2xl font-bold text-[#815536] group-hover:text-[#6d4429] transition-colors duration-200">Velora</h1>
-              <p className="text-xs text-[#c9baa8] -mt-1">TRADINGS</p>
-            </div>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-1">
-            {navigationItems.map((item) => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`relative px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                  isActivePath(item.path)
-                    ? 'text-[#815536] bg-[#815536]/10'
-                    : 'text-gray-700 hover:text-[#815536] hover:bg-[#815536]/5'
-                }`}
-              >
-                <span className="relative z-10">{item.label}</span>
-                {isActivePath(item.path) && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute inset-0 bg-gradient-to-r from-[#815536]/10 to-[#c9baa8]/10 rounded-lg border border-[#815536]/20"
-                    initial={false}
-                    transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                  />
-                )}
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-[#815536]/5 to-[#c9baa8]/5 rounded-lg opacity-0"
-                  whileHover={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                />
-              </Link>
-            ))}
-          </nav>
-
-          {/* Right Side Icons */}
-          <div className="flex items-center space-x-2">
-            {/* Search Button */}
-            <motion.button 
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => navigate('/products')}
-              className="relative p-3 text-gray-700 hover:text-[#815536] hover:bg-[#815536]/10 rounded-lg transition-all duration-200 group"
-              title="Search Products"
-            >
-              <Search className="h-5 w-5" />
+    <> {/* Add React.Fragment here */}
+      <header className="bg-white shadow-lg sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <Link to="/" className="flex items-center space-x-2 group">
               <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-[#815536]/10 to-[#c9baa8]/10 rounded-lg opacity-0"
-                whileHover={{ opacity: 1 }}
-                transition={{ duration: 0.2 }}
-              />
-            </motion.button>
-            
-            {/* Wishlist Button */}
-            <Link to="/wishlist" className="relative group">
-              <motion.div 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="relative p-3 text-gray-700 hover:text-[#815536] hover:bg-[#815536]/10 rounded-lg transition-all duration-200"
-                title="Wishlist"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="bg-gradient-to-r from-[#815536] to-[#c9baa8] p-2 rounded-lg group-hover:shadow-lg transition-all duration-200"
               >
-                <Heart className="h-5 w-5" />
-                <AnimatePresence>
-                  {getWishlistItemsCount() > 0 && (
-                    <motion.span
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-semibold shadow-lg"
-                    >
-                      {getWishlistItemsCount()}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-pink-500/10 rounded-lg opacity-0"
-                  whileHover={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                />
+                <span className="text-white font-bold text-xl">V</span>
               </motion.div>
+              <div className="group-hover:scale-105 transition-transform duration-200">
+                <h1 className="text-2xl font-bold text-[#815536] group-hover:text-[#6d4429] transition-colors duration-200">Velora</h1>
+                <p className="text-xs text-[#c9baa8] -mt-1">TRADINGS</p>
+              </div>
             </Link>
 
-            {/* Cart Button */}
-            <Link to="/cart" className="relative group">
-              <motion.div 
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="relative p-3 text-gray-700 hover:text-[#815536] hover:bg-[#815536]/10 rounded-lg transition-all duration-200"
-                title="Shopping Cart"
-              >
-                <ShoppingCart className="h-5 w-5" />
-                <AnimatePresence>
-                  {getCartItemsCount() > 0 && (
-                    <motion.span
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      className="absolute -top-1 -right-1 bg-[#815536] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-semibold shadow-lg"
-                    >
-                      {getCartItemsCount()}
-                    </motion.span>
+            {/* Desktop Navigation */}
+            <nav className="hidden md:flex items-center space-x-1">
+              {navigationItems.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`relative px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                    isActivePath(item.path)
+                      ? 'text-[#815536] bg-[#815536]/10'
+                      : 'text-gray-700 hover:text-[#815536] hover:bg-[#815536]/5'
+                  }`}
+                >
+                  <span className="relative z-10">{item.label}</span>
+                  {isActivePath(item.path) && (
+                    <motion.div
+                      layoutId="activeTab"
+                      className="absolute inset-0 bg-gradient-to-r from-[#815536]/10 to-[#c9baa8]/10 rounded-lg border border-[#815536]/20"
+                      initial={false}
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
                   )}
-                </AnimatePresence>
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-[#815536]/10 to-[#c9baa8]/10 rounded-lg opacity-0"
-                  whileHover={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                />
-              </motion.div>
-            </Link>
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-[#815536]/5 to-[#c9baa8]/5 rounded-lg opacity-0"
+                    whileHover={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                  />
+                </Link>
+              ))}
+            </nav>
 
-            {/* User Profile Dropdown */}
-            <div className="relative profile-dropdown">
+            {/* Right Side Icons */}
+            <div className="flex items-center space-x-2">
+              {/* Search Button */}
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                onClick={() => navigate('/products')}
                 className="relative p-3 text-gray-700 hover:text-[#815536] hover:bg-[#815536]/10 rounded-lg transition-all duration-200 group"
-                title={user ? `${userProfile?.full_name || 'User'} Account` : 'Account'}
+                title="Search Products"
               >
-                <User className="h-5 w-5" />
+                <Search className="h-5 w-5" />
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-r from-[#815536]/10 to-[#c9baa8]/10 rounded-lg opacity-0"
                   whileHover={{ opacity: 1 }}
                   transition={{ duration: 0.2 }}
                 />
-                {/* Dropdown indicator */}
-                <motion.div
-                  animate={{ rotate: isProfileOpen ? 180 : 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="absolute -bottom-1 -right-1 w-3 h-3"
-                >
-                  <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-t-[4px] border-l-transparent border-r-transparent border-t-gray-400"></div>
-                </motion.div>
               </motion.button>
-              
-              <AnimatePresence>
-                {isProfileOpen && (
+
+              {/* Wishlist Button */}
+              <Link to="/wishlist" className="relative group">
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="relative p-3 text-gray-700 hover:text-[#815536] hover:bg-[#815536]/10 rounded-lg transition-all duration-200"
+                  title="Wishlist"
+                >
+                  <Heart className="h-5 w-5" />
+                  <AnimatePresence>
+                    {getWishlistItemsCount() > 0 && (
+                      <motion.span
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-semibold shadow-lg"
+                      >
+                        {getWishlistItemsCount()}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                   <motion.div
-                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                    className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-pink-500/10 rounded-lg opacity-0"
+                    whileHover={{ opacity: 1 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50 overflow-hidden"
+                  />
+                </motion.div>
+              </Link>
+
+              {/* Cart Button */}
+              <Link to="/cart" className="relative group">
+                <motion.div
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  className="relative p-3 text-gray-700 hover:text-[#815536] hover:bg-[#815536]/10 rounded-lg transition-all duration-200"
+                  title="Shopping Cart"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  <AnimatePresence>
+                    {getCartItemsCount() > 0 && (
+                      <motion.span
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0, opacity: 0 }}
+                        className="absolute -top-1 -right-1 bg-[#815536] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-semibold shadow-lg"
+                      >
+                        {getCartItemsCount()}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-[#815536]/10 to-[#c9baa8]/10 rounded-lg opacity-0"
+                    whileHover={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                  />
+                </motion.div>
+              </Link>
+
+              {/* User Profile Dropdown */}
+              <div className="relative profile-dropdown">
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  className="relative p-3 text-gray-700 hover:text-[#815536] hover:bg-[#815536]/10 rounded-lg transition-all duration-200 group"
+                  title={user ? `${userProfile?.full_name || 'User'} Account` : 'Account'}
+                >
+                  <User className="h-5 w-5" />
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-[#815536]/10 to-[#c9baa8]/10 rounded-lg opacity-0"
+                    whileHover={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                  />
+                  {/* Dropdown indicator */}
+                  <motion.div
+                    animate={{ rotate: isProfileOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute -bottom-1 -right-1 w-3 h-3"
                   >
-                    {user ? (
-                      <>
-                        {/* User Info Header */}
-                        <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-[#815536]/5 to-[#c9baa8]/5">
-                          {authLoading && !userProfile ? (
-                            <p className="text-sm font-semibold text-gray-900">Loading profile...</p>
-                          ) : (
-                            <>
-                              <p className="text-sm font-semibold text-gray-900 truncate">{userProfile?.full_name || 'User'}</p>
-                              <p className="text-xs text-gray-500 truncate">{userProfile?.email || user?.email}</p>
-                              {userProfile?.is_admin && (
-                                <span className="inline-block mt-1 px-2 py-1 bg-[#815536] text-white text-xs rounded-full">
-                                  Administrator
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </div>
-                        
-                        {/* Menu Items */}
-                        <div className="py-1">
-                          {authLoading && !userProfile ? (
-                            <div className="px-4 py-2 text-sm text-gray-700">Loading menu...</div>
-                          ) : (
-                            <>
-                              <Link
-                                to="/profile"
-                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
-                                onClick={() => setIsProfileOpen(false)}
-                              >
-                                <User className="h-4 w-4 mr-3" />
-                                My Profile
-                              </Link>
-                              <Link
-                                to="/orders"
-                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
-                                onClick={() => setIsProfileOpen(false)}
-                              >
-                                <ShoppingCart className="h-4 w-4 mr-3" />
-                                My Orders
-                              </Link>
-                              <Link
-                                to="/wishlist"
-                                className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
-                                onClick={() => setIsProfileOpen(false)}
-                              >
-                                <Heart className="h-4 w-4 mr-3" />
-                                My Wishlist
-                                {getWishlistItemsCount() > 0 && (
-                                  <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                                    {getWishlistItemsCount()}
+                    <div className="w-0 h-0 border-l-[4px] border-r-[4px] border-t-[4px] border-l-transparent border-r-transparent border-t-gray-400"></div>
+                  </motion.div>
+                </motion.button>
+
+                <AnimatePresence>
+                  {isProfileOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50 overflow-hidden"
+                    >
+                      {user ? (
+                        <>
+                          {/* User Info Header */}
+                          <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-[#815536]/5 to-[#c9baa8]/5">
+                            {authLoading && !userProfile ? (
+                              <p className="text-sm font-semibold text-gray-900">Loading profile...</p>
+                            ) : (
+                              <>
+                                <p className="text-sm font-semibold text-gray-900 truncate">{userProfile?.full_name || 'User'}</p>
+                                <p className="text-xs text-gray-500 truncate">{userProfile?.email || user?.email}</p>
+                                {isAdmin && (
+                                  <span className="inline-block mt-1 px-2 py-1 bg-[#815536] text-white text-xs rounded-full">
+                                    Administrator
                                   </span>
                                 )}
-                              </Link>
-                              {userProfile?.is_admin && (
+                              </>
+                            )}
+                          </div>
+
+                          {/* Menu Items */}
+                          <div className="py-1">
+                            {authLoading && !userProfile ? (
+                              <div className="px-4 py-2 text-sm text-gray-700">Loading menu...</div>
+                            ) : (
+                              <>
                                 <Link
-                                  to="/admin/dashboard"
+                                  to="/profile"
                                   className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
                                   onClick={() => setIsProfileOpen(false)}
                                 >
-                                  <Settings className="h-4 w-4 mr-3" />
-                                  Admin Panel
+                                  <User className="h-4 w-4 mr-3" />
+                                  My Profile
                                 </Link>
-                              )}
-                            </>
-                          )}
-                        </div>
-                        
-                        <div className="border-t border-gray-100 pt-1">
-                          <button
-                            onClick={handleLogout}
-                            className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200"
-                          >
-                            <LogOut className="h-4 w-4 mr-3" />
-                            Logout
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="py-1">
-                        <Link
-                          to="/login"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
-                          onClick={() => setIsProfileOpen(false)}
-                        >
-                          <User className="h-4 w-4 mr-3" />
-                          Login
-                        </Link>
-                        <Link
-                          to="/register"
-                          className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
-                          onClick={() => setIsProfileOpen(false)}
-                        >
-                          <User className="h-4 w-4 mr-3" />
-                          Register
-                        </Link>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                                <Link
+                                  to="/orders"
+                                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
+                                  onClick={() => setIsProfileOpen(false)}
+                                >
+                                  <ShoppingCart className="h-4 w-4 mr-3" />
+                                  My Orders
+                                </Link>
+                                <Link
+                                  to="/wishlist"
+                                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
+                                  onClick={() => setIsProfileOpen(false)}
+                                >
+                                  <Heart className="h-4 w-4 mr-3" />
+                                  My Wishlist
+                                  {getWishlistItemsCount() > 0 && (
+                                    <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                                      {getWishlistItemsCount()}
+                                    </span>
+                                  )}
+                                </Link>
+                                {isAdmin && (
+                                  <Link
+                                    to="/admin/dashboard"
+                                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
+                                    onClick={() => setIsProfileOpen(false)}
+                                  >
+                                    <Settings className="h-4 w-4 mr-3" />
+                                    Admin Panel
+                                  </Link>
+                                )}
+                              </>
+                            )}
+                          </div>
 
-            {/* Mobile Menu Button */}
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="md:hidden p-3 text-gray-700 hover:text-[#815536] hover:bg-[#815536]/10 rounded-lg transition-all duration-200"
-            >
-              <AnimatePresence mode="wait">
-                {isMenuOpen ? (
-                  <motion.div
-                    key="close"
-                    initial={{ rotate: -90, opacity: 0 }}
-                    animate={{ rotate: 0, opacity: 1 }}
-                    exit={{ rotate: 90, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <X className="h-6 w-6" />
-                  </motion.div>
-                ) : (
-                  <motion.div
-                    key="menu"
-                    initial={{ rotate: 90, opacity: 0 }}
-                    animate={{ rotate: 0, opacity: 1 }}
-                    exit={{ rotate: -90, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Menu className="h-6 w-6" />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.button>
+                          <div className="border-t border-gray-100 pt-1">
+                            <button
+                              onClick={handleLogout}
+                              className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200"
+                            >
+                              <LogOut className="h-4 w-4 mr-3" />
+                              Logout
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="py-1">
+                          <Link
+                            to="/login"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
+                            onClick={() => setIsProfileOpen(false)}
+                          >
+                            <User className="h-4 w-4 mr-3" />
+                            Login
+                          </Link>
+                          <Link
+                            to="/register"
+                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
+                            onClick={() => setIsProfileOpen(false)}
+                          >
+                            <User className="h-4 w-4 mr-3" />
+                            Register
+                          </Link>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Mobile Menu Button */}
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="md:hidden p-3 text-gray-700 hover:text-[#815536] hover:bg-[#815536]/10 rounded-lg transition-all duration-200"
+              >
+                <AnimatePresence mode="wait">
+                  {isMenuOpen ? (
+                    <motion.div
+                      key="close"
+                      initial={{ rotate: -90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: 90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <X className="h-6 w-6" />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="menu"
+                      initial={{ rotate: 90, opacity: 0 }}
+                      animate={{ rotate: 0, opacity: 1 }}
+                      exit={{ rotate: -90, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <Menu className="h-6 w-6" />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.button>
+              </div>
+            </div>
           </div>
-        </div>
+        </header>
 
         {/* Mobile Navigation */}
         <AnimatePresence>
@@ -399,42 +401,41 @@ const Header: React.FC = () => {
             </motion.nav>
           )}
         </AnimatePresence>
-      </div>
 
-      {/* Page Indicator */}
-      <AnimatePresence>
-        {location.pathname !== '/' && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="bg-gradient-to-r from-[#815536]/5 to-[#c9baa8]/5 border-b border-[#815536]/10"
-          >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
-              <div className="flex items-center space-x-2 text-sm">
-                <Link to="/" className="text-gray-500 hover:text-[#815536] transition-colors">
-                  Home
-                </Link>
-                <span className="text-gray-400">/</span>
-                <span className="text-[#815536] font-medium capitalize">
-                  {location.pathname === '/products' && 'Products'}
-                  {location.pathname === '/about' && 'About Us'}
-                  {location.pathname === '/contact' && 'Contact'}
-                  {location.pathname === '/cart' && 'Shopping Cart'}
-                  {location.pathname === '/wishlist' && 'Wishlist'}
-                  {location.pathname === '/profile' && 'My Profile'}
-                  {location.pathname === '/orders' && 'My Orders'}
-                  {location.pathname.startsWith('/product/') && 'Product Details'}
-                  {location.pathname === '/checkout' && 'Checkout'}
-                  {location.pathname === '/login' && 'Login'}
-                  {location.pathname === '/register' && 'Register'}
-                </span>
+        {/* Page Indicator */}
+        <AnimatePresence>
+          {location.pathname !== '/' && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-gradient-to-r from-[#815536]/5 to-[#c9baa8]/5 border-b border-[#815536]/10"
+            >
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+                <div className="flex items-center space-x-2 text-sm">
+                  <Link to="/" className="text-gray-500 hover:text-[#815536] transition-colors">
+                    Home
+                  </Link>
+                  <span className="text-gray-400">/</span>
+                  <span className="text-[#815536] font-medium capitalize">
+                    {location.pathname === '/products' && 'Products'}
+                    {location.pathname === '/about' && 'About Us'}
+                    {location.pathname === '/contact' && 'Contact'}
+                    {location.pathname === '/cart' && 'Shopping Cart'}
+                    {location.pathname === '/wishlist' && 'Wishlist'}
+                    {location.pathname === '/profile' && 'My Profile'}
+                    {location.pathname === '/orders' && 'My Orders'}
+                    {location.pathname.startsWith('/product/') && 'Product Details'}
+                    {location.pathname === '/checkout' && 'Checkout'}
+                    {location.pathname === '/login' && 'Login'}
+                    {location.pathname === '/register' && 'Register'}
+                  </span>
+                </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </header>
+            </motion.div>
+          )}
+        </AnimatePresence>
+    </>
   );
 };
 

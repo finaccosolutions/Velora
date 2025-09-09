@@ -1,3 +1,4 @@
+// src/pages/Profile.tsx
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { User, Mail, Phone, MapPin, Edit, Save, X } from 'lucide-react';
@@ -13,8 +14,8 @@ const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const { userProfile, updateProfile } = useAuth();
-  
+  const { userProfile, updateProfile, isAdmin } = useAuth(); // ADD isAdmin from useAuth
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ProfileForm>({
     defaultValues: {
       full_name: userProfile?.full_name || '',
@@ -25,16 +26,16 @@ const Profile: React.FC = () => {
   const onSubmit = async (data: ProfileForm) => {
     setIsLoading(true);
     setMessage(null);
-    
+
     const { error } = await updateProfile(data);
-    
+
     if (error) {
       setMessage({ type: 'error', text: error.message });
     } else {
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
       setIsEditing(false);
     }
-    
+
     setIsLoading(false);
   };
 
@@ -82,7 +83,7 @@ const Profile: React.FC = () => {
               <div>
                 <h1 className="text-3xl font-bold text-white">{userProfile.full_name}</h1>
                 <p className="text-[#c9baa8] text-lg">{userProfile.email}</p>
-                {userProfile.is_admin && (
+                {isAdmin && ( // USE isAdmin here
                   <span className="inline-block bg-white/20 text-white px-3 py-1 rounded-full text-sm font-medium mt-2">
                     Administrator
                   </span>
@@ -98,7 +99,7 @@ const Profile: React.FC = () => {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className={`mb-6 p-4 rounded-lg ${
-                  message.type === 'success' 
+                  message.type === 'success'
                     ? 'bg-green-50 border border-green-200 text-green-700'
                     : 'bg-red-50 border border-red-200 text-red-700'
                 }`}
@@ -214,7 +215,7 @@ const Profile: React.FC = () => {
                     <div>
                       <p className="text-sm font-medium text-gray-600">Account Type</p>
                       <p className="text-lg text-gray-900">
-                        {userProfile.is_admin ? 'Administrator' : 'Customer'}
+                        {isAdmin ? 'Administrator' : 'Customer'} {/* USE isAdmin here */}
                       </p>
                     </div>
                   </div>

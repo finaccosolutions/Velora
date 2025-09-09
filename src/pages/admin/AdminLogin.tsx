@@ -16,42 +16,33 @@ const AdminLogin: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { signIn, signOut } = useAuth();
+  const { signIn, isAdmin } = useAuth(); // ADD isAdmin from useAuth
   const navigate = useNavigate();
-  
+
   const { register, handleSubmit, formState: { errors } } = useForm<AdminLoginForm>();
 
   const onSubmit = async (formData: AdminLoginForm) => {
     setIsLoading(true);
     setError(null);
-    
-    const { data, error } = await signIn(formData.email, formData.password);
-    
-    if (error) {
-      setError(error.message);
+
+    const { data, error: authError } = await signIn(formData.email, formData.password);
+
+    if (authError) {
+      setError(authError.message);
       setIsLoading(false);
       return;
     }
 
-    if (data.user) {
-      // Check if user is admin
-      const { data: userProfile } = await supabase
-        .from('users')
-        .select('is_admin')
-        .eq('id', data.user.id)
-        .single();
+    // Give a small delay to allow isAdmin to update in AuthContext
+    await new Promise(resolve => setTimeout(resolve, 100));
 
-      if (userProfile?.is_admin) {
-        navigate('/admin/dashboard');
-      } else {
-        // If not an admin, redirect to regular login and show a message
-        setError('Access denied. Admin privileges required. Please use the regular login page.');
-        // Do NOT call signOut() here, as the user might want to log in as a regular user.
-        // Instead, you can navigate them to the regular login page.
-        navigate('/login'); // Redirect to the regular login page
-      }
+    if (isAdmin) { // USE isAdmin here
+      navigate('/admin/dashboard');
+    } else {
+      setError('Access denied. Admin privileges required. Please use the regular login page.');
+      navigate('/login');
     }
-    
+
     setIsLoading(false);
   };
 
@@ -95,7 +86,7 @@ const AdminLogin: React.FC = () => {
                   </div>
                   <input
                     type="email"
-                    {...register('email', { 
+                    {...register('email', {
                       required: 'Email is required',
                       pattern: {
                         value: /^\S+@\S+$/i,
