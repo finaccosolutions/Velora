@@ -36,7 +36,8 @@ export const useSupabaseAuth = () => {
         .eq('id', authUser.id)
         .single();
 
-      console.log('_fetchUserProfile: Supabase query executed for profile. Data:', data, 'Error:', error);
+      // NEW LOG: Log the direct result of the Supabase query
+      console.log('_fetchUserProfile: Supabase query executed for profile. Raw Data:', data, 'Raw Error:', error);
 
       if (error) {
         if (error.code === 'PGRST116') { // No rows found
@@ -57,21 +58,31 @@ export const useSupabaseAuth = () => {
 
           if (insertError) {
             console.error('_fetchUserProfile: Error creating new user profile:', JSON.stringify(insertError, null, 2));
+            // NEW LOG: Log return value on insert error
+            console.log('_fetchUserProfile: Returning null due to insert error.');
             return null; // Return null on error
           } else {
             console.log('_fetchUserProfile: New user profile created successfully. Returning:', newProfile);
+            // NEW LOG: Log return value on successful insert
+            console.log('_fetchUserProfile: Returning newProfile after successful insert.');
             return newProfile; // Return the new profile
           }
         } else {
           console.error('_fetchUserProfile: Error during profile fetch (not "no rows found"):', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
+          // NEW LOG: Log return value on other fetch errors
+          console.log('_fetchUserProfile: Returning null due to other fetch error.');
           return null; // Return null on other errors
         }
       } else { // Profile found
         console.log('_fetchUserProfile: User profile fetched successfully. Returning:', data);
+        // NEW LOG: Log return value on successful fetch
+        console.log('_fetchUserProfile: Returning fetched data.');
         return data; // Return the fetched profile
       }
     } catch (outerError: any) {
       console.error('_fetchUserProfile: Caught unexpected exception in outer catch block:', JSON.stringify(outerError, Object.getOwnPropertyNames(outerError), 2));
+      // NEW LOG: Log return value on outer exception
+      console.log('_fetchUserProfile: Returning null due to outer exception.');
       return null; // Return null on exception
     }
   };
@@ -99,6 +110,8 @@ export const useSupabaseAuth = () => {
     // Log the actual state variables after they've been set and React has potentially re-rendered
     console.log('handleAuth: Final user state (from currentSession):', currentSession?.user ?? null);
     console.log('handleAuth: Final userProfile state (from local variable):', profile);
+    // NEW LOG ADDED HERE
+    console.log('handleAuth: After setLoading(false) - Current user state:', user, 'Current userProfile state:', userProfile);
   };
 
   // Effect for initial session check and subscribing to auth state changes
@@ -263,3 +276,4 @@ export const useSupabaseAuth = () => {
     isVisible, // Return isVisible
   };
 };
+
