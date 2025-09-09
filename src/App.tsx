@@ -60,7 +60,7 @@ function App() {
           {/* END NEW ADMIN ROUTES */}
 
           {/* Public routes that should not have Header/Footer on admin pages */}
-          <Route path="/admin/login" element={null} /> {/* Admin login page does not need Header/Footer */}
+          <Route path="/adminlogin" element={null} /> {/* Admin login page does not need Header/Footer */}
           <Route path="*" element={<Header />} />
         </Routes>
         <main className="flex-1">
@@ -73,7 +73,7 @@ function App() {
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/adminlogin" element={<AdminLogin />} /> {/* UPDATED PATH */}
               {/* REMOVED: AdminDashboard and AdminProducts from here as they are now nested under AdminLayout */}
               {/* <Route path="/admin/dashboard" element={<AdminDashboard />} /> */}
               {/* <Route path="/admin/products" element={<AdminProducts />} /> */}

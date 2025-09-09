@@ -1,8 +1,22 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Award, Users, Globe, Heart, Star, CheckCircle } from 'lucide-react';
+import { useSiteSettings } from '../hooks/useSiteSettings'; // NEW: Import useSiteSettings
 
 const About: React.FC = () => {
+  const { settings, loading: settingsLoading } = useSiteSettings(); // NEW: Get site settings
+
+  if (settingsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#815536] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading about page content...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
@@ -16,11 +30,10 @@ const About: React.FC = () => {
             className="text-center"
           >
             <h1 className="text-4xl lg:text-6xl font-bold text-white mb-6">
-              About Velora Tradings
+              {settings.aboutHeroTitle || 'About Velora Tradings'}
             </h1>
             <p className="text-xl text-[#c9baa8] max-w-3xl mx-auto leading-relaxed">
-              Crafting memories through exquisite fragrances since 2020. We believe that every scent 
-              tells a story, and every story deserves to be unforgettable.
+              {settings.aboutHeroSubtitle || 'Crafting memories through exquisite fragrances since 2020. We believe that every scent tells a story, and every story deserves to be unforgettable.'}
             </p>
           </motion.div>
         </div>

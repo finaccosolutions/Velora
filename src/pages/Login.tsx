@@ -45,7 +45,7 @@ const Login: React.FC = () => {
     if (!authLoading && user && userProfile) {
       if (isAdmin) { // NEW: Check if the logged-in user is an admin
         setError('Admin users must log in via the admin panel.'); // Display error message
-        navigate('/admin/login'); // Redirect to admin login page
+        navigate('/adminlogin'); // UPDATED PATH
       } else {
         console.log('Login useEffect: Navigation condition met. Navigating to /'); // New log
         navigate('/');

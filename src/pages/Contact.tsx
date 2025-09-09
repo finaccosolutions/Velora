@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Phone, Mail, Clock, Send, MessageCircle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { useSiteSettings } from '../hooks/useSiteSettings'; // NEW: Import useSiteSettings
 
 interface ContactForm {
   name: string;
@@ -13,6 +14,7 @@ interface ContactForm {
 
 const Contact: React.FC = () => {
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ContactForm>();
+  const { settings, loading: settingsLoading } = useSiteSettings(); // NEW: Get site settings
 
   const onSubmit = (data: ContactForm) => {
     console.log('Contact form submitted:', data);
@@ -26,6 +28,17 @@ const Contact: React.FC = () => {
     }, 5000);
     reset();
   };
+
+  if (settingsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#815536] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading contact information...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -70,17 +83,31 @@ const Contact: React.FC = () => {
               {
                 icon: MapPin,
                 title: 'Visit Our Store',
-                details: ['Perinthalmanna', 'Kerala', 'India']
+                details: [
+                  settings.addressLine1 || 'Perinthalmanna',
+                  settings.addressLine2 || 'Kerala',
+                  settings.country || 'India'
+                ]
               },
               {
                 icon: Phone,
                 title: 'Call Us',
-                details: ['+91 73560 62349', '+91 98765 43211', 'Mon-Sat: 10AM-8PM', 'Sun: 11AM-6PM']
+                details: [
+                  settings.contactPhone || '+91 73560 62349',
+                  '+91 98765 43211', // This can also be made dynamic if needed
+                  'Mon-Sat: 10AM-8PM',
+                  'Sun: 11AM-6PM'
+                ]
               },
               {
                 icon: Mail,
                 title: 'Email Us',
-                details: ['info@veloratradings.com', 'support@veloratradings.com', 'orders@veloratradings.com', 'We reply within 24 hours']
+                details: [
+                  settings.contactEmail || 'info@veloratradings.com',
+                  'support@veloratradings.com', // This can also be made dynamic if needed
+                  'orders@veloratradings.com', // This can also be made dynamic if needed
+                  'We reply within 24 hours'
+                ]
               },
               {
                 icon: Clock,

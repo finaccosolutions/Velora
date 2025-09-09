@@ -3,11 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LineChart, Line, PieChart, Pie, Cell
+  LineChart, Line, PieChart, Pie, Cell, Legend
 } from 'recharts';
 import {
   Package, Users, ShoppingCart, DollarSign, TrendingUp,
-  Eye, Plus, Settings, LogOut
+  Eye, Plus, Settings, LogOut, CalendarDays
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -23,6 +23,9 @@ interface DashboardStats {
   topProducts: any[];
   salesData: any[];
   categoryData: any[];
+  productPerformance: any[]; // Added for dashboard
+  userGrowth: any[]; // Added for dashboard
+  orderStatusData: any[]; // Added for dashboard
 }
 
 // Define admin theme colors for charts (adjusted for light theme)
@@ -45,7 +48,10 @@ const AdminDashboard: React.FC = () => {
     recentOrders: [],
     topProducts: [],
     salesData: [],
-    categoryData: []
+    categoryData: [],
+    productPerformance: [], // Initialize
+    userGrowth: [], // Initialize
+    orderStatusData: [] // Initialize
   });
   const [loading, setLoading] = useState(true);
   const { userProfile, signOut, loading: authLoading, isAdmin } = useAuth();
@@ -158,6 +164,71 @@ const AdminDashboard: React.FC = () => {
         value
       }));
 
+      // --- Start: Data for charts moved from AdminReports.tsx ---
+
+      // Sales Data (Last 30 days)
+      const { data: sales, error: salesError } = await supabase
+        .from('orders')
+        .select('created_at, total_amount')
+        .gte('created_at', format(new Date().setDate(new Date().getDate() - 30), 'yyyy-MM-dd'))
+        .order('created_at', { ascending: true });
+
+      if (salesError) throw salesError;
+
+      const dailySales = sales.reduce((acc, order) => {
+        const date = format(new Date(order.created_at), 'MMM dd');
+        acc[date] = (acc[date] || 0) + order.total_amount;
+        return acc;
+      }, {});
+      const monthlySalesData = Object.keys(dailySales).map(date => ({ date, sales: dailySales[date] }));
+
+      // Product Performance (Top 10 by quantity sold)
+      const { data: orderItems, error: orderItemsError } = await supabase
+        .from('order_items')
+        .select(`
+          quantity,
+          product:products (name)
+        `);
+      if (orderItemsError) throw orderItemsError;
+
+      const productSales = orderItems.reduce((acc, item) => {
+        const productName = item.product?.name || 'Unknown Product';
+        acc[productName] = (acc[productName] || 0) + item.quantity;
+        return acc;
+      }, {});
+      const topProductPerformance = Object.keys(productSales)
+          .map(name => ({ name, quantity: productSales[name] }))
+          .sort((a, b) => b.quantity - a.quantity)
+          .slice(0, 10);
+
+      // User Growth (Users created per month)
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('created_at');
+      if (usersError) throw usersError;
+
+      const monthlyUserGrowth = users.reduce((acc, user) => {
+        const month = format(new Date(user.created_at), 'MMM yyyy');
+        acc[month] = (acc[month] || 0) + 1;
+        return acc;
+      }, {});
+      const userGrowthData = Object.keys(monthlyUserGrowth).map(month => ({ month, count: monthlyUserGrowth[month] }));
+
+      // Order Status Distribution
+      const { data: ordersStatus, error: ordersStatusError } = await supabase
+        .from('orders')
+        .select('status');
+      if (ordersStatusError) throw ordersStatusError;
+
+      const statusCounts = ordersStatus.reduce((acc, order) => {
+        acc[order.status] = (acc[order.status] || 0) + 1;
+        return acc;
+      }, {});
+      const orderStatusDistributionData = Object.keys(statusCounts).map(status => ({ name: status, value: statusCounts[status] }));
+
+      // --- End: Data for charts moved from AdminReports.tsx ---
+
+
       setStats({
         totalProducts: productsCount || 0,
         totalUsers: usersCount || 0,
@@ -166,7 +237,10 @@ const AdminDashboard: React.FC = () => {
         recentOrders: recentOrders || [],
         topProducts: topProducts || [],
         salesData,
-        categoryData
+        categoryData,
+        productPerformance: topProductPerformance, // Set the new state
+        userGrowth: userGrowthData, // Set the new state
+        orderStatusData: orderStatusDistributionData // Set the new state
       });
     } catch (error: any) {
       console.error('Error fetching dashboard data:', error);
@@ -178,7 +252,10 @@ const AdminDashboard: React.FC = () => {
         recentOrders: [],
         topProducts: [],
         salesData: [],
-        categoryData: []
+        categoryData: [],
+        productPerformance: [],
+        userGrowth: [],
+        orderStatusData: []
       });
     } finally {
       setLoading(false);
@@ -189,8 +266,6 @@ const AdminDashboard: React.FC = () => {
     await signOut();
     navigate('/admin/login');
   };
-
-  // The COLORS array is now defined at the top of the file to use admin theme colors.
 
   if (loading) {
     return (
@@ -253,7 +328,7 @@ const AdminDashboard: React.FC = () => {
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Sales Chart */}
+          {/* Sales Chart (Weekly) */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -288,16 +363,123 @@ const AdminDashboard: React.FC = () => {
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
+                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                 >
                   {stats.categoryData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderRadius: '8px', color: '#343A40' }} itemStyle={{ color: '#343A40' }} />
+                <Legend />
               </PieChart>
             </ResponsiveContainer>
           </motion.div>
         </div>
+
+        {/* Charts moved from AdminReports.tsx */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          {/* Sales Trend (Last 30 Days) */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-admin-card rounded-xl shadow-lg p-6"
+          >
+            <h2 className="text-xl font-bold text-admin-text mb-4 flex items-center space-x-2">
+              <TrendingUp className="h-6 w-6 text-admin-primary" />
+              <span>Sales Trend (Last 30 Days)</span>
+            </h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={stats.salesData}> {/* Using stats.salesData for this chart */}
+                <CartesianGrid strokeDasharray="3 3" stroke={COLORS[6]} />
+                <XAxis dataKey="date" stroke={COLORS[6]} />
+                <YAxis stroke={COLORS[6]} />
+                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderRadius: '8px', color: '#343A40' }} itemStyle={{ color: '#343A40' }} />
+                <Legend />
+                <Line type="monotone" dataKey="sales" stroke={COLORS[0]} activeDot={{ r: 8 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </motion.div>
+
+          {/* Product Performance */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-admin-card rounded-xl shadow-lg p-6"
+          >
+            <h2 className="text-xl font-bold text-admin-text mb-4 flex items-center space-x-2">
+              <Package className="h-6 w-6 text-admin-secondary" />
+              <span>Top 10 Product Performance</span>
+            </h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={stats.productPerformance} layout="vertical" margin={{ left: 20, right: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={COLORS[6]} />
+                <XAxis type="number" stroke={COLORS[6]} />
+                <YAxis type="category" dataKey="name" stroke={COLORS[6]} width={100} />
+                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderRadius: '8px', color: '#343A40' }} itemStyle={{ color: '#343A40' }} />
+                <Legend />
+                <Bar dataKey="quantity" fill={COLORS[1]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </motion.div>
+
+          {/* User Growth */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-admin-card rounded-xl shadow-lg p-6"
+          >
+            <h2 className="text-xl font-bold text-admin-text mb-4 flex items-center space-x-2">
+              <Users className="h-6 w-6 text-admin-warning" />
+              <span>User Registration Growth</span>
+            </h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={stats.userGrowth}>
+                <CartesianGrid strokeDasharray="3 3" stroke={COLORS[6]} />
+                <XAxis dataKey="month" stroke={COLORS[6]} />
+                <YAxis stroke={COLORS[6]} />
+                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderRadius: '8px', color: '#343A40' }} itemStyle={{ color: '#343A40' }} />
+                <Legend />
+                <Line type="monotone" dataKey="count" stroke={COLORS[2]} activeDot={{ r: 8 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </motion.div>
+
+          {/* Order Status Distribution */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-admin-card rounded-xl shadow-lg p-6"
+          >
+            <h2 className="text-xl font-bold text-admin-text mb-4 flex items-center space-x-2">
+              <CalendarDays className="h-6 w-6 text-admin-danger" />
+              <span>Order Status Distribution</span>
+            </h2>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={stats.orderStatusData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                >
+                  {stats.orderStatusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E00E0', borderRadius: '8px', color: '#343A40' }} itemStyle={{ color: '#343A40' }} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </motion.div>
+        </div>
+
 
         {/* Recent Orders and Top Products */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -363,3 +545,4 @@ const AdminDashboard: React.FC = () => {
 };
 
 export default AdminDashboard;
+

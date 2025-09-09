@@ -14,6 +14,8 @@ interface SiteSettingsForm {
   secondaryColor: string;
   heroTitle: string;
   heroSubtitle: string;
+  aboutHeroTitle: string; // NEW
+  aboutHeroSubtitle: string; // NEW
   contactEmail: string;
   contactPhone: string;
   addressLine1: string;
@@ -49,6 +51,8 @@ const AdminSettings: React.FC = () => {
         secondaryColor: settings.secondaryColor || '#c9baa8',
         heroTitle: settings.heroTitle || 'Discover Your Signature Scent',
         heroSubtitle: settings.heroSubtitle || 'Experience luxury fragrances that define your personality.',
+        aboutHeroTitle: settings.aboutHeroTitle || 'About Velora Tradings', // NEW
+        aboutHeroSubtitle: settings.aboutHeroSubtitle || 'Crafting memories through exquisite fragrances since 2020.', // NEW
         contactEmail: settings.contactEmail || 'info@veloratradings.com',
         contactPhone: settings.contactPhone || '+91 73560 62349',
         addressLine1: settings.addressLine1 || 'Perinthalmanna',
@@ -204,6 +208,29 @@ const AdminSettings: React.FC = () => {
               <label className="block text-sm font-medium text-admin-text-dark mb-2">Hero Subtitle</label>
               <textarea
                 {...register('heroSubtitle')}
+                rows={3}
+                className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          {/* About Page Hero Section Text (NEW) */}
+          <h2 className="text-2xl font-bold text-admin-text mb-4 pt-6 flex items-center space-x-2">
+            <Type className="h-6 w-6" />
+            <span>About Page Hero Content</span>
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-admin-text-dark mb-2">About Hero Title</label>
+              <input
+                {...register('aboutHeroTitle')}
+                className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-admin-text-dark mb-2">About Hero Subtitle</label>
+              <textarea
+                {...register('aboutHeroSubtitle')}
                 rows={3}
                 className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
               />

@@ -62,7 +62,7 @@ const AdminLayout: React.FC = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-admin-background text-admin-text overflow-hidden"> {/* ADD overflow-hidden to prevent global scroll */}
+    <div className="flex min-h-screen h-screen bg-admin-background text-admin-text"> {/* Added h-screen to fix layout height */}
       {/* Mobile Sidebar Toggle */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -76,14 +76,15 @@ const AdminLayout: React.FC = () => {
         initial={false} // Control animations manually
         animate={{
           x: isSidebarOpen ? 0 : -250, // Mobile slide in/out
-          width: window.innerWidth >= 768 ? (isSidebarExpanded ? 256 : 80) : (isSidebarOpen ? 256 : 0) // Desktop width or mobile overlay width
+          // Adjusted width for sidebar: w-56 (224px) when expanded, w-16 (64px) when collapsed
+          width: window.innerWidth >= 768 ? (isSidebarExpanded ? 224 : 64) : (isSidebarOpen ? 224 : 0)
         }}
         transition={{ duration: 0.3 }}
-        className={`bg-admin-sidebar shadow-xl h-screen flex-shrink-0 overflow-y-auto
+        className={`bg-admin-sidebar shadow-xl h-screen flex-shrink-0 overflow-y-auto overflow-x-hidden
                     ${window.innerWidth >= 768 ? 'relative' : 'fixed inset-y-0 left-0 z-40'}
                   `}
       >
-        <div className={`flex flex-col h-full ${isSidebarExpanded ? 'p-6' : 'p-2'}`}> {/* Adjust padding based on expanded state */}
+        <div className={`flex flex-col h-full px-4 py-6`}> {/* Fixed padding for the inner container */}
           {/* Logo and Toggle Button */}
           <div className="flex items-center justify-between mb-10">
             <div className={`flex items-center ${isSidebarExpanded ? 'space-x-3' : ''}`}> {/* Remove space-x-3 when collapsed */}
@@ -124,7 +125,7 @@ const AdminLayout: React.FC = () => {
                     ? 'bg-admin-primary text-white shadow-md'
                     : 'text-admin-text-light hover:bg-admin-card hover:text-admin-primary-dark'
                   }
-                  ${isSidebarExpanded ? 'px-4 space-x-3' : 'justify-center px-0'} {/* Explicit padding and spacing */}
+                  ${isSidebarExpanded ? 'space-x-3' : 'justify-center'} /* No px-4 here, parent handles it */
                   `}
               >
                 <item.icon className="h-5 w-5" />
@@ -135,7 +136,7 @@ const AdminLayout: React.FC = () => {
 
           {/* User and Logout */}
           <div className="mt-auto pt-6 border-t border-admin-border">
-            <div className={`flex items-center mb-4 ${isSidebarExpanded ? 'space-x-3 px-4' : 'justify-center px-0'}`}> {/* Conditional spacing/centering */}
+            <div className={`flex items-center mb-4 ${isSidebarExpanded ? 'space-x-3' : 'justify-center'}`}> {/* No px-4 here */}
               <div className="bg-admin-card p-2 rounded-full">
                 <User className="h-5 w-5 text-admin-primary-dark" />
               </div>
@@ -149,20 +150,20 @@ const AdminLayout: React.FC = () => {
             <button
               onClick={handleLogout}
               className={`flex items-center w-full py-3 rounded-lg text-admin-danger hover:bg-admin-danger/20 transition-colors duration-200
-                ${isSidebarExpanded ? 'px-4 space-x-3' : 'justify-center px-0'} {/* Conditional spacing/centering */}
+                ${isSidebarExpanded ? 'space-x-3' : 'justify-center'} /* No px-4 here */
                 `}
             >
               <LogOut className="h-5 w-5" />
-              {isSidebarExpanded && <span className="font-medium">Logout</span>} {/* Conditionally render text */}
+              {isSidebarExpanded && <span className="font-medium">Logout</span>}
             </button>
             <Link
               to="/"
               className={`flex items-center w-full py-3 rounded-lg text-admin-text-light hover:bg-admin-card hover:text-admin-primary-dark transition-colors duration-200 mt-2
-                ${isSidebarExpanded ? 'px-4 space-x-3' : 'justify-center px-0'} {/* Conditional spacing/centering */}
+                ${isSidebarExpanded ? 'space-x-3' : 'justify-center'} /* No px-4 here */
                 `}
             >
               <Eye className="h-5 w-5" />
-              {isSidebarExpanded && <span className="font-medium">View Site</span>} {/* Conditionally render text */}
+              {isSidebarExpanded && <span className="font-medium">View Site</span>}
             </Link>
           </div>
         </div>
@@ -170,7 +171,7 @@ const AdminLayout: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        <main className="flex-1 p-8 md:p-10 overflow-y-auto">
+        <main className="flex-1 p-4 md:p-6 overflow-y-auto"> {/* Adjusted padding to p-4 md:p-6 */}
           <Outlet />
         </main>
       </div>

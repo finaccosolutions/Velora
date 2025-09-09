@@ -6,6 +6,7 @@ import { useSupabaseCart } from '../hooks/useSupabaseCart';
 import { useAuth } from '../context/AuthContext';
 import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSiteSettings } from '../hooks/useSiteSettings'; // NEW: Import useSiteSettings
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -13,6 +14,7 @@ const Header: React.FC = () => {
   const { getCartItemsCount } = useSupabaseCart();
   const { getWishlistItemsCount } = useSupabaseWishlist();
   const { user, userProfile, signOut, loading: authLoading, isAdmin } = useAuth();
+  const { settings } = useSiteSettings(); // NEW: Get site settings
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -82,7 +84,7 @@ const Header: React.FC = () => {
                 <span className="text-white font-bold text-xl">V</span>
               </motion.div>
               <div className="group-hover:scale-105 transition-transform duration-200">
-                <h1 className="text-2xl font-bold text-[#815536] group-hover:text-[#6d4429] transition-colors duration-200">Velora</h1>
+                <h1 className="text-2xl font-bold text-[#815536] group-hover:text-[#6d4429] transition-colors duration-200">{settings.siteName || 'Velora'}</h1> {/* NEW: Use siteName */}
                 <p className="text-xs text-[#c9baa8] -mt-1">TRADINGS</p>
               </div>
             </Link>
@@ -429,6 +431,7 @@ const Header: React.FC = () => {
                     {location.pathname === '/checkout' && 'Checkout'}
                     {location.pathname === '/login' && 'Login'}
                     {location.pathname === '/register' && 'Register'}
+                    {location.pathname === '/adminlogin' && 'Admin Login'} {/* UPDATED PATH */}
                   </span>
                 </div>
               </div>

@@ -6,9 +6,11 @@ import { motion } from 'framer-motion';
 import FeaturedProducts from '../components/FeaturedProducts';
 import { useAuth } from '../context/AuthContext'; // Import useAuth
 import { supabaseUrl, supabaseAnonKey } from '../lib/supabase'; // Import Supabase config
+import { useSiteSettings } from '../hooks/useSiteSettings'; // NEW: Import useSiteSettings
 
 const Home: React.FC = () => {
   const { user, session, loading: authLoading } = useAuth(); // Get user and session from useAuth
+  const { settings, loading: settingsLoading } = useSiteSettings(); // NEW: Get site settings
 
   // REMOVE START: Direct fetch test
   // const handleDirectFetchProducts = async () => {
@@ -59,6 +61,17 @@ const Home: React.FC = () => {
   // }, [user, session, authLoading]); // Dependencies
   // REMOVE END: Direct fetch test
 
+  if (settingsLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#815536] mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading website content...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -72,14 +85,13 @@ const Home: React.FC = () => {
               transition={{ duration: 0.8 }}
             >
               <h1 className="text-4xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-                Discover Your
+                {settings.heroTitle || 'Discover Your'}
                 <span className="block bg-gradient-to-r from-[#c9baa8] to-white bg-clip-text text-transparent">
-                  Signature Scent
+                  {settings.heroTitle ? (settings.heroTitle.includes('Signature Scent') ? '' : 'Signature Scent') : 'Signature Scent'}
                 </span>
               </h1>
               <p className="text-xl text-[#c9baa8] mb-8 leading-relaxed">
-                Experience luxury fragrances that define your personality. From fresh daily wear
-                to sophisticated evening scents, find your perfect match at Velora Tradings.
+                {settings.heroSubtitle || 'Experience luxury fragrances that define your personality. From fresh daily wear to sophisticated evening scents, find your perfect match at Velora Tradings.'}
               </p>
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                 <motion.div
