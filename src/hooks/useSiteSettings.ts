@@ -22,13 +22,6 @@ export const useSiteSettings = () => {
     setLoading(true);
     setError(null);
     try {
-      // REMOVED: if (!user || !isAdmin) {
-      // REMOVED:   setError('Unauthorized access to site settings.');
-      // REMOVED:   setSettings({});
-      // REMOVED:   setLoading(false);
-      // REMOVED:   return;
-      // REMOVED: }
-
       const { data, error: fetchError } = await supabase
         .from('site_settings')
         .select('*');
@@ -49,19 +42,13 @@ export const useSiteSettings = () => {
     } finally {
       setLoading(false);
     }
-  }, []); // Removed user and isAdmin from dependencies as fetch should happen for all
+  }, []);
 
   useEffect(() => {
-    // Trigger fetchSettings once authLoading is complete, regardless of user or isAdmin status
     if (!authLoading) {
       fetchSettings();
     }
-    // REMOVED: else if (!authLoading && (!user || !isAdmin)) {
-    // REMOVED:   setSettings({});
-    // REMOVED:   setLoading(false);
-    // REMOVED:   setError('Not authorized to view site settings.');
-    // REMOVED: }
-  }, [authLoading, fetchSettings]); // Only authLoading and fetchSettings are dependencies
+  }, [authLoading, fetchSettings]);
 
   const updateSetting = async (key: string, value: any) => {
     // This check remains, as only admins should be able to UPDATE settings

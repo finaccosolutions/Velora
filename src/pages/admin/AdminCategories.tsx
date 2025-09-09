@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../context/AuthContext';
 import { useSupabaseCategories, Category } from '../../hooks/useSupabaseCategories';
+import { useToast } from '../../context/ToastContext'; // NEW: Import useToast
 
 interface CategoryForm {
   name: string;
@@ -15,11 +16,12 @@ const AdminCategories: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  // REMOVED: const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const { isAdmin } = useAuth();
   const { categories, loading, error, createCategory, updateCategory, deleteCategory } = useSupabaseCategories();
   const navigate = useNavigate();
+  const { showToast } = useToast(); // NEW: Use useToast hook
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<CategoryForm>();
 
@@ -37,19 +39,19 @@ const AdminCategories: React.FC = () => {
       reset({ name: '' });
     }
     setIsModalOpen(true);
-    setMessage(null);
+    // REMOVED: setMessage(null);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingCategory(null);
     reset();
-    setMessage(null);
+    // REMOVED: setMessage(null);
   };
 
   const onSubmit = async (data: CategoryForm) => {
     setIsLoading(true);
-    setMessage(null);
+    // REMOVED: setMessage(null);
     let result;
 
     if (editingCategory) {
@@ -59,9 +61,9 @@ const AdminCategories: React.FC = () => {
     }
 
     if (result.error) {
-      setMessage({ type: 'error', text: result.error.message });
+      showToast(result.error.message, 'error'); // NEW: Use showToast
     } else {
-      setMessage({ type: 'success', text: `Category ${editingCategory ? 'updated' : 'added'} successfully!` });
+      showToast(`Category ${editingCategory ? 'updated' : 'added'} successfully!`, 'success'); // NEW: Use showToast
       closeModal();
     }
     setIsLoading(false);
@@ -70,12 +72,12 @@ const AdminCategories: React.FC = () => {
   const handleDelete = async (categoryId: string) => {
     if (window.confirm('Are you sure you want to delete this category? This cannot be undone.')) {
       setIsLoading(true);
-      setMessage(null);
+      // REMOVED: setMessage(null);
       const result = await deleteCategory(categoryId);
       if (result.error) {
-        setMessage({ type: 'error', text: result.error.message });
+        showToast(result.error.message, 'error'); // NEW: Use showToast
       } else {
-        setMessage({ type: 'success', text: 'Category deleted successfully!' });
+        showToast('Category deleted successfully!', 'success'); // NEW: Use showToast
       }
       setIsLoading(false);
     }
@@ -109,7 +111,6 @@ const AdminCategories: React.FC = () => {
       <header className="bg-admin-card shadow-lg rounded-xl p-6 mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            {/* Removed "Back to Dashboard" button */}
             <h1 className="text-3xl font-bold text-admin-text">Category Management</h1>
           </div>
 
@@ -123,19 +124,7 @@ const AdminCategories: React.FC = () => {
         </div>
       </header>
 
-      {message && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`mb-6 p-4 rounded-lg ${
-            message.type === 'success'
-              ? 'bg-green-500 text-white'
-              : 'bg-red-500 text-white'
-          }`}
-        >
-          {message.text}
-        </motion.div>
-      )}
+      {/* REMOVED: message rendering */}
 
       {/* Categories List */}
       <div className="bg-admin-card rounded-xl shadow-lg p-6">

@@ -1,41 +1,36 @@
+// src/pages/Wishlist.tsx
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Trash2, HeartCrack, ArrowLeft, ShoppingCart } from 'lucide-react';
 import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
+import { useToast } from '../context/ToastContext'; // NEW: Import useToast
 
 const Wishlist: React.FC = () => {
   const { wishlistItems, removeFromWishlist, loading } = useSupabaseWishlist();
   const { addToCart } = useSupabaseCart();
   const navigate = useNavigate();
+  const { showToast } = useToast(); // NEW: Use useToast hook
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    const toast = document.createElement('div');
-    toast.className = `fixed bottom-4 right-4 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      document.body.removeChild(toast);
-    }, 3000);
-  };
+  // REMOVED: Local showToast function
 
   const handleMoveToCart = async (productId: string, wishlistItemId: string) => {
     const result = await addToCart(productId, 1);
     if (!result.error) {
       await removeFromWishlist(wishlistItemId);
-      showToast('Product moved to cart!');
+      showToast('Product moved to cart!', 'success'); // NEW: Use global showToast
     } else {
-      showToast(result.error.message, 'error');
+      showToast(result.error.message, 'error'); // NEW: Use global showToast
     }
   };
 
   const handleRemoveFromWishlist = async (wishlistItemId: string) => {
     const result = await removeFromWishlist(wishlistItemId);
     if (!result.error) {
-      showToast('Product removed from wishlist');
+      showToast('Product removed from wishlist', 'success'); // NEW: Use global showToast
     } else {
-      showToast(result.error.message, 'error');
+      showToast(result.error.message, 'error'); // NEW: Use global showToast
     }
   };
 

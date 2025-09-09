@@ -6,7 +6,7 @@ import { useSupabaseCart } from '../hooks/useSupabaseCart';
 import { useAuth } from '../context/AuthContext';
 import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSiteSettings } from '../hooks/useSiteSettings'; // NEW: Import useSiteSettings
+import { useSiteSettings } from '../hooks/useSiteSettings';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -14,7 +14,7 @@ const Header: React.FC = () => {
   const { getCartItemsCount } = useSupabaseCart();
   const { getWishlistItemsCount } = useSupabaseWishlist();
   const { user, userProfile, signOut, loading: authLoading, isAdmin } = useAuth();
-  const { settings } = useSiteSettings(); // NEW: Get site settings
+  const { settings } = useSiteSettings();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -70,21 +70,31 @@ const Header: React.FC = () => {
   };
 
   return (
-    <> {/* Add React.Fragment here */}
+    <>
       <header className="bg-white shadow-lg sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-2 group">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="bg-gradient-to-r from-[#815536] to-[#c9baa8] p-2 rounded-lg group-hover:shadow-lg transition-all duration-200"
-              >
-                <span className="text-white font-bold text-xl">V</span>
-              </motion.div>
+              {settings.logoUrl ? ( // NEW: Conditional rendering for image logo
+                <motion.img
+                  src={settings.logoUrl}
+                  alt={settings.siteName || 'Velora Tradings'}
+                  className="h-8 w-auto"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                />
+              ) : (
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-gradient-to-r from-[#815536] to-[#c9baa8] p-2 rounded-lg group-hover:shadow-lg transition-all duration-200"
+                >
+                  <span className="text-white font-bold text-xl">V</span>
+                </motion.div>
+              )}
               <div className="group-hover:scale-105 transition-transform duration-200">
-                <h1 className="text-2xl font-bold text-[#815536] group-hover:text-[#6d4429] transition-colors duration-200">{settings.siteName || 'Velora'}</h1> {/* NEW: Use siteName */}
+                <h1 className="text-2xl font-bold text-[#815536] group-hover:text-[#6d4429] transition-colors duration-200">{settings.siteName || 'Velora'}</h1>
                 <p className="text-xs text-[#c9baa8] -mt-1">TRADINGS</p>
               </div>
             </Link>
@@ -431,7 +441,7 @@ const Header: React.FC = () => {
                     {location.pathname === '/checkout' && 'Checkout'}
                     {location.pathname === '/login' && 'Login'}
                     {location.pathname === '/register' && 'Register'}
-                    {location.pathname === '/adminlogin' && 'Admin Login'} {/* UPDATED PATH */}
+                    {location.pathname === '/adminlogin' && 'Admin Login'}
                   </span>
                 </div>
               </div>

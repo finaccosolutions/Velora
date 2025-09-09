@@ -1,10 +1,11 @@
+// src/pages/About.tsx
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Award, Users, Globe, Heart, Star, CheckCircle } from 'lucide-react';
-import { useSiteSettings } from '../hooks/useSiteSettings'; // NEW: Import useSiteSettings
+import { useSiteSettings } from '../hooks/useSiteSettings';
 
 const About: React.FC = () => {
-  const { settings, loading: settingsLoading } = useSiteSettings(); // NEW: Get site settings
+  const { settings, loading: settingsLoading } = useSiteSettings();
 
   if (settingsLoading) {
     return (
@@ -50,27 +51,22 @@ const About: React.FC = () => {
             >
               <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">Our Story</h2>
               <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-                Founded with a passion for luxury and elegance, Velora Tradings began as a dream to bring 
-                the world's finest fragrances to discerning customers. Our journey started with a simple 
-                belief: that fragrance is not just about smelling good, but about expressing your unique 
-                personality and creating lasting impressions.
+                {settings.aboutStoryParagraph1 || 'Founded with a passion for luxury and elegance, Velora Tradings began as a dream to bring the world\'s finest fragrances to discerning customers. Our journey started with a simple belief: that fragrance is not just about smelling good, but about expressing your unique personality and creating lasting impressions.'}
               </p>
               <p className="text-lg text-gray-700 mb-6 leading-relaxed">
-                Today, we curate an exclusive collection of premium perfumes from renowned houses and 
-                emerging artisans alike. Each fragrance in our collection is carefully selected for its 
-                quality, uniqueness, and ability to evoke emotions and memories.
+                {settings.aboutStoryParagraph2 || 'Today, we curate an exclusive collection of premium perfumes from renowned houses and emerging artisans alike. Each fragrance in our collection is carefully selected for its quality, uniqueness, and ability to evoke emotions and memories.'}
               </p>
               <div className="flex items-center space-x-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-[#815536]">5+</div>
+                  <div className="text-2xl font-bold text-[#815536]">{settings.aboutYearsExperience || '5+'}</div>
                   <div className="text-sm text-gray-600">Years Experience</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-[#815536]">10K+</div>
+                  <div className="text-2xl font-bold text-[#815536]">{settings.aboutHappyCustomers || '10K+'}</div>
                   <div className="text-sm text-gray-600">Happy Customers</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-[#815536]">100+</div>
+                  <div className="text-2xl font-bold text-[#815536]">{settings.aboutPremiumFragrances || '100+'}</div>
                   <div className="text-sm text-gray-600">Premium Fragrances</div>
                 </div>
               </div>
@@ -111,23 +107,23 @@ const About: React.FC = () => {
             {[
               {
                 icon: Award,
-                title: 'Quality Excellence',
-                description: 'We source only the finest fragrances from trusted suppliers and renowned perfume houses.'
+                title: settings.aboutValueQualityTitle || 'Quality Excellence',
+                description: settings.aboutValueQualityDescription || 'We source only the finest fragrances from trusted suppliers and renowned perfume houses.'
               },
               {
                 icon: Users,
-                title: 'Customer First',
-                description: 'Your satisfaction is our priority. We provide personalized service and expert guidance.'
+                title: settings.aboutValueCustomerTitle || 'Customer First',
+                description: settings.aboutValueCustomerDescription || 'Your satisfaction is our priority. We provide personalized service and expert guidance.'
               },
               {
                 icon: Globe,
-                title: 'Global Reach',
-                description: 'Bringing international luxury fragrances to customers across India with reliable delivery.'
+                title: settings.aboutValueGlobalTitle || 'Global Reach',
+                description: settings.aboutValueGlobalDescription || 'Bringing international luxury fragrances to customers across India with reliable delivery.'
               },
               {
                 icon: Heart,
-                title: 'Passion Driven',
-                description: 'Our love for fragrances drives us to continuously discover and share exceptional scents.'
+                title: settings.aboutValuePassionTitle || 'Passion Driven',
+                description: settings.aboutValuePassionDescription || 'Our love for fragrances drives us to continuously discover and share exceptional scents.'
               }
             ].map((value, index) => (
               <motion.div
@@ -173,12 +169,12 @@ const About: React.FC = () => {
               <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">Why Choose Velora?</h2>
               <div className="space-y-4">
                 {[
-                  'Authentic products from verified suppliers',
-                  '100% genuine fragrances with quality guarantee',
-                  'Expert curation and personalized recommendations',
-                  'Secure packaging and fast delivery',
-                  'Competitive pricing on luxury fragrances',
-                  '24/7 customer support and after-sales service'
+                  settings.aboutWhyChoose1 || 'Authentic products from verified suppliers',
+                  settings.aboutWhyChoose2 || '100% genuine fragrances with quality guarantee',
+                  settings.aboutWhyChoose3 || 'Expert curation and personalized recommendations',
+                  settings.aboutWhyChoose4 || 'Secure packaging and fast delivery',
+                  settings.aboutWhyChoose5 || 'Competitive pricing on luxury fragrances',
+                  settings.aboutWhyChoose6 || '24/7 customer support and after-sales service'
                 ].map((feature, index) => (
                   <motion.div
                     key={index}
@@ -206,10 +202,10 @@ const About: React.FC = () => {
             transition={{ duration: 0.6 }}
           >
             <h2 className="text-3xl lg:text-4xl font-bold text-white mb-4">
-              Ready to Find Your Signature Scent?
+              {settings.aboutCtaTitle || 'Ready to Find Your Signature Scent?'}
             </h2>
             <p className="text-xl text-[#c9baa8] mb-8">
-              Explore our curated collection of premium fragrances and discover the perfect scent that defines you.
+              {settings.aboutCtaSubtitle || 'Explore our curated collection of premium fragrances and discover the perfect scent that defines you.'}
             </p>
             <motion.a
               href="/products"

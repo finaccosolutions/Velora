@@ -1,9 +1,11 @@
+// src/pages/Register.tsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Mail, Lock, Eye, EyeOff, Phone, MapPin } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext'; // NEW: Import useToast
 
 interface RegisterForm {
   name: string;
@@ -24,6 +26,7 @@ const Register: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { signUp } = useAuth();
   const navigate = useNavigate();
+  const { showToast } = useToast(); // NEW: Use useToast hook
   
   const { register, handleSubmit, watch, formState: { errors } } = useForm<RegisterForm>();
   
@@ -39,27 +42,9 @@ const Register: React.FC = () => {
       setError(error.message);
       setIsLoading(false);
     } else {
-      // Show verification message
-      const toast = document.createElement('div');
-      toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 max-w-md';
-      toast.innerHTML = `
-        <div class="flex items-center space-x-3">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          <div>
-            <p class="font-semibold">Verification email sent!</p>
-            <p class="text-sm">Please check ${data.email} and click the verification link to activate your account.</p>
-          </div>
-        </div>
-      `;
-      document.body.appendChild(toast);
-      setTimeout(() => {
-        if (document.body.contains(toast)) {
-          document.body.removeChild(toast);
-        }
-        navigate('/login');
-      }, 5000);
+      // REMOVED: Local toast creation
+      showToast(`Verification email sent! Please check ${data.email} and click the verification link to activate your account.`, 'success'); // NEW: Use global showToast
+      navigate('/login');
       setIsLoading(false);
     }
   };

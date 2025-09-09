@@ -1,9 +1,11 @@
+// src/components/ProductCard.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Star } from 'lucide-react';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
 import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
 import { motion } from 'framer-motion';
+import { useToast } from '../context/ToastContext'; // NEW: Import useToast
 
 interface ProductCardProps {
   product: any;
@@ -13,16 +15,9 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
   const { addToCart } = useSupabaseCart();
   const { wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useSupabaseWishlist();
+  const { showToast } = useToast(); // NEW: Use useToast hook
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    const toast = document.createElement('div');
-    toast.className = `fixed bottom-4 right-4 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      document.body.removeChild(toast);
-    }, 3000);
-  };
+  // REMOVED: Local showToast function
 
   const handleWishlistToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -35,17 +30,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
       if (wishlistItem) {
         const result = await removeFromWishlist(wishlistItem.id);
         if (!result.error) {
-          showToast(`${product.name} removed from wishlist!`);
+          showToast(`${product.name} removed from wishlist!`, 'success'); // NEW: Use global showToast
         } else {
-          showToast(result.error.message, 'error');
+          showToast(result.error.message, 'error'); // NEW: Use global showToast
         }
       }
     } else {
       const result = await addToWishlist(product.id);
       if (!result.error) {
-        showToast(`${product.name} added to wishlist!`);
+        showToast(`${product.name} added to wishlist!`, 'success'); // NEW: Use global showToast
       } else {
-        showToast(result.error.message, 'error');
+        showToast(result.error.message, 'error'); // NEW: Use global showToast
       }
     }
   };

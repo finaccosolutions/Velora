@@ -1,11 +1,14 @@
 // src/pages/admin/AdminSettings.tsx
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Settings, Palette, Type, Image as ImageIcon } from 'lucide-react';
+import {
+  Settings, Palette, Type, Image as ImageIcon, Info, Phone, MessageCircle, Home, LayoutDashboard,
+} from 'lucide-react'; // NEW: Import Home and LayoutDashboard for tab icons
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../context/AuthContext';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
+import { useToast } from '../../context/ToastContext';
 
 interface SiteSettingsForm {
   siteName: string;
@@ -14,24 +17,75 @@ interface SiteSettingsForm {
   secondaryColor: string;
   heroTitle: string;
   heroSubtitle: string;
-  aboutHeroTitle: string; // NEW
-  aboutHeroSubtitle: string; // NEW
-  contactEmail: string;
-  contactPhone: string;
-  addressLine1: string;
-  addressLine2: string;
-  city: string;
-  postalCode: string;
-  country: string;
+  // NEW: About Page Content
+  aboutHeroTitle: string;
+  aboutHeroSubtitle: string;
+  aboutStoryParagraph1: string;
+  aboutStoryParagraph2: string;
+  aboutYearsExperience: string;
+  aboutHappyCustomers: string;
+  aboutPremiumFragrances: string;
+  aboutValueQualityTitle: string;
+  aboutValueQualityDescription: string;
+  aboutValueCustomerTitle: string;
+  aboutValueCustomerDescription: string;
+  aboutValueGlobalTitle: string;
+  aboutValueGlobalDescription: string;
+  aboutValuePassionTitle: string;
+  aboutValuePassionDescription: string;
+  aboutWhyChoose1: string;
+  aboutWhyChoose2: string;
+  aboutWhyChoose3: string;
+  aboutWhyChoose4: string;
+  aboutWhyChoose5: string;
+  aboutWhyChoose6: string;
+  aboutCtaTitle: string;
+  aboutCtaSubtitle: string;
+  // NEW: Contact Page Content
+  contactHeroSubtitle: string;
+  contactAddressLine1: string;
+  contactAddressLine2: string;
+  contactCity: string;
+  contactCountry: string;
+  contactPhone1: string;
+  contactPhone2: string;
+  contactEmail1: string;
+  contactEmail2: string;
+  contactEmail3: string;
+  contactHoursMonFri: string;
+  contactHoursSat: string;
+  contactHoursSun: string;
+  contactHoursHolidays: string;
+  contactFormTitle: string;
+  contactFormSubtitle: string;
+  contactFaqTitle: string;
+  contactFaqSubtitle: string;
+  contactFaq1Question: string;
+  contactFaq1Answer: string;
+  contactFaq2Question: string;
+  contactFaq2Answer: string;
+  contactFaq3Question: string;
+  contactFaq3Answer: string;
+  contactFaq4Question: string;
+  contactFaq4Answer: string;
+  contactFaq5Question: string;
+  contactFaq5Answer: string;
+  // NEW: Footer Content
+  footerCompanyDescription: string;
+  footerSocialFacebook: string;
+  footerSocialInstagram: string;
+  footerSocialTwitter: string;
+  footerCopyrightText: string;
 }
 
 const AdminSettings: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [activeTab, setActiveTab] = useState('general'); // State for active tab
 
   const { isAdmin } = useAuth();
   const { settings, loading: settingsLoading, error: settingsError, updateSetting } = useSiteSettings();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<SiteSettingsForm>();
 
@@ -51,22 +105,71 @@ const AdminSettings: React.FC = () => {
         secondaryColor: settings.secondaryColor || '#c9baa8',
         heroTitle: settings.heroTitle || 'Discover Your Signature Scent',
         heroSubtitle: settings.heroSubtitle || 'Experience luxury fragrances that define your personality.',
-        aboutHeroTitle: settings.aboutHeroTitle || 'About Velora Tradings', // NEW
-        aboutHeroSubtitle: settings.aboutHeroSubtitle || 'Crafting memories through exquisite fragrances since 2020.', // NEW
-        contactEmail: settings.contactEmail || 'info@veloratradings.com',
-        contactPhone: settings.contactPhone || '+91 73560 62349',
-        addressLine1: settings.addressLine1 || 'Perinthalmanna',
-        addressLine2: settings.addressLine2 || 'Kerala',
-        city: settings.city || 'Perinthalmanna',
-        postalCode: settings.postalCode || '679322',
-        country: settings.country || 'India',
+        // NEW: About Page Content
+        aboutHeroTitle: settings.aboutHeroTitle || 'About Velora Tradings',
+        aboutHeroSubtitle: settings.aboutHeroSubtitle || 'Crafting memories through exquisite fragrances since 2020.',
+        aboutStoryParagraph1: settings.aboutStoryParagraph1 || 'Founded with a passion for luxury and elegance, Velora Tradings began as a dream to bring the world\'s finest fragrances to discerning customers. Our journey started with a simple belief: that fragrance is not just about smelling good, but about expressing your unique personality and creating lasting impressions.',
+        aboutStoryParagraph2: settings.aboutStoryParagraph2 || 'Today, we curate an exclusive collection of premium perfumes from renowned houses and emerging artisans alike. Each fragrance in our collection is carefully selected for its quality, uniqueness, and ability to evoke emotions and memories.',
+        aboutYearsExperience: settings.aboutYearsExperience || '5+',
+        aboutHappyCustomers: settings.aboutHappyCustomers || '10K+',
+        aboutPremiumFragrances: settings.aboutPremiumFragrances || '100+',
+        aboutValueQualityTitle: settings.aboutValueQualityTitle || 'Quality Excellence',
+        aboutValueQualityDescription: settings.aboutValueQualityDescription || 'We source only the finest fragrances from trusted suppliers and renowned perfume houses.',
+        aboutValueCustomerTitle: settings.aboutValueCustomerTitle || 'Customer First',
+        aboutValueCustomerDescription: settings.aboutValueCustomerDescription || 'Your satisfaction is our priority. We provide personalized service and expert guidance.',
+        aboutValueGlobalTitle: settings.aboutValueGlobalTitle || 'Global Reach',
+        aboutValueGlobalDescription: settings.aboutValueGlobalDescription || 'Bringing international luxury fragrances to customers across India with reliable delivery.',
+        aboutValuePassionTitle: settings.aboutValuePassionTitle || 'Passion Driven',
+        aboutValuePassionDescription: settings.aboutValuePassionDescription || 'Our love for fragrances drives us to continuously discover and share exceptional scents.',
+        aboutWhyChoose1: settings.aboutWhyChoose1 || 'Authentic products from verified suppliers',
+        aboutWhyChoose2: settings.aboutWhyChoose2 || '100% genuine fragrances with quality guarantee',
+        aboutWhyChoose3: settings.aboutWhyChoose3 || 'Expert curation and personalized recommendations',
+        aboutWhyChoose4: settings.aboutWhyChoose4 || 'Secure packaging and fast delivery',
+        aboutWhyChoose5: settings.aboutWhyChoose5 || 'Competitive pricing on luxury fragrances',
+        aboutWhyChoose6: settings.aboutWhyChoose6 || '24/7 customer support and after-sales service',
+        aboutCtaTitle: settings.aboutCtaTitle || 'Ready to Find Your Signature Scent?',
+        aboutCtaSubtitle: settings.aboutCtaSubtitle || 'Explore our curated collection of premium fragrances and discover the perfect scent that defines you.',
+        // NEW: Contact Page Content
+        contactHeroSubtitle: settings.contactHeroSubtitle || 'Have questions about our fragrances? Need personalized recommendations? We\'re here to help you find your perfect scent.',
+        contactAddressLine1: settings.contactAddressLine1 || 'Perinthalmanna',
+        contactAddressLine2: settings.contactAddressLine2 || 'Kerala',
+        contactCity: settings.contactCity || 'Perinthalmanna',
+        contactCountry: settings.contactCountry || 'India',
+        contactPhone1: settings.contactPhone1 || '+91 73560 62349',
+        contactPhone2: settings.contactPhone2 || '+91 98765 43211',
+        contactEmail1: settings.contactEmail1 || 'info@veloratradings.com',
+        contactEmail2: settings.contactEmail2 || 'support@veloratradings.com',
+        contactEmail3: settings.contactEmail3 || 'orders@veloratradings.com',
+        contactHoursMonFri: settings.contactHoursMonFri || 'Monday - Friday: 10AM - 8PM',
+        contactHoursSat: settings.contactHoursSat || 'Saturday: 10AM - 8PM',
+        contactHoursSun: settings.contactHoursSun || 'Sunday: 11AM - 6PM',
+        contactHoursHolidays: settings.contactHoursHolidays || 'Holidays: 12PM - 5PM',
+        contactFormTitle: settings.contactFormTitle || 'Send Us a Message',
+        contactFormSubtitle: settings.contactFormSubtitle || 'Fill out the form below and we\'ll get back to you as soon as possible.',
+        contactFaqTitle: settings.contactFaqTitle || 'Frequently Asked Questions',
+        contactFaqSubtitle: settings.contactFaqSubtitle || 'Quick answers to common questions about our products and services.',
+        contactFaq1Question: settings.contactFaq1Question || 'Are all your fragrances authentic?',
+        contactFaq1Answer: settings.contactFaq1Answer || 'Yes, we guarantee 100% authentic products. All our fragrances are sourced directly from authorized distributors and verified suppliers.',
+        contactFaq2Question: settings.contactFaq2Question || 'Do you offer fragrance samples?',
+        contactFaq2Answer: settings.contactFaq2Answer || 'Yes, we offer sample sizes for most of our fragrances. This allows you to try before committing to a full-size bottle.',
+        contactFaq3Question: settings.contactFaq3Question || 'What is your return policy?',
+        contactFaq3Answer: settings.contactFaq3Answer || 'We offer a 30-day return policy for unopened products. If you\'re not satisfied with your purchase, you can return it for a full refund.',
+        contactFaq4Question: settings.contactFaq4Question || 'How long does shipping take?',
+        contactFaq4Answer: settings.contactFaq4Answer || 'Standard shipping takes 3-5 business days within India. Express shipping is available for 1-2 day delivery in major cities.',
+        contactFaq5Question: settings.contactFaq5Question || 'Do you provide fragrance recommendations?',
+        contactFaq5Answer: settings.contactFaq5Answer || 'Absolutely! Our fragrance experts are happy to provide personalized recommendations based on your preferences and occasions.',
+        // NEW: Footer Content
+        footerCompanyDescription: settings.footerCompanyDescription || 'Discover the essence of luxury with Velora Tradings. We curate the finest fragrances to enhance your personal style and leave a lasting impression.',
+        footerSocialFacebook: settings.footerSocialFacebook || '#',
+        footerSocialInstagram: settings.footerSocialInstagram || '#',
+        footerSocialTwitter: settings.footerSocialTwitter || '#',
+        footerCopyrightText: settings.footerCopyrightText || '© 2025 Velora Tradings. All rights reserved.',
       });
     }
   }, [settingsLoading, settingsError, settings, reset]);
 
   const onSubmit = async (data: SiteSettingsForm) => {
     setIsLoading(true);
-    setMessage(null);
 
     try {
       // Update each setting individually
@@ -78,13 +181,13 @@ const AdminSettings: React.FC = () => {
       const hasError = results.some(result => result.error);
 
       if (hasError) {
-        setMessage({ type: 'error', text: 'Failed to save some settings. Check console for details.' });
+        showToast('Failed to save some settings. Check console for details.', 'error');
       } else {
-        setMessage({ type: 'success', text: 'All settings saved successfully!' });
+        showToast('All settings saved successfully!', 'success');
       }
     } catch (error: any) {
       console.error('Error saving site settings:', error);
-      setMessage({ type: 'error', text: error.message || 'Failed to save settings.' });
+      showToast(error.message || 'Failed to save settings.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -112,189 +215,467 @@ const AdminSettings: React.FC = () => {
     );
   }
 
+  const tabs = [
+    { id: 'general', label: 'General', icon: Settings, color: 'text-admin-primary' },
+    { id: 'home', label: 'Home Page', icon: Home, color: 'text-admin-success' },
+    { id: 'about', label: 'About Page', icon: Info, color: 'text-admin-warning' },
+    { id: 'contact', label: 'Contact Page', icon: Phone, color: 'text-admin-secondary' },
+    { id: 'footer', label: 'Footer', icon: LayoutDashboard, color: 'text-admin-info' },
+  ];
+
   return (
     <div className="min-h-screen bg-admin-background text-admin-text p-8">
       {/* Header */}
       <header className="bg-admin-card shadow-lg rounded-xl p-6 mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            {/* Removed "Back to Dashboard" button */}
             <h1 className="text-3xl font-bold text-admin-text">Site Settings</h1>
           </div>
         </div>
       </header>
-
-      {message && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`mb-6 p-4 rounded-lg ${
-            message.type === 'success'
-              ? 'bg-green-500 text-white'
-              : 'bg-red-500 text-white'
-          }`}
-        >
-          {message.text}
-        </motion.div>
-      )}
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-admin-card rounded-xl shadow-lg p-6"
       >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {/* General Settings */}
-          <h2 className="text-2xl font-bold text-admin-text mb-4 flex items-center space-x-2">
-            <Settings className="h-6 w-6" />
-            <span>General Settings</span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-admin-text-dark mb-2">Site Name</label>
-              <input
-                {...register('siteName')}
-                className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-admin-text-dark mb-2">Logo URL</label>
-              <input
-                {...register('logoUrl')}
-                className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                placeholder="https://example.com/logo.png"
-              />
-            </div>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+          {/* Tab Navigation */}
+          <div className="flex flex-wrap gap-2 mb-6 border-b border-admin-border pb-4">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200
+                  ${activeTab === tab.id
+                    ? 'bg-admin-primary text-white shadow-md'
+                    : 'bg-admin-sidebar text-admin-text-light hover:bg-admin-border'
+                  }`}
+              >
+                <tab.icon className="h-5 w-5" />
+                <span>{tab.label}</span>
+              </button>
+            ))}
           </div>
 
-          {/* Theme Colors */}
-          <h2 className="text-2xl font-bold text-admin-text mb-4 pt-6 flex items-center space-x-2">
-            <Palette className="h-6 w-6" />
-            <span>Theme Colors</span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-admin-text-dark mb-2">Primary Color</label>
-              <input
-                type="color"
-                {...register('primaryColor')}
-                className="w-full h-12 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-admin-text-dark mb-2">Secondary Color</label>
-              <input
-                type="color"
-                {...register('secondaryColor')}
-                className="w-full h-12 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-              />
-            </div>
-          </div>
+          {/* Tab Content */}
+          <div>
+            {activeTab === 'general' && (
+              <motion.div
+                key="general"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6" // Added space-y for spacing between sections
+              >
+                {/* General Settings Section */}
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'general')?.color}`}>
+                    <Settings className="h-6 w-6" />
+                    <span>General Settings</span>
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Site Name</label>
+                      <input
+                        {...register('siteName')}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Logo URL</label>
+                      <input
+                        {...register('logoUrl')}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                        placeholder="https://example.com/logo.png"
+                      />
+                    </div>
+                  </div>
+                </div>
 
-          {/* Hero Section Text */}
-          <h2 className="text-2xl font-bold text-admin-text mb-4 pt-6 flex items-center space-x-2">
-            <ImageIcon className="h-6 w-6" />
-            <span>Hero Section Content</span>
-          </h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-admin-text-dark mb-2">Hero Title</label>
-              <input
-                {...register('heroTitle')}
-                className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-admin-text-dark mb-2">Hero Subtitle</label>
-              <textarea
-                {...register('heroSubtitle')}
-                rows={3}
-                className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-              />
-            </div>
-          </div>
+                {/* Theme Colors Section */}
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'general')?.color}`}>
+                    <Palette className="h-6 w-6" />
+                    <span>Theme Colors</span>
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Primary Color</label>
+                      <input
+                        type="color"
+                        {...register('primaryColor')}
+                        className="w-full h-12 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Secondary Color</label>
+                      <input
+                        type="color"
+                        {...register('secondaryColor')}
+                        className="w-full h-12 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
-          {/* About Page Hero Section Text (NEW) */}
-          <h2 className="text-2xl font-bold text-admin-text mb-4 pt-6 flex items-center space-x-2">
-            <Type className="h-6 w-6" />
-            <span>About Page Hero Content</span>
-          </h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-admin-text-dark mb-2">About Hero Title</label>
-              <input
-                {...register('aboutHeroTitle')}
-                className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-admin-text-dark mb-2">About Hero Subtitle</label>
-              <textarea
-                {...register('aboutHeroSubtitle')}
-                rows={3}
-                className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-              />
-            </div>
-          </div>
+            {activeTab === 'home' && (
+              <motion.div
+                key="home"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                {/* Home Page Hero Section Content */}
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'home')?.color}`}>
+                    <Home className="h-6 w-6" />
+                    <span>Home Page Hero Section Content</span>
+                  </h2>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Hero Title</label>
+                      <input
+                        {...register('heroTitle')}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Hero Subtitle</label>
+                      <textarea
+                        {...register('heroSubtitle')}
+                        rows={3}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
-          {/* Contact Information */}
-          <h2 className="text-2xl font-bold text-admin-text mb-4 pt-6 flex items-center space-x-2">
-            <Type className="h-6 w-6" />
-            <span>Contact Information</span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-admin-text-dark mb-2">Contact Email</label>
-              <input
-                type="email"
-                {...register('contactEmail')}
-                className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-admin-text-dark mb-2">Contact Phone</label>
-              <input
-                {...register('contactPhone')}
-                className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-admin-text-dark mb-2">Address Line 1</label>
-              <input
-                {...register('addressLine1')}
-                className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-admin-text-dark mb-2">Address Line 2</label>
-              <input
-                {...register('addressLine2')}
-                className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-admin-text-dark mb-2">City</label>
-              <input
-                {...register('city')}
-                className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-admin-text-dark mb-2">Postal Code</label>
-              <input
-                {...register('postalCode')}
-                className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-admin-text-dark mb-2">Country</label>
-              <input
-                {...register('country')}
-                className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-              />
-            </div>
-          </div>
+            {activeTab === 'about' && (
+              <motion.div
+                key="about"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                {/* About Hero Section */}
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'about')?.color}`}>
+                    <Info className="h-6 w-6" />
+                    <span>About Hero Section</span>
+                  </h2>
+                  <div>
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">About Hero Title</label>
+                    <input
+                      {...register('aboutHeroTitle')}
+                      className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">About Hero Subtitle</label>
+                    <textarea
+                      {...register('aboutHeroSubtitle')}
+                      rows={3}
+                      className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                    />
+                  </div>
+                </div>
 
+                {/* Our Story Section */}
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h3 className="text-xl font-bold text-admin-text mb-4">Our Story</h3>
+                  <div>
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">Story Paragraph 1</label>
+                    <textarea
+                      {...register('aboutStoryParagraph1')}
+                      rows={4}
+                      className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">Story Paragraph 2</label>
+                    <textarea
+                      {...register('aboutStoryParagraph2')}
+                      rows={4}
+                      className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Years Experience</label>
+                      <input
+                        {...register('aboutYearsExperience')}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Happy Customers</label>
+                      <input
+                        {...register('aboutHappyCustomers')}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Premium Fragrances</label>
+                      <input
+                        {...register('aboutPremiumFragrances')}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Our Values Section */}
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h3 className="text-xl font-bold text-admin-text mb-4">Our Values</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Quality Value Title</label>
+                      <input {...register('aboutValueQualityTitle')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                      <label className="block text-sm font-medium text-admin-text-dark mt-2 mb-2">Quality Value Description</label>
+                      <textarea {...register('aboutValueQualityDescription')} rows={2} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Customer Value Title</label>
+                      <input {...register('aboutValueCustomerTitle')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                      <label className="block text-sm font-medium text-admin-text-dark mt-2 mb-2">Customer Value Description</label>
+                      <textarea {...register('aboutValueCustomerDescription')} rows={2} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Global Value Title</label>
+                      <input {...register('aboutValueGlobalTitle')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                      <label className="block text-sm font-medium text-admin-text-dark mt-2 mb-2">Global Value Description</label>
+                      <textarea {...register('aboutValueGlobalDescription')} rows={2} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Passion Value Title</label>
+                      <input {...register('aboutValuePassionTitle')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                      <label className="block text-sm font-medium text-admin-text-dark mt-2 mb-2">Passion Value Description</label>
+                      <textarea {...register('aboutValuePassionDescription')} rows={2} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Why Choose Us Section */}
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h3 className="text-xl font-bold text-admin-text mb-4">Why Choose Us</h3>
+                  <div className="space-y-4">
+                    {[1, 2, 3, 4, 5, 6].map(i => (
+                      <div key={`aboutWhyChoose${i}`}>
+                        <label className="block text-sm font-medium text-admin-text-dark mb-2">{`Why Choose Us Point ${i}`}</label>
+                        <input {...register(`aboutWhyChoose${i}` as keyof SiteSettingsForm)} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Call to Action Section */}
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h3 className="text-xl font-bold text-admin-text mb-4">Call to Action</h3>
+                  <div>
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">CTA Title</label>
+                    <input {...register('aboutCtaTitle')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">CTA Subtitle</label>
+                    <textarea {...register('aboutCtaSubtitle')} rows={2} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'contact' && (
+              <motion.div
+                key="contact"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                {/* Contact Hero Section */}
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'contact')?.color}`}>
+                    <Phone className="h-6 w-6" />
+                    <span>Contact Hero Section</span>
+                  </h2>
+                  <div>
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">Contact Hero Subtitle</label>
+                    <textarea
+                      {...register('contactHeroSubtitle')}
+                      rows={3}
+                      className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Contact Details Section */}
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h3 className="text-xl font-bold text-admin-text mb-4">Contact Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Address Line 1</label>
+                      <input {...register('contactAddressLine1')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Address Line 2</label>
+                      <input {...register('contactAddressLine2')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">City</label>
+                      <input {...register('contactCity')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Country</label>
+                      <input {...register('contactCountry')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Phone Number 1</label>
+                      <input {...register('contactPhone1')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Phone Number 2</label>
+                      <input {...register('contactPhone2')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Email Address 1</label>
+                      <input {...register('contactEmail1')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Email Address 2</label>
+                      <input {...register('contactEmail2')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Email Address 3</label>
+                      <input {...register('contactEmail3')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Business Hours Section */}
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h3 className="text-xl font-bold text-admin-text mb-4">Business Hours</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Hours Mon-Fri</label>
+                      <input {...register('contactHoursMonFri')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Hours Saturday</label>
+                      <input {...register('contactHoursSat')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Hours Sunday</label>
+                      <input {...register('contactHoursSun')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Hours Holidays</label>
+                      <input {...register('contactHoursHolidays')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Contact Form Section */}
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h3 className="text-xl font-bold text-admin-text mb-4">Contact Form Section</h3>
+                  <div>
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">Form Title</label>
+                    <input {...register('contactFormTitle')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">Form Subtitle</label>
+                    <textarea {...register('contactFormSubtitle')} rows={2} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                  </div>
+                </div>
+
+                {/* FAQ Section */}
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h3 className="text-xl font-bold text-admin-text mb-4">FAQ Section</h3>
+                  <div>
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">FAQ Title</label>
+                    <input {...register('contactFaqTitle')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">FAQ Subtitle</label>
+                    <textarea {...register('contactFaqSubtitle')} rows={2} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                  </div>
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <div key={`contactFaq${i}`} className="mt-4">
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">{`FAQ ${i} Question`}</label>
+                      <input {...register(`contactFaq${i}Question` as keyof SiteSettingsForm)} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                      <label className="block text-sm font-medium text-admin-text-dark mt-2 mb-2">{`FAQ ${i} Answer`}</label>
+                      <textarea {...register(`contactFaq${i}Answer` as keyof SiteSettingsForm)} rows={2} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'footer' && (
+              <motion.div
+                key="footer"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                {/* Company Description Section */}
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'footer')?.color}`}>
+                    <LayoutDashboard className="h-6 w-6" />
+                    <span>Company Description</span>
+                  </h2>
+                  <div>
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">Company Description</label>
+                    <textarea
+                      {...register('footerCompanyDescription')}
+                      rows={3}
+                      className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Social Media Links Section */}
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h3 className="text-xl font-bold text-admin-text mb-4">Social Media Links</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Facebook URL</label>
+                      <input {...register('footerSocialFacebook')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Instagram URL</label>
+                      <input {...register('footerSocialInstagram')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Twitter URL</label>
+                      <input {...register('footerSocialTwitter')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Copyright Text Section */}
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h3 className="text-xl font-bold text-admin-text mb-4">Copyright Text</h3>
+                  <div>
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">Copyright Text</label>
+                    <input {...register('footerCopyrightText')} className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent" />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </div>
 
           <div className="flex justify-end pt-6">
             <motion.button

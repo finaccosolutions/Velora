@@ -1,21 +1,24 @@
+// src/pages/ProductDetail.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Star, Minus, Plus, ArrowLeft, Shield, Truck, RotateCcw } from 'lucide-react';
 import { useSupabaseProducts } from '../hooks/useSupabaseProducts';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
-import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist'; // NEW: Import useSupabaseWishlist
+import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
+import { useToast } from '../context/ToastContext'; // NEW: Import useToast
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getProductById } = useSupabaseProducts();
   const { addToCart } = useSupabaseCart();
-  const { wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useSupabaseWishlist(); // NEW: Destructure wishlist functions
+  const { wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useSupabaseWishlist();
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'description' | 'features' | 'reviews'>('description');
+  const { showToast } = useToast(); // NEW: Use useToast hook
 
   useEffect(() => {
     if (id) {
@@ -42,23 +45,14 @@ const ProductDetail: React.FC = () => {
     if (product) {
       const result = await addToCart(product.id, quantity);
       if (!result.error) {
-        showToast('Product added to cart!', 'success');
+        showToast('Product added to cart!', 'success'); // NEW: Use global showToast
       } else {
-        showToast(result.error.message, 'error');
+        showToast(result.error.message, 'error'); // NEW: Use global showToast
       }
     }
   };
 
-  // NEW: Toast function
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    const toast = document.createElement('div');
-    toast.className = `fixed bottom-4 right-4 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      document.body.removeChild(toast);
-    }, 3000);
-  };
+  // REMOVED: Local showToast function
 
   // NEW: Handle wishlist toggle
   const handleWishlistToggle = async () => {
@@ -70,17 +64,17 @@ const ProductDetail: React.FC = () => {
       if (wishlistItem) {
         const result = await removeFromWishlist(wishlistItem.id);
         if (!result.error) {
-          showToast(`${product.name} removed from wishlist!`, 'success');
+          showToast(`${product.name} removed from wishlist!`, 'success'); // NEW: Use global showToast
         } else {
-          showToast(result.error.message, 'error');
+          showToast(result.error.message, 'error'); // NEW: Use global showToast
         }
       }
     } else {
       const result = await addToWishlist(product.id);
       if (!result.error) {
-        showToast(`${product.name} added to wishlist!`, 'success');
+        showToast(`${product.name} added to wishlist!`, 'success'); // NEW: Use global showToast
       } else {
-        showToast(result.error.message, 'error');
+        showToast(result.error.message, 'error'); // NEW: Use global showToast
       }
     }
   };

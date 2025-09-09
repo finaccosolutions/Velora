@@ -1,8 +1,10 @@
+// src/pages/Contact.tsx
 import React from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Phone, Mail, Clock, Send, MessageCircle } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { useSiteSettings } from '../hooks/useSiteSettings'; // NEW: Import useSiteSettings
+import { useSiteSettings } from '../hooks/useSiteSettings';
+import { useToast } from '../context/ToastContext'; // NEW: Import useToast
 
 interface ContactForm {
   name: string;
@@ -14,18 +16,13 @@ interface ContactForm {
 
 const Contact: React.FC = () => {
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ContactForm>();
-  const { settings, loading: settingsLoading } = useSiteSettings(); // NEW: Get site settings
+  const { settings, loading: settingsLoading } = useSiteSettings();
+  const { showToast } = useToast(); // NEW: Use useToast hook
 
   const onSubmit = (data: ContactForm) => {
     console.log('Contact form submitted:', data);
-    // Show success message
-    const toast = document.createElement('div');
-    toast.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
-    toast.textContent = 'Message sent successfully! We\'ll get back to you soon.';
-    document.body.appendChild(toast);
-    setTimeout(() => {
-      document.body.removeChild(toast);
-    }, 5000);
+    // REMOVED: Local toast creation
+    showToast('Message sent successfully! We\'ll get back to you soon.', 'success'); // NEW: Use global showToast
     reset();
   };
 
@@ -56,8 +53,7 @@ const Contact: React.FC = () => {
               Get in Touch
             </h1>
             <p className="text-xl text-[#c9baa8] max-w-3xl mx-auto leading-relaxed">
-              Have questions about our fragrances? Need personalized recommendations? 
-              We're here to help you find your perfect scent.
+              {settings.contactHeroSubtitle || 'Have questions about our fragrances? Need personalized recommendations? We\'re here to help you find your perfect scent.'}
             </p>
           </motion.div>
         </div>
@@ -84,35 +80,39 @@ const Contact: React.FC = () => {
                 icon: MapPin,
                 title: 'Visit Our Store',
                 details: [
-                  settings.addressLine1 || 'Perinthalmanna',
-                  settings.addressLine2 || 'Kerala',
-                  settings.country || 'India'
+                  settings.contactAddressLine1 || 'Perinthalmanna',
+                  settings.contactAddressLine2 || 'Kerala',
+                  settings.contactCity || 'Perinthalmanna',
+                  settings.contactCountry || 'India'
                 ]
               },
               {
                 icon: Phone,
                 title: 'Call Us',
                 details: [
-                  settings.contactPhone || '+91 73560 62349',
-                  '+91 98765 43211', // This can also be made dynamic if needed
-                  'Mon-Sat: 10AM-8PM',
-                  'Sun: 11AM-6PM'
+                  settings.contactPhone1 || '+91 73560 62349',
+                  settings.contactPhone2 || '+91 98765 43211',
                 ]
               },
               {
                 icon: Mail,
                 title: 'Email Us',
                 details: [
-                  settings.contactEmail || 'info@veloratradings.com',
-                  'support@veloratradings.com', // This can also be made dynamic if needed
-                  'orders@veloratradings.com', // This can also be made dynamic if needed
+                  settings.contactEmail1 || 'info@veloratradings.com',
+                  settings.contactEmail2 || 'support@veloratradings.com',
+                  settings.contactEmail3 || 'orders@veloratradings.com',
                   'We reply within 24 hours'
                 ]
               },
               {
                 icon: Clock,
                 title: 'Business Hours',
-                details: ['Monday - Friday: 10AM - 8PM', 'Saturday: 10AM - 8PM', 'Sunday: 11AM - 6PM', 'Holidays: 12PM - 5PM']
+                details: [
+                  settings.contactHoursMonFri || 'Monday - Friday: 10AM - 8PM',
+                  settings.contactHoursSat || 'Saturday: 10AM - 8PM',
+                  settings.contactHoursSun || 'Sunday: 11AM - 6PM',
+                  settings.contactHoursHolidays || 'Holidays: 12PM - 5PM'
+                ]
               }
             ].map((contact, index) => (
               <motion.div
@@ -146,9 +146,9 @@ const Contact: React.FC = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Send Us a Message</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">{settings.contactFormTitle || 'Send Us a Message'}</h2>
             <p className="text-xl text-gray-600">
-              Fill out the form below and we'll get back to you as soon as possible.
+              {settings.contactFormSubtitle || 'Fill out the form below and we\'ll get back to you as soon as possible.'}
             </p>
           </motion.div>
 
@@ -268,33 +268,33 @@ const Contact: React.FC = () => {
             transition={{ duration: 0.6 }}
             className="text-center mb-12"
           >
-            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Frequently Asked Questions</h2>
+            <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">{settings.contactFaqTitle || 'Frequently Asked Questions'}</h2>
             <p className="text-xl text-gray-600">
-              Quick answers to common questions about our products and services.
+              {settings.contactFaqSubtitle || 'Quick answers to common questions about our products and services.'}
             </p>
           </motion.div>
 
           <div className="space-y-6">
             {[
               {
-                question: 'Are all your fragrances authentic?',
-                answer: 'Yes, we guarantee 100% authentic products. All our fragrances are sourced directly from authorized distributors and verified suppliers.'
+                question: settings.contactFaq1Question || 'Are all your fragrances authentic?',
+                answer: settings.contactFaq1Answer || 'Yes, we guarantee 100% authentic products. All our fragrances are sourced directly from authorized distributors and verified suppliers.'
               },
               {
-                question: 'Do you offer fragrance samples?',
-                answer: 'Yes, we offer sample sizes for most of our fragrances. This allows you to try before committing to a full-size bottle.'
+                question: settings.contactFaq2Question || 'Do you offer fragrance samples?',
+                answer: settings.contactFaq2Answer || 'Yes, we offer sample sizes for most of our fragrances. This allows you to try before committing to a full-size bottle.'
               },
               {
-                question: 'What is your return policy?',
-                answer: 'We offer a 30-day return policy for unopened products. If you\'re not satisfied with your purchase, you can return it for a full refund.'
+                question: settings.contactFaq3Question || 'What is your return policy?',
+                answer: settings.contactFaq3Answer || 'We offer a 30-day return policy for unopened products. If you\'re not satisfied with your purchase, you can return it for a full refund.'
               },
               {
-                question: 'How long does shipping take?',
-                answer: 'Standard shipping takes 3-5 business days within India. Express shipping is available for 1-2 day delivery in major cities.'
+                question: settings.contactFaq4Question || 'How long does shipping take?',
+                answer: settings.contactFaq4Answer || 'Standard shipping takes 3-5 business days within India. Express shipping is available for 1-2 day delivery in major cities.'
               },
               {
-                question: 'Do you provide fragrance recommendations?',
-                answer: 'Absolutely! Our fragrance experts are happy to provide personalized recommendations based on your preferences and occasions.'
+                question: settings.contactFaq5Question || 'Do you provide fragrance recommendations?',
+                answer: settings.contactFaq5Answer || 'Absolutely! Our fragrance experts are happy to provide personalized recommendations based on your preferences and occasions.'
               }
             ].map((faq, index) => (
               <motion.div

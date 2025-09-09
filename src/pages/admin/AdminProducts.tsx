@@ -10,6 +10,7 @@ import { useForm } from 'react-hook-form';
 import { useAuth } from '../../context/AuthContext';
 import { useSupabaseProducts } from '../../hooks/useSupabaseProducts';
 import { useSupabaseCategories } from '../../hooks/useSupabaseCategories'; // NEW: Import useSupabaseCategories
+import { useToast } from '../../context/ToastContext'; // NEW: Import useToast
 
 interface ProductForm {
   name: string;
@@ -29,13 +30,14 @@ const AdminProducts: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All'); // Renamed to avoid conflict
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  // REMOVED: const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
 
   const { isAdmin } = useAuth();
   const { products, categories: productFilterCategories, createProduct, updateProduct, deleteProduct, fetchProducts } = useSupabaseProducts();
   const { categories: allCategories, loading: categoriesLoading } = useSupabaseCategories(); // NEW: Fetch all categories for dropdown
   const navigate = useNavigate();
+  const { showToast } = useToast(); // NEW: Use useToast hook
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ProductForm>();
 
@@ -81,19 +83,19 @@ const AdminProducts: React.FC = () => {
       });
     }
     setIsModalOpen(true);
-    setMessage(null);
+    // REMOVED: setMessage(null);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
     reset();
-    setMessage(null);
+    // REMOVED: setMessage(null);
   };
 
   const onSubmit = async (data: ProductForm) => {
     setIsLoading(true);
-    setMessage(null);
+    // REMOVED: setMessage(null);
 
     const productData = {
       ...data,
@@ -113,11 +115,11 @@ const AdminProducts: React.FC = () => {
       if (result.error) {
         throw result.error;
       }
-      setMessage({ type: 'success', text: `Product ${editingProduct ? 'updated' : 'added'} successfully!` });
+      showToast(`Product ${editingProduct ? 'updated' : 'added'} successfully!`, 'success'); // NEW: Use showToast
       closeModal();
     } catch (error: any) {
       console.error('Error saving product:', error);
-      setMessage({ type: 'error', text: error.message || 'Failed to save product.' });
+      showToast(error.message || 'Failed to save product.', 'error'); // NEW: Use showToast
     } finally {
       setIsLoading(false);
     }
@@ -126,12 +128,12 @@ const AdminProducts: React.FC = () => {
   const handleDelete = async (productId: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       setIsLoading(true);
-      setMessage(null);
+      // REMOVED: setMessage(null);
       const result = await deleteProduct(productId);
       if (result.error) {
-        setMessage({ type: 'error', text: result.error.message || 'Failed to delete product.' });
+        showToast(result.error.message || 'Failed to delete product.', 'error'); // NEW: Use showToast
       } else {
-        setMessage({ type: 'success', text: 'Product deleted successfully!' });
+        showToast('Product deleted successfully!', 'success'); // NEW: Use showToast
       }
       setIsLoading(false);
     }
@@ -143,7 +145,6 @@ const AdminProducts: React.FC = () => {
       <header className="bg-admin-card shadow-lg rounded-xl p-6 mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            {/* Removed "Back to Dashboard" button */}
             <h1 className="text-3xl font-bold text-admin-text">Product Management</h1>
           </div>
 
@@ -157,19 +158,7 @@ const AdminProducts: React.FC = () => {
         </div>
       </header>
 
-      {message && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`mb-6 p-4 rounded-lg ${
-            message.type === 'success'
-              ? 'bg-green-500 text-white'
-              : 'bg-red-500 text-white'
-          }`}
-        >
-          {message.text}
-        </motion.div>
-      )}
+      {/* REMOVED: message rendering */}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
