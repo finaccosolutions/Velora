@@ -116,12 +116,13 @@ const AdminDashboard: React.FC = () => {
       console.log('fetchDashboardData: Fetching product categories for distribution...');
       const { data: productsData, error: productsDataError } = await supabase
         .from('products')
-        .select('category');
+        .select('category, categories(name)'); // Select category ID and join to get category name
       console.log('fetchDashboardData: Product categories result:', productsData, 'Error:', productsDataError);
       if (productsDataError) throw productsDataError;
 
       const categoryCount = productsData?.reduce((acc: any, product) => {
-        acc[product.category] = (acc[product.category] || 0) + 1;
+        const categoryName = product.categories?.name || 'Uncategorized'; // Use joined name
+        acc[categoryName] = (acc[categoryName] || 0) + 1;
         return acc;
       }, {}) || {};
 

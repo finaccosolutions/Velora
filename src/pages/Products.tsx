@@ -13,7 +13,7 @@ const Products: React.FC = () => {
   const filteredAndSortedProducts = useMemo(() => {
     let filtered = selectedCategory === 'All' 
       ? products 
-      : products.filter(product => product.category === selectedCategory);
+      : products.filter(product => product.category_name === selectedCategory); // Filter by category_name
 
     return filtered.sort((a, b) => {
       switch (sortBy) {
@@ -28,7 +28,7 @@ const Products: React.FC = () => {
           return a.name.localeCompare(b.name);
       }
     });
-  }, [selectedCategory, sortBy]);
+  }, [selectedCategory, sortBy, products]); // Add products to dependencies
 
   if (loading) {
     return (

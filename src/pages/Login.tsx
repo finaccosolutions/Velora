@@ -17,7 +17,7 @@ const Login: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false); // NEW: Local submission state
 
   // Destructure user, userProfile, and loading (aliased as authLoading) from useAuth
-  const { signIn, user, userProfile, loading: authLoading } = useAuth();
+  const { signIn, user, userProfile, loading: authLoading, isAdmin } = useAuth(); // ADD isAdmin
   const navigate = useNavigate();
   
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
@@ -40,13 +40,18 @@ const Login: React.FC = () => {
 
   // New useEffect to handle navigation after successful login and profile load
   useEffect(() => {
-    console.log('Login useEffect: authLoading:', authLoading, 'user:', user, 'userProfile:', userProfile);
+    console.log('Login useEffect: authLoading:', authLoading, 'user:', user, 'userProfile:', userProfile, 'isAdmin:', isAdmin); // ADD isAdmin to log
     // Check if authentication is not loading, a user is present, AND userProfile is loaded
     if (!authLoading && user && userProfile) {
-      console.log('Login useEffect: Navigation condition met. Navigating to /'); // New log
-      navigate('/');
+      if (isAdmin) { // NEW: Check if the logged-in user is an admin
+        setError('Admin users must log in via the admin panel.'); // Display error message
+        navigate('/admin/login'); // Redirect to admin login page
+      } else {
+        console.log('Login useEffect: Navigation condition met. Navigating to /'); // New log
+        navigate('/');
+      }
     }
-  }, [authLoading, user, userProfile, navigate]); // Dependencies for this effect
+  }, [authLoading, user, userProfile, isAdmin, navigate]); // ADD isAdmin to dependencies
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#815536] to-[#c9baa8] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

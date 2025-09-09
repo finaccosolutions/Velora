@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../context/AuthContext';
 import { useSupabaseProducts } from '../../hooks/useSupabaseProducts';
+import { useSupabaseCategories } from '../../hooks/useSupabaseCategories'; // NEW: Import useSupabaseCategories
 
 interface ProductForm {
   name: string;
@@ -16,7 +17,7 @@ interface ProductForm {
   price: number;
   original_price: number | null;
   image_url: string;
-  category: string;
+  category: string; // This will now be the category ID (UUID)
   in_stock: boolean;
   features: string;
   ingredients: string;
@@ -26,25 +27,29 @@ const AdminProducts: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All'); // Renamed to avoid conflict
   const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const { userProfile, isAdmin } = useAuth(); // ADD isAdmin from useAuth
-  const { products, categories, createProduct, updateProduct, deleteProduct, fetchProducts } = useSupabaseProducts();
+
+  const { isAdmin } = useAuth();
+  const { products, categories: productFilterCategories, createProduct, updateProduct, deleteProduct, fetchProducts } = useSupabaseProducts();
+  const { categories: allCategories, loading: categoriesLoading } = useSupabaseCategories(); // NEW: Fetch all categories for dropdown
   const navigate = useNavigate();
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ProductForm>();
 
   useEffect(() => {
-    if (!isAdmin) { // USE isAdmin here
+    if (!isAdmin) {
       navigate('/');
     }
-  }, [isAdmin]); // Add isAdmin to dependencies
+  }, [isAdmin, navigate]);
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                        product.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+    // Use product.category_name for filtering display
+    const matchesCategory = selectedCategoryFilter === 'All' || product.category_name === selectedCategoryFilter;
     return matchesSearch && matchesCategory;
   });
 
@@ -57,7 +62,7 @@ const AdminProducts: React.FC = () => {
         price: product.price,
         original_price: product.original_price,
         image_url: product.image_url,
-        category: product.category,
+        category: product.category, // Use the category ID for the form
         in_stock: product.in_stock,
         features: product.features?.join(', ') || '',
         ingredients: product.ingredients ? product.ingredients.join(', ') : ''
@@ -69,23 +74,26 @@ const AdminProducts: React.FC = () => {
         price: 0,
         original_price: null,
         image_url: '',
-        category: '',
+        category: '', // Default empty or first category ID
         in_stock: true,
         features: '',
         ingredients: ''
       });
     }
     setIsModalOpen(true);
+    setMessage(null);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
     reset();
+    setMessage(null);
   };
 
   const onSubmit = async (data: ProductForm) => {
     setIsLoading(true);
+    setMessage(null);
 
     const productData = {
       ...data,
@@ -95,14 +103,21 @@ const AdminProducts: React.FC = () => {
     };
 
     try {
+      let result;
       if (editingProduct) {
-        await updateProduct(editingProduct.id, productData);
+        result = await updateProduct(editingProduct.id, productData);
       } else {
-        await createProduct(productData);
+        result = await createProduct(productData);
       }
+
+      if (result.error) {
+        throw result.error;
+      }
+      setMessage({ type: 'success', text: `Product ${editingProduct ? 'updated' : 'added'} successfully!` });
       closeModal();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving product:', error);
+      setMessage({ type: 'error', text: error.message || 'Failed to save product.' });
     } finally {
       setIsLoading(false);
     }
@@ -110,133 +125,151 @@ const AdminProducts: React.FC = () => {
 
   const handleDelete = async (productId: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
-      await deleteProduct(productId);
+      setIsLoading(true);
+      setMessage(null);
+      const result = await deleteProduct(productId);
+      if (result.error) {
+        setMessage({ type: 'error', text: result.error.message || 'Failed to delete product.' });
+      } else {
+        setMessage({ type: 'success', text: 'Product deleted successfully!' });
+      }
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-admin-background text-admin-text p-8">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate('/admin/dashboard')}
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
-              >
-                <ArrowLeft className="h-5 w-5" />
-                <span>Back to Dashboard</span>
-              </button>
-              <div className="h-6 w-px bg-gray-300"></div>
-              <h1 className="text-xl font-bold text-gray-900">Product Management</h1>
-            </div>
-
+      <header className="bg-admin-card shadow-lg rounded-xl p-6 mb-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
             <button
-              onClick={() => openModal()}
-              className="flex items-center space-x-2 px-4 py-2 bg-[#815536] text-white rounded-lg hover:bg-[#6d4429] transition-colors"
+              onClick={() => navigate('/admin/dashboard')}
+              className="flex items-center space-x-2 text-admin-text-light hover:text-admin-primary-dark transition-colors"
             >
-              <Plus className="h-4 w-4" />
-              <span>Add Product</span>
+              <ArrowLeft className="h-5 w-5" />
+              <span>Back to Dashboard</span>
             </button>
+            <div className="h-6 w-px bg-admin-border"></div>
+            <h1 className="text-3xl font-bold text-admin-text">Product Management</h1>
           </div>
+
+          <button
+            onClick={() => openModal()}
+            className="flex items-center space-x-2 px-5 py-2 bg-admin-primary text-white rounded-lg hover:bg-admin-primary-dark transition-colors shadow-md"
+          >
+            <Plus className="h-5 w-5" />
+            <span>Add New Product</span>
+          </button>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
-            />
-          </div>
+      {message && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`mb-6 p-4 rounded-lg ${
+            message.type === 'success'
+              ? 'bg-green-500 text-white'
+              : 'bg-red-500 text-white'
+          }`}
+        >
+          {message.text}
+        </motion.div>
+      )}
 
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
-          >
-            {categories.map(category => (
-              <option key={category} value={category}>{category}</option>
-            ))}
-          </select>
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-admin-text-light h-4 w-4" />
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+          />
         </div>
 
-        {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProducts.map((product, index) => (
-            <motion.div
-              key={product.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
-            >
-              <div className="relative">
-                <img
-                  src={product.image_url}
-                  alt={product.name}
-                  className="w-full h-48 object-cover"
-                />
-                <div className="absolute top-2 right-2 flex space-x-1">
-                  <button
-                    onClick={() => openModal(product)}
-                    className="p-2 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(product.id)}
-                    className="p-2 bg-white rounded-full shadow-md hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4 text-red-600" />
-                  </button>
-                </div>
-                {!product.in_stock && (
-                  <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">
-                    Out of Stock
-                  </div>
-                )}
-              </div>
-
-              <div className="p-4">
-                <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{product.name}</h3>
-                <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
-
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <span className="text-lg font-bold text-[#815536]">₹{product.price}</span>
-                    {product.original_price && (
-                      <span className="text-sm text-gray-400 line-through ml-2">₹{product.original_price}</span>
-                    )}
-                  </div>
-                  <span className="text-xs bg-[#c9baa8]/20 text-[#815536] px-2 py-1 rounded-full">
-                    {product.category}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-sm text-gray-600">
-                  <span>Rating: {product.rating}/5</span>
-                  <span>{product.reviews_count} reviews</span>
-                </div>
-              </div>
-            </motion.div>
+        <select
+          value={selectedCategoryFilter}
+          onChange={(e) => setSelectedCategoryFilter(e.target.value)}
+          className="px-4 py-2 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+        >
+          {productFilterCategories.map(category => (
+            <option key={category} value={category}>{category}</option>
           ))}
-        </div>
-
-        {filteredProducts.length === 0 && (
-          <div className="text-center py-12">
-            <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">No products found</p>
-          </div>
-        )}
+        </select>
       </div>
+
+      {/* Products Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {filteredProducts.map((product, index) => (
+          <motion.div
+            key={product.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+            className="bg-admin-card rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
+          >
+            <div className="relative">
+              <img
+                src={product.image_url}
+                alt={product.name}
+                className="w-full h-48 object-cover"
+              />
+              <div className="absolute top-2 right-2 flex space-x-1">
+                <button
+                  onClick={() => openModal(product)}
+                  className="p-2 bg-admin-sidebar rounded-full shadow-md hover:bg-admin-border transition-colors text-admin-text-light"
+                >
+                  <Edit className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => handleDelete(product.id)}
+                  className="p-2 bg-admin-sidebar rounded-full shadow-md hover:bg-admin-danger/20 transition-colors text-admin-danger"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+              {!product.in_stock && (
+                <div className="absolute top-2 left-2 bg-admin-danger text-white px-2 py-1 rounded text-xs font-semibold">
+                  Out of Stock
+                </div>
+              )}
+            </div>
+
+            <div className="p-4">
+              <h3 className="font-semibold text-admin-text mb-2 line-clamp-2">{product.name}</h3>
+              <p className="text-admin-text-light text-sm mb-3 line-clamp-2">{product.description}</p>
+
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <span className="text-lg font-bold text-admin-primary">₹{product.price}</span>
+                  {product.original_price && (
+                    <span className="text-sm text-admin-text-light line-through ml-2">₹{product.original_price}</span>
+                  )}
+                </div>
+                <span className="text-xs bg-admin-secondary/20 text-admin-secondary px-2 py-1 rounded-full">
+                  {product.category_name} {/* Display category name */}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between text-sm text-admin-text-light">
+                <span>Rating: {product.rating}/5</span>
+                <span>{product.reviews_count} reviews</span>
+              </div>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {filteredProducts.length === 0 && (
+        <div className="text-center py-12 text-admin-text-light">
+          <Package className="h-12 w-12 mx-auto mb-4" />
+          <p>No products found</p>
+        </div>
+      )}
 
       {/* Product Modal */}
       <AnimatePresence>
@@ -245,22 +278,22 @@ const AdminProducts: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+            className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-admin-card rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900">
+                  <h2 className="text-2xl font-bold text-admin-text">
                     {editingProduct ? 'Edit Product' : 'Add New Product'}
                   </h2>
                   <button
                     onClick={closeModal}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                    className="p-2 hover:bg-admin-sidebar rounded-full transition-colors text-admin-text-light"
                   >
                     <X className="h-5 w-5" />
                   </button>
@@ -269,12 +302,12 @@ const AdminProducts: React.FC = () => {
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-admin-text-light mb-2">
                         Product Name *
                       </label>
                       <input
                         {...register('name', { required: 'Product name is required' })}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
                         placeholder="Enter product name"
                       />
                       {errors.name && (
@@ -283,14 +316,24 @@ const AdminProducts: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-admin-text-light mb-2">
                         Category *
                       </label>
-                      <input
-                        {...register('category', { required: 'Category is required' })}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
-                        placeholder="e.g., Luxury, Fresh, Oriental"
-                      />
+                      {categoriesLoading ? (
+                        <p className="text-admin-text-light">Loading categories...</p>
+                      ) : (
+                        <select
+                          {...register('category', { required: 'Category is required' })}
+                          className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                        >
+                          <option value="">Select a category</option>
+                          {allCategories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
                       {errors.category && (
                         <p className="text-red-500 text-sm mt-1">{errors.category.message}</p>
                       )}
@@ -298,13 +341,13 @@ const AdminProducts: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-admin-text-light mb-2">
                       Description *
                     </label>
                     <textarea
                       {...register('description', { required: 'Description is required' })}
                       rows={4}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                      className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
                       placeholder="Enter product description"
                     />
                     {errors.description && (
@@ -314,7 +357,7 @@ const AdminProducts: React.FC = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-admin-text-light mb-2">
                         Price (₹) *
                       </label>
                       <input
@@ -324,7 +367,7 @@ const AdminProducts: React.FC = () => {
                           required: 'Price is required',
                           min: { value: 0, message: 'Price must be positive' }
                         })}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
                         placeholder="0.00"
                       />
                       {errors.price && (
@@ -333,7 +376,7 @@ const AdminProducts: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-admin-text-light mb-2">
                         Original Price (₹)
                       </label>
                       <input
@@ -342,7 +385,7 @@ const AdminProducts: React.FC = () => {
                         {...register('original_price', {
                           min: { value: 0, message: 'Price must be positive' }
                         })}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
                         placeholder="0.00 (optional)"
                       />
                       {errors.original_price && (
@@ -352,37 +395,37 @@ const AdminProducts: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-admin-text-light mb-2">
                       Image URL *
                     </label>
                     <input
                       {...register('image_url', { required: 'Image URL is required' })}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                      className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
                       placeholder="https://example.com/image.jpg"
                     />
                     {errors.image_url && (
                       <p className="text-red-500 text-sm mt-1">{errors.image_url.message}</p>
-                    )}
+                      )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-admin-text-light mb-2">
                       Features (comma-separated)
                     </label>
                     <input
                       {...register('features')}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                      className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
                       placeholder="Long-lasting, Premium bottle, Gift box included"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-admin-text-light mb-2">
                       Ingredients (comma-separated)
                     </label>
                     <input
                       {...register('ingredients')}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                      className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
                       placeholder="Bergamot, Rose, Sandalwood"
                     />
                   </div>
@@ -391,9 +434,9 @@ const AdminProducts: React.FC = () => {
                     <input
                       type="checkbox"
                       {...register('in_stock')}
-                      className="h-4 w-4 text-[#815536] focus:ring-[#815536] border-gray-300 rounded"
+                      className="h-4 w-4 text-admin-primary focus:ring-admin-primary border-admin-border rounded"
                     />
-                    <label className="ml-2 block text-sm text-gray-900">
+                    <label className="ml-2 block text-sm text-admin-text">
                       In Stock
                     </label>
                   </div>
@@ -402,14 +445,14 @@ const AdminProducts: React.FC = () => {
                     <button
                       type="button"
                       onClick={closeModal}
-                      className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="flex-1 px-4 py-3 border border-admin-border text-admin-text-light rounded-lg hover:bg-admin-sidebar transition-colors"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="flex-1 px-4 py-3 bg-[#815536] text-white rounded-lg hover:bg-[#6d4429] transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+                      className="flex-1 px-4 py-3 bg-admin-primary text-white rounded-lg hover:bg-admin-primary-dark transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
                     >
                       <Save className="h-4 w-4" />
                       <span>{isLoading ? 'Saving...' : 'Save Product'}</span>

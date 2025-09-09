@@ -35,7 +35,7 @@ export interface Database {
           price: number;
           original_price: number | null;
           image_url: string;
-          category: string;
+          category: string; // This will become a UUID after migration
           in_stock: boolean;
           rating: number;
           reviews_count: number;
@@ -51,7 +51,7 @@ export interface Database {
           price: number;
           original_price?: number | null;
           image_url: string;
-          category: string;
+          category: string; // This will become a UUID after migration
           in_stock?: boolean;
           rating?: number;
           reviews_count?: number;
@@ -67,7 +67,7 @@ export interface Database {
           price?: number;
           original_price?: number | null;
           image_url?: string;
-          category?: string;
+          category?: string; // This will become a UUID after migration
           in_stock?: boolean;
           rating?: number;
           reviews_count?: number;
@@ -293,7 +293,26 @@ export interface Database {
           updated_at?: string;
         };
       };
+      // NEW: Categories table definition
+      categories: {
+        Row: {
+          id: string;
+          name: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          updated_at?: string;
+        };
+      };
     };
   };
 }
-

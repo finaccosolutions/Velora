@@ -20,6 +20,11 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Wishlist from './pages/Wishlist';
 import { supabase } from './lib/supabase'; // Import supabase client
+import AdminLayout from './components/admin/AdminLayout'; // NEW: Import AdminLayout
+import AdminCategories from './pages/admin/AdminCategories'; // NEW: Import AdminCategories
+import AdminSettings from './pages/admin/AdminSettings'; // NEW: Import AdminSettings
+import AdminReports from './pages/admin/AdminReports'; // NEW: Import AdminReports
+
 
 function App() {
   // REMOVED Direct connectivity test block
@@ -44,7 +49,18 @@ function App() {
     <Router>
       <div className="min-h-screen flex flex-col">
         <Routes>
-          <Route path="/admin/*" element={null} />
+          {/* NEW: Admin routes nested under AdminLayout */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="categories" element={<AdminCategories />} /> {/* NEW */}
+            <Route path="settings" element={<AdminSettings />} /> {/* NEW */}
+            <Route path="reports" element={<AdminReports />} /> {/* NEW */}
+          </Route>
+          {/* END NEW ADMIN ROUTES */}
+
+          {/* Public routes that should not have Header/Footer on admin pages */}
+          <Route path="/admin/login" element={null} /> {/* Admin login page does not need Header/Footer */}
           <Route path="*" element={<Header />} />
         </Routes>
         <main className="flex-1">
@@ -58,8 +74,9 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              <Route path="/admin/products" element={<AdminProducts />} />
+              {/* REMOVED: AdminDashboard and AdminProducts from here as they are now nested under AdminLayout */}
+              {/* <Route path="/admin/dashboard" element={<AdminDashboard />} /> */}
+              {/* <Route path="/admin/products" element={<AdminProducts />} /> */}
               <Route path="/profile" element={<Profile />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/about" element={<About />} />

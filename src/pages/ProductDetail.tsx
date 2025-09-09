@@ -4,12 +4,14 @@ import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Star, Minus, Plus, ArrowLeft, Shield, Truck, RotateCcw } from 'lucide-react';
 import { useSupabaseProducts } from '../hooks/useSupabaseProducts';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
+import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist'; // NEW: Import useSupabaseWishlist
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getProductById } = useSupabaseProducts();
   const { addToCart } = useSupabaseCart();
+  const { wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useSupabaseWishlist(); // NEW: Destructure wishlist functions
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -38,7 +40,48 @@ const ProductDetail: React.FC = () => {
 
   const handleAddToCart = async () => {
     if (product) {
-      await addToCart(product.id, quantity);
+      const result = await addToCart(product.id, quantity);
+      if (!result.error) {
+        showToast('Product added to cart!', 'success');
+      } else {
+        showToast(result.error.message, 'error');
+      }
+    }
+  };
+
+  // NEW: Toast function
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    const toast = document.createElement('div');
+    toast.className = `fixed bottom-4 right-4 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white px-6 py-3 rounded-lg shadow-lg z-50`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+      document.body.removeChild(toast);
+    }, 3000);
+  };
+
+  // NEW: Handle wishlist toggle
+  const handleWishlistToggle = async () => {
+    if (!product) return;
+    const isCurrentlyInWishlist = isInWishlist(product.id);
+    
+    if (isCurrentlyInWishlist) {
+      const wishlistItem = wishlistItems.find(item => item.product_id === product.id);
+      if (wishlistItem) {
+        const result = await removeFromWishlist(wishlistItem.id);
+        if (!result.error) {
+          showToast(`${product.name} removed from wishlist!`, 'success');
+        } else {
+          showToast(result.error.message, 'error');
+        }
+      }
+    } else {
+      const result = await addToWishlist(product.id);
+      if (!result.error) {
+        showToast(`${product.name} added to wishlist!`, 'success');
+      } else {
+        showToast(result.error.message, 'error');
+      }
     }
   };
 
@@ -145,7 +188,7 @@ const ProductDetail: React.FC = () => {
                   <span className="text-xl text-gray-400 line-through">₹{product.original_price}</span>
                 )}
                 <span className="bg-[#c9baa8]/20 text-[#815536] px-3 py-1 rounded-full text-sm font-medium">
-                  {product.category}
+                  {product.category_name} {/* Display category_name */}
                 </span>
               </div>
 
@@ -181,8 +224,11 @@ const ProductDetail: React.FC = () => {
                   <span>Add to Cart</span>
                 </motion.button>
 
-                <button className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                  <Heart className="h-5 w-5 text-gray-600" />
+                <button 
+                  onClick={handleWishlistToggle} // NEW: Add wishlist toggle handler
+                  className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <Heart className={`h-5 w-5 ${isInWishlist(product.id) ? 'text-red-500 fill-current' : 'text-gray-600'}`} /> {/* NEW: Conditional styling */}
                 </button>
               </div>
 

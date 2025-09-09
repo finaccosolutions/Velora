@@ -4,11 +4,12 @@ export interface Product {
   description: string;
   price: number;
   originalPrice?: number;
-  image: string;
-  category: string;
+  image_url: string; // Changed from 'image' to 'image_url' to match DB
+  category: string; // This will now be the category ID (UUID)
+  category_name?: string; // NEW: For displaying the category name
   inStock: boolean;
   rating: number;
-  reviews: number;
+  reviews: number; // Changed from 'reviews_count' to 'reviews' to match DB
   features: string[];
   ingredients?: string[];
 }

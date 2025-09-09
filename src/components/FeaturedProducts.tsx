@@ -221,7 +221,7 @@ const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
                   </div>
                   <span className="text-gray-600">({product.reviews_count} reviews)</span>
                   <span className="bg-[#c9baa8]/20 text-[#815536] px-3 py-1 rounded-full text-sm font-medium">
-                    {product.category}
+                    {product.category_name} {/* Display category_name */}
                   </span>
                 </div>
 

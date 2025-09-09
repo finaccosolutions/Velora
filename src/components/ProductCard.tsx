@@ -12,7 +12,7 @@ interface ProductCardProps {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
   const { addToCart } = useSupabaseCart();
-  const { wishlistItems, addToWishlist, removeFromWishlist } = useSupabaseWishlist();
+  const { wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useSupabaseWishlist();
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     const toast = document.createElement('div');
@@ -28,9 +28,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
     e.preventDefault();
     e.stopPropagation();
     
-    const isInWishlist = wishlistItems.some(item => item.product_id === product.id);
+    const isCurrentlyInWishlist = isInWishlist(product.id);
     
-    if (isInWishlist) {
+    if (isCurrentlyInWishlist) {
       const wishlistItem = wishlistItems.find(item => item.product_id === product.id);
       if (wishlistItem) {
         const result = await removeFromWishlist(wishlistItem.id);
@@ -49,8 +49,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
       }
     }
   };
-
-  const isInWishlist = wishlistItems.some(item => item.product_id === product.id);
 
   return (
     <motion.div
@@ -77,7 +75,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
           >
             <Heart 
               className={`h-4 w-4 ${
-                isInWishlist 
+                isInWishlist(product.id) 
                   ? 'text-red-500 fill-current' 
                   : 'text-gray-600'
               }`} 
@@ -114,7 +112,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
               )}
             </div>
             <span className="text-sm text-[#c9baa8] bg-[#c9baa8]/20 px-3 py-1 rounded-full">
-              {product.category}
+              {product.category_name} {/* Display category_name */}
             </span>
           </div>
 
