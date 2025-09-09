@@ -62,32 +62,30 @@ export const useSupabaseWishlist = () => {
 
   useEffect(() => {
     console.log('useSupabaseWishlist useEffect: authLoading:', authLoading, 'user:', user, 'userProfile:', userProfile, 'isVisible:', isVisible);
-    let timeoutId: NodeJS.Timeout;
+    // Removed timeoutId as setTimeout is removed
 
     // Only fetch if auth is not loading, userProfile is available, and document is visible
-    if (!authLoading && userProfile && isVisible) {
+    // MODIFIED START: Remove setTimeout and adjust condition
+    if (!authLoading && user && userProfile && isVisible && !isFetchingRef.current) {
       if (isFetchingRef.current) {
         console.log('useSupabaseWishlist useEffect: Fetch already in progress, skipping scheduling.');
         return;
       }
       
       isFetchingRef.current = true; // Set ref to true before scheduling
-      console.log('useSupabaseWishlist useEffect: Triggering fetchWishlistItems with debounce.');
-      timeoutId = setTimeout(() => {
-        fetchWishlistItems();
-      }, 50); // Small delay to allow state to settle
+      console.log('useSupabaseWishlist useEffect: Triggering fetchWishlistItems.');
+      fetchWishlistItems();
     } else if (!authLoading && !user) {
       // If auth is done loading and no user, clear wishlist items immediately
       console.log('useSupabaseWishlist useEffect: No user and auth done loading, clearing wishlist items.');
       setWishlistItems([]);
     } else {
-      console.log('useSupabaseWishlist useEffect: Skipping scheduling fetch. authLoading:', authLoading, 'userProfile:', userProfile, 'isVisible:', isVisible);
+      console.log('useSupabaseWishlist useEffect: Skipping fetch. authLoading:', authLoading, 'userProfile:', userProfile, 'isVisible:', isVisible);
     }
+    // MODIFIED END: Remove setTimeout and adjust condition
 
     return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+      // No cleanup for setTimeout needed
     };
   }, [user, userProfile, authLoading, isVisible, fetchWishlistItems]); // Add userProfile and isVisible to dependencies
 

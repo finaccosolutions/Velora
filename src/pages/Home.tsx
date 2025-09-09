@@ -1,5 +1,5 @@
 // src/pages/Home.tsx
-import React, { useEffect } from 'react'; // Add useEffect
+import React, { useEffect } from 'react'; // Remove useEffect if not used elsewhere
 import { Link } from 'react-router-dom';
 import { ArrowRight, Star, ShoppingBag, Truck, Shield, HeadphonesIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -10,53 +10,54 @@ import { supabaseUrl, supabaseAnonKey } from '../lib/supabase'; // Import Supaba
 const Home: React.FC = () => {
   const { user, session, loading: authLoading } = useAuth(); // Get user and session from useAuth
 
-  // NEW: Direct fetch test
-  const handleDirectFetchProducts = async () => {
-    console.log('Attempting direct product fetch...');
-    if (!user || !session) {
-      console.error('No active user or session found for direct fetch.');
-      return;
-    }
+  // REMOVE START: Direct fetch test
+  // const handleDirectFetchProducts = async () => {
+  //   console.log('Attempting direct product fetch...');
+  //   if (!user || !session) {
+  //     console.error('No active user or session found for direct fetch.');
+  //     return;
+  //   }
 
-    try {
-      const productsEndpoint = `${supabaseUrl}/rest/v1/products?select=*`;
-      console.log('Attempting raw fetch to:', productsEndpoint);
-      console.log('Using access token (first 5 chars):', session.access_token.substring(0, 5) + '...');
+  //   try {
+  //     const productsEndpoint = `${supabaseUrl}/rest/v1/products?select=*`;
+  //     console.log('Attempting raw fetch to:', productsEndpoint);
+  //     console.log('Using access token (first 5 chars):', session.access_token.substring(0, 5) + '...');
 
-      const response = await Promise.race([
-        fetch(productsEndpoint, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': supabaseAnonKey, // Your anon key
-            'Authorization': `Bearer ${session.access_token}`, // The authenticated token
-          },
-        }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Direct fetch timed out after 5 seconds')), 5000)
-        )
-      ]);
+  //     const response = await Promise.race([
+  //       fetch(productsEndpoint, {
+  //         method: 'GET',
+  //         headers: {
+  //           'Content-Type': 'application/json',
+  //           'apikey': supabaseAnonKey, // Your anon key
+  //           'Authorization': `Bearer ${session.access_token}`, // The authenticated token
+  //         },
+  //       }),
+  //       new Promise((_, reject) =>
+  //         setTimeout(() => reject(new Error('Direct fetch timed out after 5 seconds')), 5000)
+  //       )
+  //     ]);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-      }
+  //     if (!response.ok) {
+  //       const errorText = await response.text();
+  //       throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
+  //     }
 
-      const data = await response.json();
-      console.log('Raw fetch successful:', data);
+  //     const data = await response.json();
+  //     console.log('Raw fetch successful:', data);
 
-    } catch (e: any) {
-      console.error('Direct product fetch caught exception:', e.message);
-    }
-  };
+  //   } catch (e: any) {
+  //     console.error('Direct product fetch caught exception:', e.message);
+  //   }
+  // };
 
   // Optional: Trigger direct fetch on component mount if user is logged in
-  useEffect(() => {
-    if (!authLoading && user && session) {
-      console.log('Home.tsx: User and session available, attempting direct fetch on mount.');
-      handleDirectFetchProducts();
-    }
-  }, [user, session, authLoading]); // Dependencies
+  // useEffect(() => {
+  //   if (!authLoading && user && session) {
+  //     console.log('Home.tsx: User and session available, attempting direct fetch on mount.');
+  //     handleDirectFetchProducts();
+  //   }
+  // }, [user, session, authLoading]); // Dependencies
+  // REMOVE END: Direct fetch test
 
   return (
     <div className="min-h-screen">
@@ -156,15 +157,16 @@ const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* NEW: Temporary Direct Fetch Button for testing */}
-      <section className="py-8 bg-gray-100 text-center">
+      {/* REMOVE START: NEW: Temporary Direct Fetch Button for testing */}
+      {/* <section className="py-8 bg-gray-100 text-center">
         <button
           onClick={handleDirectFetchProducts}
           className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
         >
           Fetch Products Directly (Debug)
         </button>
-      </section>
+      </section> */}
+      {/* REMOVE END: NEW: Temporary Direct Fetch Button for testing */}
 
       {/* Featured Products */}
       <FeaturedProducts />

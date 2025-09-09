@@ -241,4 +241,4 @@ export const useSupabaseProducts = () => {
     updateProduct,
     deleteProduct,
   };
-};
+}; 

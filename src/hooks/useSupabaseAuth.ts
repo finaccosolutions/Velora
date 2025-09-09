@@ -25,7 +25,7 @@ export const useSupabaseAuth = () => {
   }, [user, userProfile]);
 
   // Internal helper function to fetch user profile
-  const _fetchUserProfile = async (authUser: User) => {
+ const _fetchUserProfile = async (authUser: User): Promise<UserProfile | null> => {
     console.log('_fetchUserProfile: Attempting to fetch profile for userId:', authUser.id);
     try {
       console.log('_fetchUserProfile: Before Supabase query for profile. authUser:', authUser);
@@ -57,22 +57,22 @@ export const useSupabaseAuth = () => {
 
           if (insertError) {
             console.error('_fetchUserProfile: Error creating new user profile:', JSON.stringify(insertError, null, 2));
-            setUserProfile(null);
+            return null; // Return null on error
           } else {
-            console.log('_fetchUserProfile: New user profile created successfully. Setting userProfile to:', newProfile);
-            setUserProfile(newProfile);
+            console.log('_fetchUserProfile: New user profile created successfully. Returning:', newProfile);
+            return newProfile; // Return the new profile
           }
         } else {
           console.error('_fetchUserProfile: Error during profile fetch (not "no rows found"):', JSON.stringify(error, Object.getOwnPropertyNames(error), 2));
-          setUserProfile(null);
+          return null; // Return null on other errors
         }
       } else { // Profile found
-        console.log('_fetchUserProfile: User profile fetched successfully. Setting userProfile to:', data);
-        setUserProfile(data);
+        console.log('_fetchUserProfile: User profile fetched successfully. Returning:', data);
+        return data; // Return the fetched profile
       }
     } catch (outerError: any) {
       console.error('_fetchUserProfile: Caught unexpected exception in outer catch block:', JSON.stringify(outerError, Object.getOwnPropertyNames(outerError), 2));
-      setUserProfile(null);
+      return null; // Return null on exception
     }
   };
 
@@ -81,19 +81,24 @@ export const useSupabaseAuth = () => {
     console.log(`handleAuth: Event Type: ${eventType}, Session received:`, currentSession);
     setLoading(true); // Set loading to true at the start of auth handling
     setSession(currentSession);
-    setUser(currentSession?.user ?? null);
+    setUser(currentSession?.user ?? null); // Set user state
     console.log(`handleAuth: User set to:`, currentSession?.user ?? null);
 
+    let profile: UserProfile | null = null; // Local variable to hold the fetched profile
     if (currentSession?.user) {
       console.log('handleAuth: User present, proceeding to fetch profile.');
-      await _fetchUserProfile(currentSession.user);
+      profile = await _fetchUserProfile(currentSession.user); // Call _fetchUserProfile and get its return value
     } else {
       console.log('handleAuth: No user session found, clearing profile.');
-      setUserProfile(null);
+      // No need to set userProfile to null here, it will be set below
     }
+    setUserProfile(profile); // Set userProfile state with the fetched/created profile
+
     setLoading(false); // Set loading to false AFTER profile handling is complete
-    console.log('handleAuth: Auth process completed. Loading set to false. Final user state:', user); // Note: `user` here might be stale due to closure
-    console.log('handleAuth: Final userProfile state:', userProfile); // Note: `userProfile` here might be stale due to closure
+    console.log('handleAuth: Auth process completed. Loading set to false.');
+    // Log the actual state variables after they've been set and React has potentially re-rendered
+    console.log('handleAuth: Final user state (from currentSession):', currentSession?.user ?? null);
+    console.log('handleAuth: Final userProfile state (from local variable):', profile);
   };
 
   // Effect for initial session check and subscribing to auth state changes
@@ -196,14 +201,14 @@ export const useSupabaseAuth = () => {
       console.log('signOut: Attempting to sign out user from Supabase.');
       console.log('signOut: ABOUT TO EXECUTE SUPABASE AUTH SIGN OUT.');
 
-      // ADD TIMEOUT FOR SIGN OUT
-      const { error } = await Promise.race([
-        supabase.auth.signOut(),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Sign out timed out after 5 seconds')), 5000)
-        )
-      ]);
-      // END TIMEOUT
+      // Clear local state immediately
+      setUser(null);
+      setSession(null);
+      setUserProfile(null);
+      setLoading(false);
+
+      // Await the signOut call directly without Promise.race
+      const { error } = await supabase.auth.signOut();
 
       console.log('signOut: Result of supabase.auth.signOut() - Error:', error);
       if (error) {
@@ -211,11 +216,7 @@ export const useSupabaseAuth = () => {
         console.error('signOut: Error details:', JSON.stringify(error, null, 2));
         signOutError = error;
       } else {
-        console.log('signOut: User signed out successfully from Supabase. Clearing local state.');
-        setUser(null);
-        setSession(null);
-        setUserProfile(null);
-        setLoading(false);
+        console.log('signOut: User signed out successfully from Supabase.');
       }
     } catch (error: any) {
       console.error('signOut: Caught unexpected error during sign out:', error.message); // Log the message
