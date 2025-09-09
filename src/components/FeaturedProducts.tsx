@@ -140,7 +140,7 @@ const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
                   {/* NEW WISHLIST BUTTON ON IMAGE */}
                   <button 
                     onClick={(e) => handleWishlistToggle(e, product.id, product.name)}
-                    className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md transition-all duration-300 hover:bg-white" // REMOVED opacity-0 group-hover:opacity-100
+                    className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md transition-all duration-300 hover:bg-white" // MODIFIED: Removed opacity-0 group-hover:opacity-100
                   >
                     <Heart 
                       className={`h-4 w-4 ${
@@ -271,8 +271,8 @@ const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
                     <span>Buy Now</span>
                   </motion.button>
 
-                  {/* Updated Wishlist button below product details */}
-                  <motion.button
+                  {/* REMOVED: Updated Wishlist button below product details */}
+                  {/* <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={(e) => handleWishlistToggle(e, product.id, product.name)}
@@ -280,7 +280,7 @@ const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
                   >
                     <Heart className={`h-5 w-5 ${isInWishlist(product.id) ? 'fill-current' : ''}`} />
                     <span>Wishlist</span>
-                  </motion.button>
+                  </motion.button> */}
 
                 </div>
               </div>

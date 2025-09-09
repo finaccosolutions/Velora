@@ -6,6 +6,7 @@ import { useSupabaseCart } from '../hooks/useSupabaseCart';
 import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
 import { motion } from 'framer-motion';
 import { useToast } from '../context/ToastContext'; // NEW: Import useToast
+import { useNavigate } from 'react-router-dom'; // NEW: Import useNavigate
 
 interface ProductCardProps {
   product: any;
@@ -16,6 +17,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
   const { addToCart } = useSupabaseCart();
   const { wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useSupabaseWishlist();
   const { showToast } = useToast(); // NEW: Use useToast hook
+  const navigate = useNavigate(); // NEW: Initialize useNavigate
 
   // REMOVED: Local showToast function
 
@@ -45,6 +47,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
     }
   };
 
+  // NEW: Handle Buy Now
+  const handleBuyNow = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate('/checkout', { state: { productId: product.id } });
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -66,7 +75,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
           )}
           <button 
             onClick={handleWishlistToggle}
-            className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white"
+            className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md transition-all duration-300 hover:bg-white" // MODIFIED: Removed opacity-0 group-hover:opacity-100
           >
             <Heart 
               className={`h-4 w-4 ${
@@ -111,12 +120,23 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
             </span>
           </div>
 
-          <Link
-            to={`/product/${product.id}`}
-            className="block w-full bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white py-3 px-4 rounded-lg font-semibold hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200 text-center"
-          >
-            View Details
-          </Link>
+          <div className="flex space-x-2"> {/* NEW: Flex container for buttons */}
+            <Link
+              to={`/product/${product.id}`}
+              className="block w-full bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white py-3 px-4 rounded-lg font-semibold hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200 text-center"
+            >
+              View Details
+            </Link>
+            {/* NEW: Buy Now Button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleBuyNow}
+              className="flex-shrink-0 px-4 py-3 border-2 border-[#815536] text-[#815536] font-semibold rounded-lg hover:bg-[#815536] hover:text-white transition-all duration-200"
+            >
+              Buy Now
+            </motion.button>
+          </div>
         </div>
       </Link>
     </motion.div>

@@ -79,6 +79,13 @@ const ProductDetail: React.FC = () => {
     }
   };
 
+  // NEW: Handle Buy Now
+  const handleBuyNow = () => {
+    if (product) {
+      navigate('/checkout', { state: { productId: product.id } });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -216,6 +223,16 @@ const ProductDetail: React.FC = () => {
                 >
                   <ShoppingCart className="h-5 w-5" />
                   <span>Add to Cart</span>
+                </motion.button>
+
+                {/* NEW: Buy Now Button */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleBuyNow}
+                  className="flex-1 border-2 border-[#815536] text-[#815536] py-4 px-6 rounded-lg font-semibold hover:bg-[#815536] hover:text-white transition-all duration-200 flex items-center justify-center space-x-2"
+                >
+                  <span>Buy Now</span>
                 </motion.button>
 
                 <button 
