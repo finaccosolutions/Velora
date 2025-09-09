@@ -9,8 +9,9 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../context/AuthContext';
 import { useSupabaseProducts } from '../../hooks/useSupabaseProducts';
-import { useSupabaseCategories } from '../../hooks/useSupabaseCategories'; // NEW: Import useSupabaseCategories
-import { useToast } from '../../context/ToastContext'; // NEW: Import useToast
+import { useSupabaseCategories } from '../../hooks/useSupabaseCategories';
+import { useToast } from '../../context/ToastContext';
+import ConfirmationModal from '../../components/ConfirmationModal'; // NEW: Import ConfirmationModal
 
 interface ProductForm {
   name: string;
@@ -18,26 +19,32 @@ interface ProductForm {
   price: number;
   original_price: number | null;
   image_url: string;
-  category: string; // This will now be the category ID (UUID)
+  category: string;
   in_stock: boolean;
   features: string;
   ingredients: string;
+  stock_quantity: number; // NEW: Add stock_quantity
+  rating: number; // NEW: Add rating
+  reviews_count: number; // NEW: Add reviews_count
 }
 
 const AdminProducts: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All'); // Renamed to avoid conflict
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All');
   const [isLoading, setIsLoading] = useState(false);
-  // REMOVED: const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // NEW: State for confirmation modal
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [productToDeleteId, setProductToDeleteId] = useState<string | null>(null);
+  const [productToDeleteName, setProductToDeleteName] = useState<string | null>(null);
 
   const { isAdmin } = useAuth();
   const { products, categories: productFilterCategories, createProduct, updateProduct, deleteProduct, fetchProducts } = useSupabaseProducts();
-  const { categories: allCategories, loading: categoriesLoading } = useSupabaseCategories(); // NEW: Fetch all categories for dropdown
+  const { categories: allCategories, loading: categoriesLoading } = useSupabaseCategories();
   const navigate = useNavigate();
-  const { showToast } = useToast(); // NEW: Use useToast hook
+  const { showToast } = useToast();
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ProductForm>();
 
@@ -50,7 +57,6 @@ const AdminProducts: React.FC = () => {
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                        product.description.toLowerCase().includes(searchTerm.toLowerCase());
-    // Use product.category_name for filtering display
     const matchesCategory = selectedCategoryFilter === 'All' || product.category_name === selectedCategoryFilter;
     return matchesSearch && matchesCategory;
   });
@@ -64,10 +70,13 @@ const AdminProducts: React.FC = () => {
         price: product.price,
         original_price: product.original_price,
         image_url: product.image_url,
-        category: product.category, // Use the category ID for the form
+        category: product.category,
         in_stock: product.in_stock,
         features: product.features?.join(', ') || '',
-        ingredients: product.ingredients ? product.ingredients.join(', ') : ''
+        ingredients: product.ingredients ? product.ingredients.join(', ') : '',
+        stock_quantity: product.stock_quantity || 0, // NEW: Set default for stock_quantity
+        rating: product.rating || 0, // NEW: Set default for rating
+        reviews_count: product.reviews_count || 0, // NEW: Set default for reviews_count
       });
     } else {
       reset({
@@ -76,32 +85,35 @@ const AdminProducts: React.FC = () => {
         price: 0,
         original_price: null,
         image_url: '',
-        category: '', // Default empty or first category ID
+        category: '',
         in_stock: true,
         features: '',
-        ingredients: ''
+        ingredients: '',
+        stock_quantity: 0, // NEW: Set default for stock_quantity
+        rating: 0, // NEW: Set default for rating
+        reviews_count: 0, // NEW: Set default for reviews_count
       });
     }
     setIsModalOpen(true);
-    // REMOVED: setMessage(null);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
     reset();
-    // REMOVED: setMessage(null);
   };
 
   const onSubmit = async (data: ProductForm) => {
     setIsLoading(true);
-    // REMOVED: setMessage(null);
 
     const productData = {
       ...data,
       features: data.features.split(',').map(f => f.trim()).filter(f => f),
       ingredients: data.ingredients ? data.ingredients.split(',').map(i => i.trim()).filter(i => i) : null,
-      original_price: data.original_price || null
+      original_price: data.original_price || null,
+      stock_quantity: data.stock_quantity, // NEW: Include in payload
+      rating: data.rating, // NEW: Include in payload
+      reviews_count: data.reviews_count, // NEW: Include in payload
     };
 
     try {
@@ -115,28 +127,44 @@ const AdminProducts: React.FC = () => {
       if (result.error) {
         throw result.error;
       }
-      showToast(`Product ${editingProduct ? 'updated' : 'added'} successfully!`, 'success'); // NEW: Use showToast
+      showToast(`Product ${editingProduct ? 'updated' : 'added'} successfully!`, 'success');
       closeModal();
     } catch (error: any) {
       console.error('Error saving product:', error);
-      showToast(error.message || 'Failed to save product.', 'error'); // NEW: Use showToast
+      showToast(error.message || 'Failed to save product.', 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDelete = async (productId: string) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
+  // MODIFIED: handleDelete to open confirmation modal
+  const handleDelete = (productId: string, productName: string) => {
+    setProductToDeleteId(productId);
+    setProductToDeleteName(productName);
+    setIsConfirmModalOpen(true);
+  };
+
+  // NEW: confirmDelete function
+  const confirmDelete = async () => {
+    if (productToDeleteId) {
       setIsLoading(true);
-      // REMOVED: setMessage(null);
-      const result = await deleteProduct(productId);
+      setIsConfirmModalOpen(false); // Close modal immediately
+      const result = await deleteProduct(productToDeleteId);
       if (result.error) {
-        showToast(result.error.message || 'Failed to delete product.', 'error'); // NEW: Use showToast
+        showToast(result.error.message || 'Failed to delete product.', 'error');
       } else {
-        showToast('Product deleted successfully!', 'success'); // NEW: Use showToast
+        showToast('Product deleted successfully!', 'success');
       }
       setIsLoading(false);
+      setProductToDeleteId(null);
+      setProductToDeleteName(null);
     }
+  };
+
+  const closeConfirmModal = () => {
+    setIsConfirmModalOpen(false);
+    setProductToDeleteId(null);
+    setProductToDeleteName(null);
   };
 
   return (
@@ -157,8 +185,6 @@ const AdminProducts: React.FC = () => {
           </button>
         </div>
       </header>
-
-      {/* REMOVED: message rendering */}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
@@ -208,8 +234,8 @@ const AdminProducts: React.FC = () => {
                   <Edit className="h-4 w-4" />
                 </button>
                 <button
-                  onClick={() => handleDelete(product.id)}
-                  className="p-2 bg-admin-sidebar rounded-full shadow-md hover:bg-admin-danger/20 transition-colors text-admin-danger"
+                  onClick={() => handleDelete(product.id, product.name)} // MODIFIED: Pass product name
+                  className="p-2 bg-admin-danger/20 text-admin-danger rounded-full hover:bg-admin-danger/30 transition-colors"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -233,7 +259,7 @@ const AdminProducts: React.FC = () => {
                   )}
                 </div>
                 <span className="text-xs bg-admin-secondary/20 text-admin-secondary px-2 py-1 rounded-full">
-                  {product.category_name} {/* Display category name */}
+                  {product.category_name}
                 </span>
               </div>
 
@@ -266,7 +292,7 @@ const AdminProducts: React.FC = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-admin-card rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-admin-card rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto" // MODIFIED: max-w-3xl for wider modal
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6">
@@ -359,7 +385,7 @@ const AdminProducts: React.FC = () => {
 
                     <div>
                       <label className="block text-sm font-medium text-admin-text-dark mb-2">
-                        Original Price (₹)
+                        MRP (₹) {/* MODIFIED: Label changed to MRP */}
                       </label>
                       <input
                         type="number"
@@ -372,6 +398,12 @@ const AdminProducts: React.FC = () => {
                       />
                       {errors.original_price && (
                         <p className="text-red-500 text-sm mt-1">{errors.original_price.message}</p>
+                      )}
+                      {/* NEW: Display discount percentage */}
+                      {editingProduct && editingProduct.original_price && editingProduct.price && editingProduct.original_price > editingProduct.price && (
+                        <p className="text-sm text-admin-text-light mt-1">
+                          Discount: {Math.round(((editingProduct.original_price - editingProduct.price) / editingProduct.original_price) * 100)}%
+                        </p>
                       )}
                     </div>
                   </div>
@@ -388,6 +420,65 @@ const AdminProducts: React.FC = () => {
                     {errors.image_url && (
                       <p className="text-red-500 text-sm mt-1">{errors.image_url.message}</p>
                       )}
+                  </div>
+
+                  {/* NEW: Stock Quantity, Rating, Reviews Count */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">
+                        Stock Quantity *
+                      </label>
+                      <input
+                        type="number"
+                        step="1"
+                        {...register('stock_quantity', {
+                          required: 'Stock quantity is required',
+                          min: { value: 0, message: 'Quantity cannot be negative' }
+                        })}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                        placeholder="0"
+                      />
+                      {errors.stock_quantity && (
+                        <p className="text-red-500 text-sm mt-1">{errors.stock_quantity.message}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">
+                        Rating (0-5) *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        {...register('rating', {
+                          required: 'Rating is required',
+                          min: { value: 0, message: 'Rating must be between 0 and 5' },
+                          max: { value: 5, message: 'Rating must be between 0 and 5' }
+                        })}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                        placeholder="0.0"
+                      />
+                      {errors.rating && (
+                        <p className="text-red-500 text-sm mt-1">{errors.rating.message}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">
+                        Reviews Count *
+                      </label>
+                      <input
+                        type="number"
+                        step="1"
+                        {...register('reviews_count', {
+                          required: 'Reviews count is required',
+                          min: { value: 0, message: 'Reviews count cannot be negative' }
+                        })}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                        placeholder="0"
+                      />
+                      {errors.reviews_count && (
+                        <p className="text-red-500 text-sm mt-1">{errors.reviews_count.message}</p>
+                      )}
+                    </div>
                   </div>
 
                   <div>
@@ -434,7 +525,7 @@ const AdminProducts: React.FC = () => {
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="flex-1 px-4 py-3 bg-admin-primary text-white rounded-lg hover:bg-admin-primary-dark transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+                      className="flex-1 px-4 py-3 bg-admin-primary text-white rounded-lg hover:bg-admin-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Save className="h-4 w-4" />
                       <span>{isLoading ? 'Saving...' : 'Save Product'}</span>
@@ -446,6 +537,17 @@ const AdminProducts: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* NEW: Confirmation Modal for Product Deletion */}
+      <ConfirmationModal
+        isOpen={isConfirmModalOpen}
+        onClose={closeConfirmModal}
+        onConfirm={confirmDelete}
+        title="Confirm Deletion"
+        message={`Are you sure you want to delete the product "${productToDeleteName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 };

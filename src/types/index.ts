@@ -12,6 +12,7 @@ export interface Product {
   reviews: number; // Changed from 'reviews_count' to 'reviews' to match DB
   features: string[];
   ingredients?: string[];
+  stockQuantity?: number; // NEW: Add stockQuantity
 }
 
 export interface CartItem {

@@ -4,13 +4,13 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext'; // Import useAuth
 
 interface CartItem {
-  id: string; product_id: string; quantity: number; product: { id: string; name: string; price: number; image_url: string; category: string; in_stock: boolean; };
+  id: string; product_id: string; quantity: number; product: { id: string; name: string; price: number; image_url: string; category: string; category_name: string; in_stock: boolean; }; // ADD category_name
 }
 
 export const useSupabaseCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user, userProfile, loading: authLoading, isVisible } = useAuth(); // Destructure userProfile and isVisible
+  const { user, userProfile, loading: authLoading } = useAuth(); // Removed isVisible
   const isFetchingRef = useRef(false);
 
   const fetchCartItems = useCallback(async () => {
@@ -37,7 +37,8 @@ export const useSupabaseCart = () => {
               price,
               image_url,
               category,
-              in_stock
+              in_stock,
+              categories(name)
             )
           `)
           .eq('user_id', user?.id); // Use optional chaining for user?.id
@@ -50,7 +51,15 @@ export const useSupabaseCart = () => {
         console.error('Error fetching cart items:', error.message);
         setCartItems([]);
       } else {
-        setCartItems(data || []);
+        // Map the fetched data to include category_name
+        const mappedData = data.map(item => ({
+          ...item,
+          product: {
+            ...item.product,
+            category_name: item.product.categories.name // Map category name
+          }
+        }));
+        setCartItems(mappedData || []);
       }
     } catch (error: any) {
       console.error('Error fetching cart items (caught exception):', error.message);
@@ -62,12 +71,12 @@ export const useSupabaseCart = () => {
   }, [user, authLoading]); // Keep user and authLoading as dependencies for fetchCartItems
 
   useEffect(() => {
-    console.log('useSupabaseCart useEffect: authLoading:', authLoading, 'user:', user, 'userProfile:', userProfile, 'isVisible:', isVisible);
+    console.log('useSupabaseCart useEffect: authLoading:', authLoading, 'user:', user, 'userProfile:', userProfile);
     // Removed timeoutId as setTimeout is removed
 
-    // Only fetch if auth is not loading, userProfile is available, and document is visible
-    // MODIFIED START: Remove setTimeout and adjust condition
-    if (!authLoading && user && userProfile && isVisible && !isFetchingRef.current) {
+    // Only fetch if auth is not loading, userProfile is available
+    // MODIFIED START: Remove isVisible from condition
+    if (!authLoading && user && userProfile && !isFetchingRef.current) {
       if (isFetchingRef.current) {
         console.log('useSupabaseCart useEffect: Fetch already in progress, skipping scheduling.');
         return;
@@ -81,14 +90,14 @@ export const useSupabaseCart = () => {
       console.log('useSupabaseCart useEffect: No user and auth done loading, clearing cart items.');
       setCartItems([]);
     } else {
-      console.log('useSupabaseCart useEffect: Skipping fetch. authLoading:', authLoading, 'userProfile:', userProfile, 'isVisible:', isVisible);
+      console.log('useSupabaseCart useEffect: Skipping fetch. authLoading:', authLoading, 'userProfile:', userProfile);
     }
-    // MODIFIED END: Remove setTimeout and adjust condition
+    // MODIFIED END: Remove isVisible from condition
 
     return () => {
       // No cleanup for setTimeout needed
     };
-  }, [user, userProfile, authLoading, isVisible, fetchCartItems]); // Add userProfile and isVisible to dependencies
+  }, [user, userProfile, authLoading, fetchCartItems]); // Removed isVisible from dependencies
 
   const addToCart = async (productId: string, quantity: number = 1) => {
     if (!user) return { error: new Error('Please login to add items to cart') };
@@ -218,4 +227,3 @@ export const useSupabaseCart = () => {
     fetchCartItems,
   };
 };
-

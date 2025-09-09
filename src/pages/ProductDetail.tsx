@@ -301,7 +301,7 @@ const ProductDetail: React.FC = () => {
                   <ul className="space-y-3">
                     {product.features.map((feature, index) => (
                       <li key={index} className="flex items-start space-x-3">
-                        <div className="w-2 h-2 bg-[#815536] rounded-full mt-2"></div>
+                        <div className="w-2 h-2 bg-[#815536] rounded-full"></div>
                         <span className="text-gray-700">{feature}</span>
                       </li>
                     ))}

@@ -7,12 +7,14 @@ import { useSupabaseProducts } from '../hooks/useSupabaseProducts';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
 import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
 import { useToast } from '../context/ToastContext'; // NEW: Import useToast
+import { useNavigate } from 'react-router-dom'; // NEW: Import useNavigate
 
 const FeaturedProducts: React.FC = () => {
   const { products, loading } = useSupabaseProducts();
   const { addToCart } = useSupabaseCart();
   const { wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useSupabaseWishlist();
   const { showToast } = useToast(); // NEW: Use useToast hook
+  const navigate = useNavigate(); // NEW: Initialize useNavigate
   
   const featuredProducts = products.slice(0, 4);
 
@@ -57,6 +59,13 @@ const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
         showToast(result.error.message, 'error'); // NEW: Use global showToast
       }
     }
+  };
+
+  // NEW: Handle Buy Now
+  const handleBuyNow = (e: React.MouseEvent, productId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate('/checkout', { state: { productId } });
   };
 
   if (loading) {
@@ -131,7 +140,7 @@ const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
                   {/* NEW WISHLIST BUTTON ON IMAGE */}
                   <button 
                     onClick={(e) => handleWishlistToggle(e, product.id, product.name)}
-                    className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-white"
+                    className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md transition-all duration-300 hover:bg-white" // REMOVED opacity-0 group-hover:opacity-100
                   >
                     <Heart 
                       className={`h-4 w-4 ${
@@ -149,21 +158,7 @@ const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
                     transition={{ duration: 0.3 }}
                     className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"
                   >
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleAddToCart(product.id, e); // Add 'e' parameter here
-                        }}
-                        className="flex-1 bg-white/90 backdrop-blur-sm text-gray-900 py-2 px-4 rounded-lg font-semibold hover:bg-white transition-all duration-200 flex items-center justify-center space-x-2"
-                      >
-                        <ShoppingCart className="h-4 w-4" />
-                        <span>Add to Cart</span>
-                      </motion.button>
-                    </div>
+                    {/* REMOVED: Buy Now button from image overlay */}
                   </motion.div>
                   
                   {product.original_price && (
@@ -264,6 +259,17 @@ const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
                       <ShoppingCart className="h-5 w-5" />
                       <span>Add to Cart</span>
                     </motion.button>
+
+                  {/* NEW: Buy Now button next to Add to Cart */}
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={(e) => handleBuyNow(e, product.id)}
+                    className="flex items-center space-x-2 px-6 py-3 border-2 border-[#815536] text-[#815536] font-semibold rounded-lg hover:bg-[#815536] hover:text-white transition-all duration-200"
+                  >
+                    <ShoppingCart className="h-5 w-5" />
+                    <span>Buy Now</span>
+                  </motion.button>
 
                   {/* Updated Wishlist button below product details */}
                   <motion.button

@@ -96,7 +96,7 @@ const Cart: React.FC = () => {
                     
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900">{item.product.name}</h3>
-                      <p className="text-gray-600 text-sm">{item.product.category}</p>
+                      <p className="text-gray-600 text-sm">{item.product.category_name}</p> {/* MODIFIED: Use category_name */}
                       <p className="font-bold text-[#815536] mt-1">₹{item.product.price}</p>
                     </div>
 

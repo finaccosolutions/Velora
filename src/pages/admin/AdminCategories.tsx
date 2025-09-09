@@ -6,7 +6,8 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../context/AuthContext';
 import { useSupabaseCategories, Category } from '../../hooks/useSupabaseCategories';
-import { useToast } from '../../context/ToastContext'; // NEW: Import useToast
+import { useToast } from '../../context/ToastContext';
+import ConfirmationModal from '../../components/ConfirmationModal'; // NEW: Import ConfirmationModal
 
 interface CategoryForm {
   name: string;
@@ -16,12 +17,16 @@ const AdminCategories: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  // REMOVED: const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  // NEW: State for confirmation modal
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [categoryToDeleteId, setCategoryToDeleteId] = useState<string | null>(null);
+  const [categoryToDeleteName, setCategoryToDeleteName] = useState<string | null>(null);
 
   const { isAdmin } = useAuth();
   const { categories, loading, error, createCategory, updateCategory, deleteCategory } = useSupabaseCategories();
   const navigate = useNavigate();
-  const { showToast } = useToast(); // NEW: Use useToast hook
+  const { showToast } = useToast();
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<CategoryForm>();
 
@@ -39,19 +44,16 @@ const AdminCategories: React.FC = () => {
       reset({ name: '' });
     }
     setIsModalOpen(true);
-    // REMOVED: setMessage(null);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingCategory(null);
     reset();
-    // REMOVED: setMessage(null);
   };
 
   const onSubmit = async (data: CategoryForm) => {
     setIsLoading(true);
-    // REMOVED: setMessage(null);
     let result;
 
     if (editingCategory) {
@@ -61,26 +63,42 @@ const AdminCategories: React.FC = () => {
     }
 
     if (result.error) {
-      showToast(result.error.message, 'error'); // NEW: Use showToast
+      showToast(result.error.message, 'error');
     } else {
-      showToast(`Category ${editingCategory ? 'updated' : 'added'} successfully!`, 'success'); // NEW: Use showToast
+      showToast(`Category ${editingCategory ? 'updated' : 'added'} successfully!`, 'success');
       closeModal();
     }
     setIsLoading(false);
   };
 
-  const handleDelete = async (categoryId: string) => {
-    if (window.confirm('Are you sure you want to delete this category? This cannot be undone.')) {
+  // MODIFIED: handleDelete to open confirmation modal
+  const handleDelete = (categoryId: string, categoryName: string) => {
+    setCategoryToDeleteId(categoryId);
+    setCategoryToDeleteName(categoryName);
+    setIsConfirmModalOpen(true);
+  };
+
+  // NEW: confirmDelete function
+  const confirmDelete = async () => {
+    if (categoryToDeleteId) {
       setIsLoading(true);
-      // REMOVED: setMessage(null);
-      const result = await deleteCategory(categoryId);
+      setIsConfirmModalOpen(false); // Close modal immediately
+      const result = await deleteCategory(categoryToDeleteId);
       if (result.error) {
-        showToast(result.error.message, 'error'); // NEW: Use showToast
+        showToast(result.error.message, 'error');
       } else {
-        showToast('Category deleted successfully!', 'success'); // NEW: Use showToast
+        showToast('Category deleted successfully!', 'success');
       }
       setIsLoading(false);
+      setCategoryToDeleteId(null); // Clear the ID after deletion attempt
+      setCategoryToDeleteName(null);
     }
+  };
+
+  const closeConfirmModal = () => {
+    setIsConfirmModalOpen(false);
+    setCategoryToDeleteId(null);
+    setCategoryToDeleteName(null);
   };
 
   if (loading) {
@@ -124,8 +142,6 @@ const AdminCategories: React.FC = () => {
         </div>
       </header>
 
-      {/* REMOVED: message rendering */}
-
       {/* Categories List */}
       <div className="bg-admin-card rounded-xl shadow-lg p-6">
         <h2 className="text-2xl font-bold text-admin-text mb-6">All Categories</h2>
@@ -157,7 +173,7 @@ const AdminCategories: React.FC = () => {
                     <Edit className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(category.id)}
+                    onClick={() => handleDelete(category.id, category.name)} // MODIFIED: Pass category name
                     className="p-2 bg-admin-danger/20 text-admin-danger rounded-full hover:bg-admin-danger/30 transition-colors"
                     title="Delete Category"
                     disabled={isLoading}
@@ -234,6 +250,17 @@ const AdminCategories: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* NEW: Confirmation Modal for Category Deletion */}
+      <ConfirmationModal
+        isOpen={isConfirmModalOpen}
+        onClose={closeConfirmModal}
+        onConfirm={confirmDelete}
+        title="Confirm Deletion"
+        message={`Are you sure you want to delete the category "${categoryToDeleteName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 };

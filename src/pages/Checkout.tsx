@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react'; // Import useEffect
+import { useNavigate, useLocation } from 'react-router-dom'; // Import useLocation
 import { motion } from 'framer-motion';
 import { CreditCard, Truck, MapPin, User } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
 import { useAuth } from '../context/AuthContext';
+import { useSupabaseProducts } from '../hooks/useSupabaseProducts'; // NEW: Import useSupabaseProducts
 
 interface CheckoutForm {
   email: string;
@@ -22,8 +23,29 @@ const Checkout: React.FC = () => {
   const { cartItems, getCartTotal, clearCart } = useSupabaseCart();
   const { userProfile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation(); // NEW: Get location object
+  const { getProductById } = useSupabaseProducts(); // NEW: Use product hook
+
   const [isProcessing, setIsProcessing] = useState(false);
-  
+  const [singleProductCheckout, setSingleProductCheckout] = useState<any | null>(null); // NEW: State for single product checkout
+
+  // NEW: Effect to handle "Buy Now" from product page
+  useEffect(() => {
+    const { productId } = location.state || {};
+    if (productId) {
+      const fetchSingleProduct = async () => {
+        const { data, error } = await getProductById(productId);
+        if (data) {
+          setSingleProductCheckout(data);
+        } else {
+          console.error('Failed to fetch product for buy now:', error);
+          navigate('/products'); // Redirect if product not found
+        }
+      };
+      fetchSingleProduct();
+    }
+  }, [location.state, getProductById, navigate]);
+
   const { register, handleSubmit, watch, formState: { errors } } = useForm<CheckoutForm>({
     defaultValues: {
       email: userProfile?.email || '',
@@ -39,10 +61,19 @@ const Checkout: React.FC = () => {
   });
 
   const paymentMethod = watch('paymentMethod');
-  const subtotal = getCartTotal();
+
+  // Determine items and totals based on whether it's a single product checkout or cart checkout
+  const itemsToCheckout = singleProductCheckout ? [{ product: singleProductCheckout, quantity: 1 }] : cartItems;
+  const subtotal = singleProductCheckout ? singleProductCheckout.price : getCartTotal();
   const shipping = subtotal > 2000 ? 0 : 100;
   const tax = Math.round(subtotal * 0.18);
   const total = subtotal + shipping + tax;
+
+  // Redirect if no items to checkout
+  if (itemsToCheckout.length === 0 && !singleProductCheckout) {
+    navigate('/cart');
+    return null;
+  }
 
   const onSubmit = async (data: CheckoutForm) => {
     setIsProcessing(true);
@@ -50,15 +81,12 @@ const Checkout: React.FC = () => {
     // Simulate order processing
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Clear cart and redirect to success page
-    clearCart();
+    // Clear cart only if it was a multi-item cart checkout
+    if (!singleProductCheckout) {
+      clearCart();
+    }
     navigate('/order-success', { state: { orderData: data, total } });
   };
-
-  if (cartItems.length === 0) {
-    navigate('/cart');
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -275,7 +303,7 @@ const Checkout: React.FC = () => {
 
                 {/* Order Items */}
                 <div className="space-y-4 mb-6 max-h-60 overflow-y-auto">
-                  {cartItems.map((item) => (
+                  {itemsToCheckout.map((item) => ( // MODIFIED: Use itemsToCheckout
                     <div key={item.product.id} className="flex items-center space-x-3">
                       <img
                         src={item.product.image_url}

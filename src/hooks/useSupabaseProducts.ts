@@ -2,22 +2,23 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase, supabaseUrl, supabaseAnonKey } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { Product as ProductType } from '../types'; // Import Product from types
+import { Product as ProductType } from '../types';
 
 // Define the structure of a product as returned from Supabase, including category name
-interface SupabaseProduct extends Omit<ProductType, 'category' | 'reviews' | 'inStock'> {
-  category: string; // This will be the category ID (UUID) from the DB
-  category_name: string; // The actual category name from the joined table
-  reviews_count: number; // Matches DB column name
-  in_stock: boolean; // Matches DB column name
+interface SupabaseProduct extends Omit<ProductType, 'category' | 'reviews' | 'inStock' | 'stockQuantity'> {
+  category: string;
+  category_name: string;
+  reviews_count: number;
+  in_stock: boolean;
+  stock_quantity: number; // NEW: Add stock_quantity to SupabaseProduct
 }
 
 export const useSupabaseProducts = () => {
   const [products, setProducts] = useState<SupabaseProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState<string[]>([]); // For filter options
+  const [categories, setCategories] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const { isVisible, user, session } = useAuth();
+  const { user, session } = useAuth(); // Removed isVisible
   const isFetchingRef = useRef(false);
 
   const fetchProducts = useCallback(async () => {
@@ -26,7 +27,6 @@ export const useSupabaseProducts = () => {
     console.log('fetchProducts: Starting fetch...');
 
     try {
-      // Select product fields and join with categories to get the category name
       const { data, error: fetchError } = await supabase
         .from('products')
         .select(`
@@ -44,7 +44,8 @@ export const useSupabaseProducts = () => {
           ingredients,
           created_at,
           updated_at,
-          categories!inner(name) // Join with categories table and select its name
+          stock_quantity,
+          categories!inner(name)
         `)
         .order('name', { ascending: true });
 
@@ -52,11 +53,11 @@ export const useSupabaseProducts = () => {
         throw fetchError;
       }
 
-      // Map the data to include category_name directly in the product object
       const mappedProducts: SupabaseProduct[] = data.map((p: any) => ({
         ...p,
-        category_name: p.categories.name, // Extract name from nested categories object
-        category: p.category, // Keep the category ID
+        category_name: p.categories.name,
+        category: p.category,
+        stockQuantity: p.stock_quantity, // Map stock_quantity to stockQuantity for frontend ProductType
       }));
 
       setProducts(mappedProducts || []);
@@ -70,7 +71,7 @@ export const useSupabaseProducts = () => {
       setLoading(false);
       isFetchingRef.current = false;
     }
-  }, []); // No dependencies needed for useCallback as it's a direct fetch
+  }, []);
 
   const fetchCategoriesForFilter = useCallback(async () => {
     try {
@@ -90,9 +91,8 @@ export const useSupabaseProducts = () => {
     }
   }, []);
 
-  // Main useEffect for initial fetch
   useEffect(() => {
-    console.log('useSupabaseProducts useEffect: isVisible:', isVisible, 'user:', user, 'session:', session);
+    console.log('useSupabaseProducts useEffect: user:', user, 'session:', session);
 
     let isMounted = true;
 
@@ -104,7 +104,7 @@ export const useSupabaseProducts = () => {
 
       try {
         await fetchProducts();
-        await fetchCategoriesForFilter(); // Fetch categories for filter options
+        await fetchCategoriesForFilter();
       } catch (error) {
         console.error('useSupabaseProducts: Error during fetch operations:', error);
       } finally {
@@ -115,15 +115,16 @@ export const useSupabaseProducts = () => {
       }
     };
 
-    if (isVisible && !isFetchingRef.current) {
-      console.log('useSupabaseProducts: Document visible. Executing fetch.');
+    // MODIFIED: Removed isVisible from condition
+    if (!isFetchingRef.current) {
+      console.log('useSupabaseProducts: Executing fetch.');
       executeFetch();
     }
 
     return () => {
       isMounted = false;
     };
-  }, [isVisible, user, session, fetchProducts, fetchCategoriesForFilter]); // Add fetchProducts and fetchCategoriesForFilter to dependencies
+  }, [user, session, fetchProducts, fetchCategoriesForFilter]); // Removed isVisible from dependencies
 
   const getProductById = async (id: string) => {
     try {
@@ -145,6 +146,7 @@ export const useSupabaseProducts = () => {
             ingredients,
             created_at,
             updated_at,
+            stock_quantity,
             categories!inner(name)
           `)
           .eq('id', id)
@@ -156,11 +158,11 @@ export const useSupabaseProducts = () => {
 
       if (error) throw error;
 
-      // Map the data to include category_name directly in the product object
       const mappedProduct: SupabaseProduct = {
         ...data,
         category_name: data.categories.name,
         category: data.category,
+        stockQuantity: data.stock_quantity, // Map stock_quantity to stockQuantity
       };
 
       return { data: mappedProduct, error: null };
@@ -170,19 +172,19 @@ export const useSupabaseProducts = () => {
     }
   };
 
-  // Product type for insert/update operations
   interface ProductInsertUpdate {
     name: string;
     description: string;
     price: number;
     original_price?: number | null;
     image_url: string;
-    category: string; // This is now the category ID (UUID)
+    category: string;
     in_stock?: boolean;
     rating?: number;
     reviews_count?: number;
     features?: string[];
     ingredients?: string[] | null;
+    stock_quantity?: number; // NEW: Add stock_quantity
   }
 
   const createProduct = async (product: ProductInsertUpdate) => {
@@ -249,7 +251,7 @@ export const useSupabaseProducts = () => {
     products,
     loading,
     error,
-    categories, // Categories for filter options
+    categories,
     fetchProducts,
     getProductById,
     createProduct,

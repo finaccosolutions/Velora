@@ -4,13 +4,13 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext'; // Import useAuth
 
 interface WishlistItem {
-  id: string; product_id: string; created_at: string; product: { id: string; name: string; price: number; image_url: string; category: string; };
+  id: string; product_id: string; created_at: string; product: { id: string; name: string; price: number; image_url: string; category: string; category_name: string; }; // ADD category_name
 }
 
 export const useSupabaseWishlist = () => {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user, userProfile, loading: authLoading, isVisible } = useAuth(); // Destructure userProfile and isVisible
+  const { user, userProfile, loading: authLoading } = useAuth(); // Removed isVisible
   const isFetchingRef = useRef(false);
 
   const fetchWishlistItems = useCallback(async () => {
@@ -36,7 +36,8 @@ export const useSupabaseWishlist = () => {
               name,
               price,
               image_url,
-              category
+              category,
+              categories(name)
             )
           `)
           .eq('user_id', user?.id); // Use optional chaining for user?.id
@@ -49,7 +50,15 @@ export const useSupabaseWishlist = () => {
         console.error('Error fetching wishlist items:', error.message);
         setWishlistItems([]);
       } else {
-        setWishlistItems(data || []);
+        // Map the fetched data to include category_name
+        const mappedData = data.map(item => ({
+          ...item,
+          product: {
+            ...item.product,
+            category_name: item.product.categories.name // Map category name
+          }
+        }));
+        setWishlistItems(mappedData || []);
       }
     } catch (error: any) {
       console.error('Error fetching wishlist items (caught exception):', error.message);
@@ -61,12 +70,12 @@ export const useSupabaseWishlist = () => {
   }, [user, authLoading]); // Keep user and authLoading as dependencies for fetchWishlistItems
 
   useEffect(() => {
-    console.log('useSupabaseWishlist useEffect: authLoading:', authLoading, 'user:', user, 'userProfile:', userProfile, 'isVisible:', isVisible);
+    console.log('useSupabaseWishlist useEffect: authLoading:', authLoading, 'user:', user, 'userProfile:', userProfile);
     // Removed timeoutId as setTimeout is removed
 
-    // Only fetch if auth is not loading, userProfile is available, and document is visible
-    // MODIFIED START: Remove setTimeout and adjust condition
-    if (!authLoading && user && userProfile && isVisible && !isFetchingRef.current) {
+    // Only fetch if auth is not loading, userProfile is available
+    // MODIFIED START: Remove isVisible from condition
+    if (!authLoading && user && userProfile && !isFetchingRef.current) {
       if (isFetchingRef.current) {
         console.log('useSupabaseWishlist useEffect: Fetch already in progress, skipping scheduling.');
         return;
@@ -80,14 +89,14 @@ export const useSupabaseWishlist = () => {
       console.log('useSupabaseWishlist useEffect: No user and auth done loading, clearing wishlist items.');
       setWishlistItems([]);
     } else {
-      console.log('useSupabaseWishlist useEffect: Skipping fetch. authLoading:', authLoading, 'userProfile:', userProfile, 'isVisible:', isVisible);
+      console.log('useSupabaseWishlist useEffect: Skipping fetch. authLoading:', authLoading, 'userProfile:', userProfile);
     }
-    // MODIFIED END: Remove setTimeout and adjust condition
+    // MODIFIED END: Remove isVisible from condition
 
     return () => {
       // No cleanup for setTimeout needed
     };
-  }, [user, userProfile, authLoading, isVisible, fetchWishlistItems]); // Add userProfile and isVisible to dependencies
+  }, [user, userProfile, authLoading, fetchWishlistItems]); // Removed isVisible from dependencies
 
   const addToWishlist = async (productId: string) => {
     if (!user) return { error: new Error('Please login to add items to wishlist') };
