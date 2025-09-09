@@ -29,30 +29,30 @@ export const useSupabaseProducts = () => {
   const isFetchingRef = useRef(false);
 
   const fetchProducts = async () => {
+    setLoading(true); // Set loading true at the start of the fetch operation
     console.log('fetchProducts: Starting fetch...');
 
-    // Ensure user and session are available before proceeding
-    if (!user || !session) {
-      console.log('fetchProducts: No user or session available, skipping fetch.');
-      setProducts([]);
-      setLoading(false);
-      return;
-    }
-
     try {
-      console.log('fetchProducts: User and session available. Proceeding with raw fetch.');
       const productsEndpoint = `${supabaseUrl}/rest/v1/products?select=*`;
       console.log('fetchProducts: Attempting raw fetch to:', productsEndpoint);
-      console.log('fetchProducts: Using access token (first 5 chars):', session.access_token.substring(0, 5) + '...');
+
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+        'apikey': supabaseAnonKey,
+      };
+
+      // Conditionally add Authorization header if a session exists
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+        console.log('fetchProducts: Using access token (first 5 chars):', session.access_token.substring(0, 5) + '...');
+      } else {
+        console.log('fetchProducts: No active session, fetching anonymously.');
+      }
 
       const response = await Promise.race([
         fetch(productsEndpoint, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': supabaseAnonKey,
-            'Authorization': `Bearer ${session.access_token}`,
-          },
+          headers: headers, // Use the constructed headers object
         }),
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Products raw fetch timed out after 5 seconds')), 5000)
@@ -83,13 +83,6 @@ export const useSupabaseProducts = () => {
   const fetchCategories = async () => {
     console.log('fetchCategories: Attempting to fetch categories...');
     try {
-      // Ensure user and session are available for this too if RLS is enabled for categories
-      if (!user || !session) {
-        console.log('fetchCategories: No user or session available, skipping category fetch.');
-        setCategories(['All']);
-        return;
-      }
-
       // This still uses the Supabase client, which might also hang.
       // If this also hangs, we might need to convert this to raw fetch too.
       const { data, error: fetchError } = await supabase
@@ -124,44 +117,38 @@ export const useSupabaseProducts = () => {
       if (!isMounted || isFetchingRef.current) return;
 
       isFetchingRef.current = true;
-      setLoading(true);
       console.log('useSupabaseProducts: Starting fetch operations...');
 
       try {
-        await fetchProducts();
+        await fetchProducts(); // fetchProducts now handles its own loading state
         await fetchCategories();
       } catch (error) {
         console.error('useSupabaseProducts: Error during fetch operations:', error);
       } finally {
         if (isMounted) {
           isFetchingRef.current = false;
-          setLoading(false); // Ensure loading is set to false
           console.log('useSupabaseProducts: Fetch operations completed');
         }
       }
     };
 
-    // Only trigger fetch if user and session are available and visible
-    if (isVisible && user && session) {
-      console.log('useSupabaseProducts: User, session, and visibility present. Scheduling fetch with debounce');
+    // Always trigger fetch if visible, fetchProducts will handle auth logic
+    if (isVisible) {
+      console.log('useSupabaseProducts: Document visible. Scheduling fetch with debounce.');
       timeoutId = setTimeout(executeFetch, 100);
-    } else if (!user || !session) {
-      // If no user/session, ensure loading is false and products/categories are cleared/defaulted
-      console.log('useSupabaseProducts: No user or session. Clearing products/categories and setting loading to false.');
+    } else {
+      console.log('useSupabaseProducts: Document not visible. Skipping fetch.');
+      // Ensure products and categories are cleared/defaulted if not visible and not fetching
       setProducts([]);
       setCategories(['All']);
-      setLoading(false);
-    } else {
-      console.log('useSupabaseProducts: Skipping scheduling fetch. isVisible:', isVisible, 'user:', user, 'session:', session);
       setLoading(false); // Ensure loading is false if not fetching
     }
-
 
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
       isMounted = false;
     };
-  }, [isVisible, user, session]); // ADDED 'session' to dependency array
+  }, [isVisible, user, session]); // Keep user and session in dependencies as fetchProducts and fetchCategories depend on them.
 
   // NOTE: getProductById, createProduct, updateProduct, deleteProduct still use the supabase client.
   // If these also exhibit hanging behavior, they would need similar raw fetch implementations.
