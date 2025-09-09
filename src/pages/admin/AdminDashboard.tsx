@@ -218,30 +218,6 @@ const AdminDashboard: React.FC = () => {
                 <p className="text-sm text-admin-text-light">Velora Tradings</p>
               </div>
             </div>
-
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate('/admin/products')}
-                className="flex items-center space-x-2 px-4 py-2 bg-admin-primary text-white rounded-lg hover:bg-admin-primary-dark transition-colors"
-              >
-                <Package className="h-4 w-4" />
-                <span>Manage Products</span>
-              </button>
-              <button
-                onClick={() => navigate('/')}
-                className="flex items-center space-x-2 px-4 py-2 border border-admin-border rounded-lg hover:bg-admin-card transition-colors text-admin-text-light"
-              >
-                <Eye className="h-4 w-4" />
-                <span>View Site</span>
-              </button>
-              <button
-                onClick={handleLogout}
-                className="flex items-center space-x-2 px-4 py-2 text-admin-danger hover:bg-admin-danger/20 rounded-lg transition-colors"
-              >
-                <LogOut className="h-4 w-4" />
-                <span>Logout</span>
-              </button>
-            </div>
           </div>
         </div>
       </header>

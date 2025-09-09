@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* CRITICAL: Ensure html, body, and root div take full height and prevent global scrolling */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* This prevents the entire page from scrolling */
+}

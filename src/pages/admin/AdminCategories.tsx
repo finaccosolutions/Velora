@@ -109,14 +109,7 @@ const AdminCategories: React.FC = () => {
       <header className="bg-admin-card shadow-lg rounded-xl p-6 mb-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <button
-              onClick={() => navigate('/admin/dashboard')}
-              className="flex items-center space-x-2 text-admin-text-light hover:text-admin-primary-dark transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              <span>Back to Dashboard</span>
-            </button>
-            <div className="h-6 w-px bg-admin-border"></div>
+            {/* Removed "Back to Dashboard" button */}
             <h1 className="text-3xl font-bold text-admin-text">Category Management</h1>
           </div>
 
