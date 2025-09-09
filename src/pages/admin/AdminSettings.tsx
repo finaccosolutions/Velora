@@ -154,14 +154,14 @@ const AdminSettings: React.FC = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-admin-text-light mb-2">Site Name</label>
+              <label className="block text-sm font-medium text-admin-text-dark mb-2">Site Name</label>
               <input
                 {...register('siteName')}
                 className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-admin-text-light mb-2">Logo URL</label>
+              <label className="block text-sm font-medium text-admin-text-dark mb-2">Logo URL</label>
               <input
                 {...register('logoUrl')}
                 className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
@@ -177,19 +177,19 @@ const AdminSettings: React.FC = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-admin-text-light mb-2">Primary Color</label>
+              <label className="block text-sm font-medium text-admin-text-dark mb-2">Primary Color</label>
               <input
                 type="color"
                 {...register('primaryColor')}
-                className="w-full h-12 border border-admin-border rounded-lg bg-admin-sidebar focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                className="w-full h-12 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-admin-text-light mb-2">Secondary Color</label>
+              <label className="block text-sm font-medium text-admin-text-dark mb-2">Secondary Color</label>
               <input
                 type="color"
                 {...register('secondaryColor')}
-                className="w-full h-12 border border-admin-border rounded-lg bg-admin-sidebar focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                className="w-full h-12 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
               />
             </div>
           </div>
@@ -201,14 +201,14 @@ const AdminSettings: React.FC = () => {
           </h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-admin-text-light mb-2">Hero Title</label>
+              <label className="block text-sm font-medium text-admin-text-dark mb-2">Hero Title</label>
               <input
                 {...register('heroTitle')}
                 className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-admin-text-light mb-2">Hero Subtitle</label>
+              <label className="block text-sm font-medium text-admin-text-dark mb-2">Hero Subtitle</label>
               <textarea
                 {...register('heroSubtitle')}
                 rows={3}
@@ -224,7 +224,7 @@ const AdminSettings: React.FC = () => {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium text-admin-text-light mb-2">Contact Email</label>
+              <label className="block text-sm font-medium text-admin-text-dark mb-2">Contact Email</label>
               <input
                 type="email"
                 {...register('contactEmail')}
@@ -232,42 +232,42 @@ const AdminSettings: React.FC = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-admin-text-light mb-2">Contact Phone</label>
+              <label className="block text-sm font-medium text-admin-text-dark mb-2">Contact Phone</label>
               <input
                 {...register('contactPhone')}
                 className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-admin-text-light mb-2">Address Line 1</label>
+              <label className="block text-sm font-medium text-admin-text-dark mb-2">Address Line 1</label>
               <input
                 {...register('addressLine1')}
                 className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-admin-text-light mb-2">Address Line 2</label>
+              <label className="block text-sm font-medium text-admin-text-dark mb-2">Address Line 2</label>
               <input
                 {...register('addressLine2')}
                 className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-admin-text-light mb-2">City</label>
+              <label className="block text-sm font-medium text-admin-text-dark mb-2">City</label>
               <input
                 {...register('city')}
                 className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-admin-text-light mb-2">Postal Code</label>
+              <label className="block text-sm font-medium text-admin-text-dark mb-2">Postal Code</label>
               <input
                 {...register('postalCode')}
                 className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-admin-text-light mb-2">Country</label>
+              <label className="block text-sm font-medium text-admin-text-dark mb-2">Country</label>
               <input
                 {...register('country')}
                 className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"

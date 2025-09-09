@@ -302,7 +302,7 @@ const AdminProducts: React.FC = () => {
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-admin-text-light mb-2">
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">
                         Product Name *
                       </label>
                       <input
@@ -316,7 +316,7 @@ const AdminProducts: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-admin-text-light mb-2">
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">
                         Category *
                       </label>
                       {categoriesLoading ? (
@@ -341,7 +341,7 @@ const AdminProducts: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-admin-text-light mb-2">
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">
                       Description *
                     </label>
                     <textarea
@@ -357,7 +357,7 @@ const AdminProducts: React.FC = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-admin-text-light mb-2">
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">
                         Price (₹) *
                       </label>
                       <input
@@ -376,7 +376,7 @@ const AdminProducts: React.FC = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-admin-text-light mb-2">
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">
                         Original Price (₹)
                       </label>
                       <input
@@ -395,7 +395,7 @@ const AdminProducts: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-admin-text-light mb-2">
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">
                       Image URL *
                     </label>
                     <input
@@ -409,7 +409,7 @@ const AdminProducts: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-admin-text-light mb-2">
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">
                       Features (comma-separated)
                     </label>
                     <input
@@ -420,7 +420,7 @@ const AdminProducts: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-admin-text-light mb-2">
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">
                       Ingredients (comma-separated)
                     </label>
                     <input

@@ -218,7 +218,7 @@ const AdminCategories: React.FC = () => {
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-admin-text-light mb-2">
+                  <label className="block text-sm font-medium text-admin-text-dark mb-2">
                     Category Name *
                   </label>
                   <input

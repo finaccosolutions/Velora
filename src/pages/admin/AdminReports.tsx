@@ -11,7 +11,16 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { format } from 'date-fns';
 
-const COLORS = ['#4A90E2', '#50E3C2', '#F5A623', '#BD10E0', '#7ED321', '#4A4A4A'];
+// Define admin theme colors for charts (adjusted for light theme)
+const COLORS = [
+  '#007BFF', // Primary Blue
+  '#28A745', // Success Green
+  '#FFC107', // Warning Yellow
+  '#6F42C1', // Secondary Purple
+  '#17A2B8', // Info Teal
+  '#DC3545', // Danger Red
+  '#CED4DA', // Light Gray for grid/axis (admin.text-light equivalent)
+];
 
 const AdminReports: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -105,7 +114,7 @@ const AdminReports: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-admin-background">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-admin-primary mx-auto mb-4"></div>
           <p className="text-admin-text">Generating reports...</p>
@@ -146,10 +155,10 @@ const AdminReports: React.FC = () => {
           </h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={salesData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={COLORS[5]} />
-              <XAxis dataKey="date" stroke={COLORS[5]} />
-              <YAxis stroke={COLORS[5]} />
-              <Tooltip contentStyle={{ backgroundColor: '#2D3748', border: 'none', borderRadius: '8px' }} itemStyle={{ color: '#E2E8F0' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={COLORS[6]} />
+              <XAxis dataKey="date" stroke={COLORS[6]} />
+              <YAxis stroke={COLORS[6]} />
+              <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderRadius: '8px', color: '#343A40' }} itemStyle={{ color: '#343A40' }} />
               <Legend />
               <Line type="monotone" dataKey="sales" stroke={COLORS[0]} activeDot={{ r: 8 }} />
             </LineChart>
@@ -168,11 +177,11 @@ const AdminReports: React.FC = () => {
             <span>Top 10 Product Performance</span>
           </h2>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={productPerformance} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke={COLORS[5]} />
-              <XAxis type="number" stroke={COLORS[5]} />
-              <YAxis type="category" dataKey="name" stroke={COLORS[5]} width={100} />
-              <Tooltip contentStyle={{ backgroundColor: '#2D3748', border: 'none', borderRadius: '8px' }} itemStyle={{ color: '#E2E8F0' }} />
+            <BarChart data={productPerformance} layout="vertical" margin={{ left: 20, right: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke={COLORS[6]} />
+              <XAxis type="number" stroke={COLORS[6]} />
+              <YAxis type="category" dataKey="name" stroke={COLORS[6]} width={100} />
+              <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderRadius: '8px', color: '#343A40' }} itemStyle={{ color: '#343A40' }} />
               <Legend />
               <Bar dataKey="quantity" fill={COLORS[1]} />
             </BarChart>
@@ -192,10 +201,10 @@ const AdminReports: React.FC = () => {
           </h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={userGrowth}>
-              <CartesianGrid strokeDasharray="3 3" stroke={COLORS[5]} />
-              <XAxis dataKey="month" stroke={COLORS[5]} />
-              <YAxis stroke={COLORS[5]} />
-              <Tooltip contentStyle={{ backgroundColor: '#2D3748', border: 'none', borderRadius: '8px' }} itemStyle={{ color: '#E2E8F0' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={COLORS[6]} />
+              <XAxis dataKey="month" stroke={COLORS[6]} />
+              <YAxis stroke={COLORS[6]} />
+              <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderRadius: '8px', color: '#343A40' }} itemStyle={{ color: '#343A40' }} />
               <Legend />
               <Line type="monotone" dataKey="count" stroke={COLORS[2]} activeDot={{ r: 8 }} />
             </LineChart>
@@ -229,7 +238,7 @@ const AdminReports: React.FC = () => {
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ backgroundColor: '#2D3748', border: 'none', borderRadius: '8px' }} itemStyle={{ color: '#E2E8F0' }} />
+              <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderRadius: '8px', color: '#343A40' }} itemStyle={{ color: '#343A40' }} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>

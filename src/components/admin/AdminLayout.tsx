@@ -19,7 +19,7 @@ const AdminLayout: React.FC = () => {
   const { userProfile, signOut, loading: authLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Controls mobile sidebar visibility
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
@@ -36,10 +36,10 @@ const AdminLayout: React.FC = () => {
   if (authLoading || !isAdmin) {
     // Show a loading spinner or a simple message while checking auth status
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-admin-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-admin-primary mx-auto mb-4"></div>
-          <p className="text-gray-300">Loading admin panel...</p>
+          <p className="text-admin-text">Loading admin panel...</p>
         </div>
       </div>
     );
@@ -57,10 +57,17 @@ const AdminLayout: React.FC = () => {
 
       {/* Sidebar */}
       <motion.aside
-        initial={false}
-        animate={{ width: isSidebarOpen ? '250px' : '0px', opacity: isSidebarOpen ? 1 : 0 }}
+        // For mobile: animate x position to slide in/out
+        initial={{ x: -250 }} // Start off-screen to the left
+        animate={{ x: isSidebarOpen ? 0 : -250 }} // Slide in (0) or out (-250)
         transition={{ duration: 0.3 }}
-        className={`fixed inset-y-0 left-0 z-40 bg-admin-sidebar shadow-xl overflow-hidden md:relative md:w-64 md:opacity-100 ${isSidebarOpen ? 'w-64' : 'w-0'}`}
+        // Tailwind classes:
+        // fixed for mobile, relative for desktop (md:relative)
+        // hidden by default on mobile, shown when isSidebarOpen is true (w-64)
+        // always visible and full width on desktop (md:w-64 md:opacity-100)
+        className={`fixed inset-y-0 left-0 z-40 bg-admin-sidebar shadow-xl overflow-hidden
+                    ${isSidebarOpen ? 'w-64' : 'w-0 opacity-0'} 
+                    md:relative md:translate-x-0 md:w-64 md:opacity-100`}
       >
         <div className="flex flex-col h-full p-6">
           {/* Logo */}
@@ -106,7 +113,7 @@ const AdminLayout: React.FC = () => {
             </div>
             <button
               onClick={handleLogout}
-              className="flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-red-400 hover:bg-red-900/20 transition-colors duration-200"
+              className="flex items-center space-x-3 w-full px-4 py-3 rounded-lg text-admin-danger hover:bg-admin-danger/20 transition-colors duration-200"
             >
               <LogOut className="h-5 w-5" />
               <span className="font-medium">Logout</span>
@@ -123,7 +130,7 @@ const AdminLayout: React.FC = () => {
       </motion.aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col md:ml-64"> {/* Add md:ml-64 to push content over on desktop */}
         <main className="flex-1 p-8 md:p-10">
           <Outlet />
         </main>

@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { format, subDays } from 'date-fns'; // Import format and subDays
 
 interface DashboardStats {
   totalProducts: number;
@@ -23,6 +24,17 @@ interface DashboardStats {
   salesData: any[];
   categoryData: any[];
 }
+
+// Define admin theme colors for charts (adjusted for light theme)
+const COLORS = [
+  '#007BFF', // Primary Blue
+  '#28A745', // Success Green
+  '#FFC107', // Warning Yellow
+  '#6F42C1', // Secondary Purple
+  '#17A2B8', // Info Teal
+  '#DC3545', // Danger Red
+  '#CED4DA', // Light Gray for grid/axis (admin.text-light equivalent)
+];
 
 const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState<DashboardStats>({
@@ -36,20 +48,20 @@ const AdminDashboard: React.FC = () => {
     categoryData: []
   });
   const [loading, setLoading] = useState(true);
-  const { userProfile, signOut, loading: authLoading, isAdmin } = useAuth(); // ADD isAdmin from useAuth
+  const { userProfile, signOut, loading: authLoading, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!authLoading && !isAdmin) { // USE isAdmin here
+    if (!authLoading && !isAdmin) {
       navigate('/');
       return;
     }
-    if (!authLoading && isAdmin) { // USE isAdmin here
+    if (!authLoading && isAdmin) {
       fetchDashboardData();
     } else if (!authLoading && !userProfile) {
       setLoading(false);
     }
-  }, [userProfile, authLoading, isAdmin]); // Add isAdmin to dependencies
+  }, [userProfile, authLoading, isAdmin, navigate]); // Added navigate to dependencies
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -96,23 +108,38 @@ const AdminDashboard: React.FC = () => {
       console.log('fetchDashboardData: Recent orders result:', recentOrders, 'Error:', recentOrdersError);
       if (recentOrdersError) throw recentOrdersError;
 
-      // Fetch top products
+      // Fetch top products (already implemented, just ensure it's correct)
       console.log('fetchDashboardData: Fetching top products...');
       const { data: topProducts, error: topProductsError } = await supabase
         .from('products')
-        .select('name, price, category')
-        .order('rating', { ascending: false })
+        .select('name, price, category, rating, reviews_count') // Added rating and reviews_count for sorting
+        .order('rating', { ascending: false }) // Sort by rating
         .limit(5);
       console.log('fetchDashboardData: Top products result:', topProducts, 'Error:', topProductsError);
       if (topProductsError) throw topProductsError;
 
-      // Generate mock sales data for chart (no Supabase call here)
-      const salesData = Array.from({ length: 7 }, (_, i) => ({
-        day: new Date(Date.now() - (6 - i) * 24 * 60 * 60 * 1000).toLocaleDateString('en', { weekday: 'short' }),
-        sales: Math.floor(Math.random() * 50000) + 10000
+      // Generate sales data for chart (last 7 days) - REAL DATA
+      const sevenDaysAgo = subDays(new Date(), 6);
+      const salesDataMap: { [key: string]: number } = {};
+      for (let i = 0; i < 7; i++) {
+        const date = format(subDays(new Date(), 6 - i), 'MMM dd');
+        salesDataMap[date] = 0;
+      }
+
+      orders.forEach(order => {
+        const orderDate = new Date(order.created_at);
+        if (orderDate >= sevenDaysAgo) {
+          const formattedDate = format(orderDate, 'MMM dd');
+          salesDataMap[formattedDate] = (salesDataMap[formattedDate] || 0) + order.total_amount;
+        }
+      });
+
+      const salesData = Object.keys(salesDataMap).map(date => ({
+        day: date,
+        sales: salesDataMap[date]
       }));
 
-      // Fetch category distribution
+      // Fetch category distribution (already implemented, just ensure it's correct)
       console.log('fetchDashboardData: Fetching product categories for distribution...');
       const { data: productsData, error: productsDataError } = await supabase
         .from('products')
@@ -163,53 +190,53 @@ const AdminDashboard: React.FC = () => {
     navigate('/admin/login');
   };
 
-  const COLORS = ['#815536', '#c9baa8', '#a67c52', '#6d4429', '#b8a494'];
+  // The COLORS array is now defined at the top of the file to use admin theme colors.
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-admin-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#815536] mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-admin-primary mx-auto mb-4"></div>
+          <p className="text-admin-text">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-admin-background">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-admin-card shadow-sm border-b border-admin-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-r from-[#815536] to-[#c9baa8] p-2 rounded-lg">
+              <div className="bg-admin-primary p-2 rounded-lg">
                 <span className="text-white font-bold text-xl">V</span>
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-sm text-gray-600">Velora Tradings</p>
+                <h1 className="text-xl font-bold text-admin-text">Admin Dashboard</h1>
+                <p className="text-sm text-admin-text-light">Velora Tradings</p>
               </div>
             </div>
 
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate('/admin/products')}
-                className="flex items-center space-x-2 px-4 py-2 bg-[#815536] text-white rounded-lg hover:bg-[#6d4429] transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 bg-admin-primary text-white rounded-lg hover:bg-admin-primary-dark transition-colors"
               >
                 <Package className="h-4 w-4" />
                 <span>Manage Products</span>
               </button>
               <button
                 onClick={() => navigate('/')}
-                className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 border border-admin-border rounded-lg hover:bg-admin-card transition-colors text-admin-text-light"
               >
                 <Eye className="h-4 w-4" />
                 <span>View Site</span>
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="flex items-center space-x-2 px-4 py-2 text-admin-danger hover:bg-admin-danger/20 rounded-lg transition-colors"
               >
                 <LogOut className="h-4 w-4" />
                 <span>Logout</span>
@@ -219,26 +246,26 @@ const AdminDashboard: React.FC = () => {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[
-            { title: 'Total Products', value: stats.totalProducts, icon: Package, color: 'bg-blue-500' },
-            { title: 'Total Users', value: stats.totalUsers, icon: Users, color: 'bg-green-500' },
-            { title: 'Total Orders', value: stats.totalOrders, icon: ShoppingCart, color: 'bg-yellow-500' },
-            { title: 'Total Revenue', value: `₹${stats.totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'bg-purple-500' }
+            { title: 'Total Products', value: stats.totalProducts, icon: Package, color: 'bg-admin-primary' },
+            { title: 'Total Users', value: stats.totalUsers, icon: Users, color: 'bg-admin-secondary' },
+            { title: 'Total Orders', value: stats.totalOrders, icon: ShoppingCart, color: 'bg-admin-warning' },
+            { title: 'Total Revenue', value: `₹${stats.totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'bg-admin-success' }
           ].map((stat, index) => (
             <motion.div
               key={stat.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-xl shadow-lg p-6"
+              className="bg-admin-card rounded-xl shadow-lg p-6"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-sm font-medium text-admin-text-light">{stat.title}</p>
+                  <p className="text-2xl font-bold text-admin-text">{stat.value}</p>
                 </div>
                 <div className={`${stat.color} p-3 rounded-lg`}>
                   <stat.icon className="h-6 w-6 text-white" />
@@ -254,16 +281,16 @@ const AdminDashboard: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="bg-white rounded-xl shadow-lg p-6"
+            className="bg-admin-card rounded-xl shadow-lg p-6"
           >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Weekly Sales</h3>
+            <h3 className="text-lg font-semibold text-admin-text mb-4">Weekly Sales</h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={stats.salesData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
-                <YAxis />
-                <Tooltip formatter={(value) => [`₹${value.toLocaleString()}`, 'Sales']} />
-                <Line type="monotone" dataKey="sales" stroke="#815536" strokeWidth={2} />
+                <CartesianGrid strokeDasharray="3 3" stroke={COLORS[6]} />
+                <XAxis dataKey="day" stroke={COLORS[6]} />
+                <YAxis stroke={COLORS[6]} />
+                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderRadius: '8px', color: '#343A40' }} itemStyle={{ color: '#343A40' }} formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Sales']} />
+                <Line type="monotone" dataKey="sales" stroke={COLORS[0]} strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           </motion.div>
@@ -272,9 +299,9 @@ const AdminDashboard: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="bg-white rounded-xl shadow-lg p-6"
+            className="bg-admin-card rounded-xl shadow-lg p-6"
           >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Product Categories</h3>
+            <h3 className="text-lg font-semibold text-admin-text mb-4">Product Categories</h3>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -282,7 +309,6 @@ const AdminDashboard: React.FC = () => {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
@@ -291,7 +317,7 @@ const AdminDashboard: React.FC = () => {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip contentStyle={{ backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderRadius: '8px', color: '#343A40' }} itemStyle={{ color: '#343A40' }} />
               </PieChart>
             </ResponsiveContainer>
           </motion.div>
@@ -303,26 +329,26 @@ const AdminDashboard: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-lg p-6"
+            className="bg-admin-card rounded-xl shadow-lg p-6"
           >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Orders</h3>
+            <h3 className="text-lg font-semibold text-admin-text mb-4">Recent Orders</h3>
             <div className="space-y-4">
               {stats.recentOrders.map((order) => (
-                <div key={order.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                <div key={order.id} className="flex items-center justify-between p-4 border border-admin-border rounded-lg">
                   <div>
-                    <p className="font-medium text-gray-900">{order.users?.full_name}</p>
-                    <p className="text-sm text-gray-600">{order.users?.email}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="font-medium text-admin-text">{order.users?.full_name}</p>
+                    <p className="text-sm text-admin-text-light">{order.users?.email}</p>
+                    <p className="text-xs text-admin-text-light">
                       {new Date(order.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-gray-900">₹{order.total_amount.toLocaleString()}</p>
+                    <p className="font-bold text-admin-primary">₹{order.total_amount.toLocaleString()}</p>
                     <span className={`inline-block px-2 py-1 text-xs rounded-full ${
-                      order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                      order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
-                      order.status === 'confirmed' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-gray-100 text-gray-800'
+                      order.status === 'delivered' ? 'bg-admin-success/20 text-admin-success' :
+                      order.status === 'shipped' ? 'bg-admin-primary/20 text-admin-primary' :
+                      order.status === 'confirmed' ? 'bg-admin-warning/20 text-admin-warning' :
+                      'bg-admin-text-light/20 text-admin-text-light'
                     }`}>
                       {order.status}
                     </span>
@@ -337,18 +363,18 @@ const AdminDashboard: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white rounded-xl shadow-lg p-6"
+            className="bg-admin-card rounded-xl shadow-lg p-6"
           >
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Rated Products</h3>
+            <h3 className="text-lg font-semibold text-admin-text mb-4">Top Rated Products</h3>
             <div className="space-y-4">
               {stats.topProducts.map((product, index) => (
-                <div key={index} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                <div key={index} className="flex items-center justify-between p-4 border border-admin-border rounded-lg">
                   <div>
-                    <p className="font-medium text-gray-900">{product.name}</p>
-                    <p className="text-sm text-gray-600">{product.category}</p>
+                    <p className="font-medium text-admin-text">{product.name}</p>
+                    <p className="text-sm text-admin-text-light">{product.category}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-[#815536]">₹{product.price.toLocaleString()}</p>
+                    <p className="font-bold text-admin-primary">₹{product.price.toLocaleString()}</p>
                   </div>
                 </div>
               ))}
