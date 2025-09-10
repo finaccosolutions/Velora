@@ -82,6 +82,7 @@ const ProductDetail: React.FC = () => {
   // NEW: Handle Buy Now
   const handleBuyNow = () => {
     if (product) {
+      sessionStorage.setItem('buyNowProductId', product.id); // Save product ID to sessionStorage
       navigate('/checkout', { state: { productId: product.id } });
     }
   };
@@ -219,9 +220,9 @@ const ProductDetail: React.FC = () => {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={handleAddToCart}
-                  className="flex-1 bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white py-4 px-6 rounded-lg font-semibold hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200 flex items-center justify-center space-x-2"
+                  className="flex-1 bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white py-4 px-6 rounded-lg font-semibold hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200 flex items-center justify-center space-x-2  border-2 border-[#815536]"
                 >
-                  <ShoppingCart className="h-5 w-5" />
+                  
                   <span>Add to Cart</span>
                 </motion.button>
 
@@ -317,7 +318,7 @@ const ProductDetail: React.FC = () => {
                   <h3 className="text-xl font-semibold text-gray-900 mb-4">Product Features</h3>
                   <ul className="space-y-3">
                     {product.features.map((feature, index) => (
-                      <li key={index} className="flex items-start space-x-3">
+                      <li key={index} className="flex items-center space-x-3">
                         <div className="w-2 h-2 bg-[#815536] rounded-full"></div>
                         <span className="text-gray-700">{feature}</span>
                       </li>
@@ -347,3 +348,4 @@ const ProductDetail: React.FC = () => {
 };
 
 export default ProductDetail;
+

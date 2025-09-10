@@ -10,7 +10,7 @@ interface SupabaseProduct extends Omit<ProductType, 'category' | 'reviews' | 'in
   category_name: string;
   reviews_count: number;
   in_stock: boolean;
-  stock_quantity: number; // NEW: Add stock_quantity to SupabaseProduct
+  stock_quantity: number; // NEW: Add stock_quantity
 }
 
 export const useSupabaseProducts = () => {
@@ -152,7 +152,8 @@ export const useSupabaseProducts = () => {
           .eq('id', id)
           .single(),
         new Promise((_, reject) =>
-          setTimeout(() => reject(new Error(`Product ${id} fetch timed out after 5 seconds`)), 5000)
+          // MODIFIED: Increased timeout duration to 30 seconds
+          setTimeout(() => reject(new Error(`Product ${id} fetch timed out after 30 seconds`)), 30000) 
         )
       ]);
 
@@ -259,3 +260,4 @@ export const useSupabaseProducts = () => {
     deleteProduct,
   };
 };
+

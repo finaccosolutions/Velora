@@ -5,32 +5,30 @@ import { motion } from 'framer-motion';
 import { Trash2, HeartCrack, ArrowLeft, ShoppingCart } from 'lucide-react';
 import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
-import { useToast } from '../context/ToastContext'; // NEW: Import useToast
+import { useToast } from '../context/ToastContext';
 
 const Wishlist: React.FC = () => {
   const { wishlistItems, removeFromWishlist, loading } = useSupabaseWishlist();
   const { addToCart } = useSupabaseCart();
   const navigate = useNavigate();
-  const { showToast } = useToast(); // NEW: Use useToast hook
-
-  // REMOVED: Local showToast function
+  const { showToast } = useToast();
 
   const handleMoveToCart = async (productId: string, wishlistItemId: string) => {
     const result = await addToCart(productId, 1);
     if (!result.error) {
       await removeFromWishlist(wishlistItemId);
-      showToast('Product moved to cart!', 'success'); // NEW: Use global showToast
+      showToast('Product moved to cart!', 'success');
     } else {
-      showToast(result.error.message, 'error'); // NEW: Use global showToast
+      showToast(result.error.message, 'error');
     }
   };
 
   const handleRemoveFromWishlist = async (wishlistItemId: string) => {
     const result = await removeFromWishlist(wishlistItemId);
     if (!result.error) {
-      showToast('Product removed from wishlist', 'success'); // NEW: Use global showToast
+      showToast('Product removed from wishlist', 'success');
     } else {
-      showToast(result.error.message, 'error'); // NEW: Use global showToast
+      showToast(result.error.message, 'error');
     }
   };
 
@@ -111,7 +109,7 @@ const Wishlist: React.FC = () => {
                 
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900">{item.product.name}</h3>
-                  <p className="text-gray-600 text-sm">{item.product.category}</p>
+                  <p className="text-gray-600 text-sm">{item.product.category_name}</p> {/* MODIFIED: Use category_name */}
                   <p className="font-bold text-[#815536] mt-1">₹{item.product.price}</p>
                 </div>
 
@@ -143,3 +141,4 @@ const Wishlist: React.FC = () => {
 };
 
 export default Wishlist;
+

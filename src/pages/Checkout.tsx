@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react'; // Import useEffect
-import { useNavigate, useLocation } from 'react-router-dom'; // Import useLocation
+// src/pages/Checkout.tsx
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CreditCard, Truck, MapPin, User } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
 import { useAuth } from '../context/AuthContext';
-import { useSupabaseProducts } from '../hooks/useSupabaseProducts'; // NEW: Import useSupabaseProducts
+import { useSupabaseProducts } from '../hooks/useSupabaseProducts';
 
 interface CheckoutForm {
   email: string;
@@ -20,31 +21,49 @@ interface CheckoutForm {
 }
 
 const Checkout: React.FC = () => {
-  const { cartItems, getCartTotal, clearCart } = useSupabaseCart();
+  const { cartItems, getCartTotal, clearCart, loading: cartLoading } = useSupabaseCart();
   const { userProfile } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation(); // NEW: Get location object
-  const { getProductById } = useSupabaseProducts(); // NEW: Use product hook
+  const location = useLocation();
+  const { getProductById } = useSupabaseProducts();
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [singleProductCheckout, setSingleProductCheckout] = useState<any | null>(null); // NEW: State for single product checkout
+  // Initialize to null, and let the useEffect determine if it's a buy-now product
+  const [singleProductCheckout, setSingleProductCheckout] = useState<any | null>(null); 
+  // This state tracks if we are actively fetching a single product for "Buy Now"
+  const [loadingSingleProduct, setLoadingSingleProduct] = useState(true); // Start as true, assuming we might need to fetch
 
-  // NEW: Effect to handle "Buy Now" from product page
+  // Effect to handle "Buy Now" from product page
   useEffect(() => {
-    const { productId } = location.state || {};
-    if (productId) {
+    let currentProductId: string | undefined = location.state?.productId;
+    if (!currentProductId) {
+      // If not from location.state, check sessionStorage
+      currentProductId = sessionStorage.getItem('buyNowProductId') || undefined;
+    }
+
+    if (currentProductId) {
+      setLoadingSingleProduct(true); // Indicate that we are fetching a single product
       const fetchSingleProduct = async () => {
-        const { data, error } = await getProductById(productId);
-        if (data) {
-          setSingleProductCheckout(data);
-        } else {
-          console.error('Failed to fetch product for buy now:', error);
-          navigate('/products'); // Redirect if product not found
+        try {
+          const { data, error } = await getProductById(currentProductId!);
+          if (data) {
+            setSingleProductCheckout(data);
+          } else {
+            console.error('Failed to fetch product for buy now:', error);
+            setSingleProductCheckout(null); // Explicitly set to null if not found or error
+          }
+        } finally {
+          setLoadingSingleProduct(false); // Fetching is complete
+          sessionStorage.removeItem('buyNowProductId'); // Clean up sessionStorage
         }
       };
       fetchSingleProduct();
+    } else {
+      // If no productId, then it's not a single product checkout
+      setLoadingSingleProduct(false); 
+      setSingleProductCheckout(null); // Confirm it's not a single product checkout
     }
-  }, [location.state, getProductById, navigate]);
+  }, [location.state, getProductById]);
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<CheckoutForm>({
     defaultValues: {
@@ -62,18 +81,53 @@ const Checkout: React.FC = () => {
 
   const paymentMethod = watch('paymentMethod');
 
-  // Determine items and totals based on whether it's a single product checkout or cart checkout
-  const itemsToCheckout = singleProductCheckout ? [{ product: singleProductCheckout, quantity: 1 }] : cartItems;
+  // Determine items to checkout based on resolved loading states
+  let itemsToCheckout = [];
+  if (!loadingSingleProduct && singleProductCheckout) {
+    // If single product is loaded and exists
+    itemsToCheckout = [{ product: singleProductCheckout, quantity: 1 }];
+  } else if (!cartLoading && cartItems.length > 0) {
+    // If cart is loaded and has items, and it's not a single product checkout
+    itemsToCheckout = cartItems;
+  }
+
   const subtotal = singleProductCheckout ? singleProductCheckout.price : getCartTotal();
   const shipping = subtotal > 2000 ? 0 : 100;
   const tax = Math.round(subtotal * 0.18);
   const total = subtotal + shipping + tax;
 
-  // Redirect if no items to checkout
-  if (itemsToCheckout.length === 0 && !singleProductCheckout) {
-    navigate('/cart');
-    return null;
+  // NEW: useEffect for navigation logic
+  useEffect(() => {
+    // Only proceed with navigation check if all loading is complete
+    // This means both cartLoading and loadingSingleProduct are false
+    if (!cartLoading && !loadingSingleProduct) {
+      // If there are no items to checkout (neither cart nor single product)
+      if (itemsToCheckout.length === 0) { // Simplified condition
+        console.log('Redirecting to cart: No items to checkout after all loading is complete.');
+        navigate('/cart');
+      }
+    }
+  }, [cartLoading, loadingSingleProduct, itemsToCheckout.length, navigate]);
+
+
+  // Render loading state if data is still being fetched
+  // This condition should catch initial loading states for both cart and single product
+  if (cartLoading || loadingSingleProduct) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center py-16">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#815536] mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading checkout details...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
+
+  // If we reach here, it means loading is complete and itemsToCheckout is correctly populated.
+  // The useEffect above would have already redirected if there were no items.
+  // So, if we are here, it means there are items to display for checkout.
 
   const onSubmit = async (data: CheckoutForm) => {
     setIsProcessing(true);
@@ -82,7 +136,7 @@ const Checkout: React.FC = () => {
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     // Clear cart only if it was a multi-item cart checkout
-    if (!singleProductCheckout) {
+    if (!singleProductCheckout) { // This check is now more reliable
       clearCart();
     }
     navigate('/order-success', { state: { orderData: data, total } });
@@ -303,7 +357,7 @@ const Checkout: React.FC = () => {
 
                 {/* Order Items */}
                 <div className="space-y-4 mb-6 max-h-60 overflow-y-auto">
-                  {itemsToCheckout.map((item) => ( // MODIFIED: Use itemsToCheckout
+                  {itemsToCheckout.map((item) => (
                     <div key={item.product.id} className="flex items-center space-x-3">
                       <img
                         src={item.product.image_url}
@@ -369,3 +423,4 @@ const Checkout: React.FC = () => {
 };
 
 export default Checkout;
+
