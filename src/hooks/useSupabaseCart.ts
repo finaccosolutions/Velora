@@ -10,12 +10,22 @@ interface CartItem {
 export const useSupabaseCart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user, userProfile, loading: authLoading } = useAuth(); // Removed isVisible
+  const { user, userProfile, loading: authLoading } = useAuth(); // Keep userProfile here
   const isFetchingRef = useRef(false);
 
   const fetchCartItems = useCallback(async () => {
-    // isFetchingRef.current is managed by the useEffect now
-    setLoading(true); // Set loading true when the fetch actually starts
+    if (isFetchingRef.current) {
+      console.log('fetchCartItems: Fetch already in progress, skipping.');
+      return;
+    }
+    if (!user?.id || !userProfile) { // Ensure user ID and userProfile exist before attempting to fetch
+      console.log('fetchCartItems: No user ID or userProfile available, cannot fetch cart items.');
+      setCartItems([]);
+      return;
+    }
+
+    isFetchingRef.current = true;
+    setLoading(true);
     console.time('fetchCartItemsQuery');
     try {
       console.log('fetchCartItems: Current authLoading state:', authLoading);
@@ -41,7 +51,7 @@ export const useSupabaseCart = () => {
               categories(name)
             )
           `)
-          .eq('user_id', user?.id); // Use optional chaining for user?.id
+          .eq('user_id', user.id); // Use user.id directly
 
       console.log('fetchCartItems: Supabase cart query executed.');
       console.timeEnd('fetchCartItemsQuery');
@@ -60,6 +70,7 @@ export const useSupabaseCart = () => {
           }
         }));
         setCartItems(mappedData || []);
+        console.log('fetchCartItems: Cart items state updated to:', mappedData); // NEW LOG
       }
     } catch (error: any) {
       console.error('Error fetching cart items (caught exception):', error.message);
@@ -68,36 +79,21 @@ export const useSupabaseCart = () => {
       setLoading(false);
       isFetchingRef.current = false; // Reset ref in finally block
     }
-  }, [user, authLoading]); // Keep user and authLoading as dependencies for fetchCartItems
+  }, [user?.id, userProfile]); // Dependency on user.id and userProfile ensures fetchCartItems is stable and re-created only when user changes
 
   useEffect(() => {
     console.log('useSupabaseCart useEffect: authLoading:', authLoading, 'user:', user, 'userProfile:', userProfile);
-    // Removed timeoutId as setTimeout is removed
 
-    // Only fetch if auth is not loading, userProfile is available
-    // MODIFIED START: Remove isVisible from condition
-    if (!authLoading && user && userProfile && !isFetchingRef.current) {
-      if (isFetchingRef.current) {
-        console.log('useSupabaseCart useEffect: Fetch already in progress, skipping scheduling.');
-        return;
+    if (!authLoading) {
+      if (user && userProfile) { // Ensure both user and userProfile are available
+        console.log('useSupabaseCart useEffect: User and profile available, triggering fetchCartItems.');
+        fetchCartItems();
+      } else {
+        console.log('useSupabaseCart useEffect: No user or profile, clearing cart items.');
+        setCartItems([]);
       }
-      
-      isFetchingRef.current = true; // Set ref to true before scheduling
-      console.log('useSupabaseCart useEffect: Triggering fetchCartItems.');
-      fetchCartItems();
-    } else if (!authLoading && !user) {
-      // If auth is done loading and no user, clear cart items immediately
-      console.log('useSupabaseCart useEffect: No user and auth done loading, clearing cart items.');
-      setCartItems([]);
-    } else {
-      console.log('useSupabaseCart useEffect: Skipping fetch. authLoading:', authLoading, 'userProfile:', userProfile);
     }
-    // MODIFIED END: Remove isVisible from condition
-
-    return () => {
-      // No cleanup for setTimeout needed
-    };
-  }, [user, userProfile, authLoading, fetchCartItems]); // Removed isVisible from dependencies
+  }, [user, userProfile, authLoading, fetchCartItems]); // Dependencies for the useEffect
 
   const addToCart = async (productId: string, quantity: number = 1) => {
     if (!user) return { error: new Error('Please login to add items to cart') };
@@ -227,3 +223,4 @@ export const useSupabaseCart = () => {
     fetchCartItems,
   };
 };
+

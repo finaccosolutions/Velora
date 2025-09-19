@@ -127,6 +127,7 @@ export const useSupabaseProducts = () => {
   }, [user, session, fetchProducts, fetchCategoriesForFilter]); // Removed isVisible from dependencies
 
   const getProductById = async (id: string) => {
+    console.log(`getProductById: Attempting to fetch product with ID: ${id}`);
     try {
       const { data, error } = await Promise.race([
         supabase
@@ -157,7 +158,15 @@ export const useSupabaseProducts = () => {
         )
       ]);
 
-      if (error) throw error;
+      if (error) {
+        console.error(`getProductById: Supabase query error for product ${id}:`, error);
+        throw error;
+      }
+
+      if (!data) {
+        console.warn(`getProductById: No data returned for product ${id}.`);
+        return { data: null, error: new Error(`Product ${id} not found.`) };
+      }
 
       const mappedProduct: SupabaseProduct = {
         ...data,
@@ -165,7 +174,7 @@ export const useSupabaseProducts = () => {
         category: data.category,
         stockQuantity: data.stock_quantity, // Map stock_quantity to stockQuantity
       };
-
+      console.log(`getProductById: Successfully fetched and mapped product ${id}:`, mappedProduct);
       return { data: mappedProduct, error: null };
     } catch (error: any) {
       console.error('getProductById: Caught unexpected exception:', error.message);

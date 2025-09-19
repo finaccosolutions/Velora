@@ -10,6 +10,7 @@ import { useToast } from '../context/ToastContext'; // NEW: Import useToast
 import { useNavigate } from 'react-router-dom'; // NEW: Import useNavigate
 
 const FeaturedProducts: React.FC = () => {
+  console.log(`FeaturedProducts re-rendered. Wishlist status for first product: ${useSupabaseWishlist().isInWishlist(useSupabaseProducts().products[0]?.id)}`); // ADD THIS LINE
   const { products, loading } = useSupabaseProducts();
   const { addToCart } = useSupabaseCart();
   const { wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useSupabaseWishlist();
@@ -30,7 +31,7 @@ const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
   if (!result.error) {
     showToast('Product added to cart!', 'success'); // NEW: Use global showToast
   } else {
-    showToast(result.error.message, 'error'); // NEW: Use global showToast
+    showToast(result.error.error_description || result.error.message, 'error'); // NEW: Use global showToast
   }
 };
 
@@ -48,7 +49,7 @@ const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
         if (!result.error) {
           showToast(`${productName} removed from wishlist!`, 'success'); // NEW: Use global showToast
         } else {
-          showToast(result.error.message, 'error'); // NEW: Use global showToast
+          showToast(result.error.error_description || result.error.message, 'error'); // NEW: Use global showToast
         }
       }
     } else {
@@ -56,7 +57,7 @@ const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
       if (!result.error) {
         showToast(`${productName} added to wishlist!`, 'success'); // NEW: Use global showToast
       } else {
-        showToast(result.error.message, 'error'); // NEW: Use global showToast
+        showToast(result.error.error_description || result.error.message, 'error'); // NEW: Use global showToast
       }
     }
   };
@@ -308,3 +309,4 @@ const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
 };
 
 export default FeaturedProducts;
+

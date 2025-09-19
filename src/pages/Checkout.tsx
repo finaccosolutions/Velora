@@ -28,42 +28,62 @@ const Checkout: React.FC = () => {
   const { getProductById } = useSupabaseProducts();
 
   const [isProcessing, setIsProcessing] = useState(false);
-  // Initialize to null, and let the useEffect determine if it's a buy-now product
   const [singleProductCheckout, setSingleProductCheckout] = useState<any | null>(null); 
-  // This state tracks if we are actively fetching a single product for "Buy Now"
-  const [loadingSingleProduct, setLoadingSingleProduct] = useState(true); // Start as true, assuming we might need to fetch
+  const [loadingSingleProduct, setLoadingSingleProduct] = useState(true); 
+  const [checkoutItems, setCheckoutItems] = useState<any[]>([]); // NEW: State for items to checkout
 
   // Effect to handle "Buy Now" from product page
   useEffect(() => {
     let currentProductId: string | undefined = location.state?.productId;
     if (!currentProductId) {
-      // If not from location.state, check sessionStorage
       currentProductId = sessionStorage.getItem('buyNowProductId') || undefined;
     }
 
+    console.log('Checkout useEffect [Buy Now]: currentProductId from state/sessionStorage:', currentProductId);
+
     if (currentProductId) {
-      setLoadingSingleProduct(true); // Indicate that we are fetching a single product
+      setLoadingSingleProduct(true);
       const fetchSingleProduct = async () => {
         try {
+          console.log('Checkout useEffect [Buy Now]: Attempting to fetch product with ID:', currentProductId);
           const { data, error } = await getProductById(currentProductId!);
+          console.log('Checkout useEffect [Buy Now]: getProductById returned - Data:', data, 'Error:', error); // NEW LOG
           if (data) {
+            console.log('Checkout useEffect [Buy Now]: Product fetched successfully:', data);
             setSingleProductCheckout(data);
           } else {
-            console.error('Failed to fetch product for buy now:', error);
-            setSingleProductCheckout(null); // Explicitly set to null if not found or error
+            console.error('Checkout useEffect [Buy Now]: Failed to fetch product for buy now:', error);
+            setSingleProductCheckout(null);
           }
         } finally {
-          setLoadingSingleProduct(false); // Fetching is complete
-          sessionStorage.removeItem('buyNowProductId'); // Clean up sessionStorage
+          setLoadingSingleProduct(false);
+          sessionStorage.removeItem('buyNowProductId');
+          console.log('Checkout useEffect [Buy Now]: loadingSingleProduct set to false, sessionStorage cleared.');
         }
       };
       fetchSingleProduct();
     } else {
-      // If no productId, then it's not a single product checkout
+      console.log('Checkout useEffect [Buy Now]: No single product ID found, setting loadingSingleProduct to false.');
       setLoadingSingleProduct(false); 
-      setSingleProductCheckout(null); // Confirm it's not a single product checkout
+      setSingleProductCheckout(null);
     }
   }, [location.state, getProductById]);
+
+  // NEW: Effect to update checkoutItems state
+  useEffect(() => {
+    console.log('Checkout useEffect [Update checkoutItems]: singleProductCheckout:', singleProductCheckout, 'cartItems.length:', cartItems.length, 'cartLoading:', cartLoading, 'loadingSingleProduct:', loadingSingleProduct);
+    if (!loadingSingleProduct && singleProductCheckout) {
+      setCheckoutItems([{ product: singleProductCheckout, quantity: 1 }]);
+      console.log('Checkout useEffect [Update checkoutItems]: Setting checkoutItems from singleProductCheckout:', [{ product: singleProductCheckout, quantity: 1 }]);
+    } else if (!cartLoading && cartItems.length > 0) {
+      setCheckoutItems(cartItems);
+      console.log('Checkout useEffect [Update checkoutItems]: Setting checkoutItems from cartItems:', cartItems);
+    } else {
+      setCheckoutItems([]);
+      console.log('Checkout useEffect [Update checkoutItems]: Setting checkoutItems to empty.');
+    }
+  }, [singleProductCheckout, cartItems, cartLoading, loadingSingleProduct]);
+
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<CheckoutForm>({
     defaultValues: {
@@ -81,38 +101,29 @@ const Checkout: React.FC = () => {
 
   const paymentMethod = watch('paymentMethod');
 
-  // Determine items to checkout based on resolved loading states
-  let itemsToCheckout = [];
-  if (!loadingSingleProduct && singleProductCheckout) {
-    // If single product is loaded and exists
-    itemsToCheckout = [{ product: singleProductCheckout, quantity: 1 }];
-  } else if (!cartLoading && cartItems.length > 0) {
-    // If cart is loaded and has items, and it's not a single product checkout
-    itemsToCheckout = cartItems;
-  }
-
-  const subtotal = singleProductCheckout ? singleProductCheckout.price : getCartTotal();
+  // Use checkoutItems for calculations
+  const subtotal = checkoutItems.reduce((total, item) => total + (item.product.price * item.quantity), 0);
   const shipping = subtotal > 2000 ? 0 : 100;
   const tax = Math.round(subtotal * 0.18);
   const total = subtotal + shipping + tax;
 
   // NEW: useEffect for navigation logic
   useEffect(() => {
+    console.log('Checkout useEffect [Navigation]: cartLoading:', cartLoading, 'loadingSingleProduct:', loadingSingleProduct, 'checkoutItems.length:', checkoutItems.length);
     // Only proceed with navigation check if all loading is complete
-    // This means both cartLoading and loadingSingleProduct are false
     if (!cartLoading && !loadingSingleProduct) {
-      // If there are no items to checkout (neither cart nor single product)
-      if (itemsToCheckout.length === 0) { // Simplified condition
-        console.log('Redirecting to cart: No items to checkout after all loading is complete.');
+      // If there are no items to checkout
+      if (checkoutItems.length === 0) {
+        console.log('Checkout useEffect [Navigation]: Redirecting to cart: No items to checkout after all loading is complete.');
         navigate('/cart');
       }
     }
-  }, [cartLoading, loadingSingleProduct, itemsToCheckout.length, navigate]);
+  }, [cartLoading, loadingSingleProduct, checkoutItems.length, navigate]);
 
 
   // Render loading state if data is still being fetched
-  // This condition should catch initial loading states for both cart and single product
   if (cartLoading || loadingSingleProduct) {
+    console.log('Checkout: Rendering loading state. cartLoading:', cartLoading, 'loadingSingleProduct:', loadingSingleProduct);
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -124,10 +135,6 @@ const Checkout: React.FC = () => {
       </div>
     );
   }
-
-  // If we reach here, it means loading is complete and itemsToCheckout is correctly populated.
-  // The useEffect above would have already redirected if there were no items.
-  // So, if we are here, it means there are items to display for checkout.
 
   const onSubmit = async (data: CheckoutForm) => {
     setIsProcessing(true);
@@ -357,7 +364,7 @@ const Checkout: React.FC = () => {
 
                 {/* Order Items */}
                 <div className="space-y-4 mb-6 max-h-60 overflow-y-auto">
-                  {itemsToCheckout.map((item) => (
+                  {checkoutItems.map((item) => ( // Use checkoutItems here
                     <div key={item.product.id} className="flex items-center space-x-3">
                       <img
                         src={item.product.image_url}

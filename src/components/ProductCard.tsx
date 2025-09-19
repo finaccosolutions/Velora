@@ -14,6 +14,7 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
+  console.log(`ProductCard ${product.id} re-rendered. Wishlist status: ${useSupabaseWishlist().isInWishlist(product.id)}`); // ADD THIS LINE
   const { addToCart } = useSupabaseCart();
   const { wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useSupabaseWishlist();
   const { showToast } = useToast(); // NEW: Use useToast hook
@@ -21,28 +22,43 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
 
   // REMOVED: Local showToast function
 
-  const handleWishlistToggle = async (e: React.MouseEvent) => {
+  const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+   
+    const result = await addToCart(productId, 1);
+    if (!result.error) {
+      showToast('Product added to cart!', 'success'); // NEW: Use global showToast
+    } else {
+      showToast(result.error.error_description || result.error.message, 'error'); // NEW: Use global showToast
+    }
+  };
+
+  // Unified function to toggle wishlist status
+  const handleWishlistToggle = async (e: React.MouseEvent, productId: string, productName: string) => {
     e.preventDefault();
     e.stopPropagation();
     
-    const isCurrentlyInWishlist = isInWishlist(product.id);
+    const isCurrentlyInWishlist = isInWishlist(productId);
     
     if (isCurrentlyInWishlist) {
-      const wishlistItem = wishlistItems.find(item => item.product_id === product.id);
+      const wishlistItem = wishlistItems.find(item => item.product_id === productId);
       if (wishlistItem) {
         const result = await removeFromWishlist(wishlistItem.id);
         if (!result.error) {
-          showToast(`${product.name} removed from wishlist!`, 'success'); // NEW: Use global showToast
+          showToast(`${productName} removed from wishlist!`, 'success'); // NEW: Use global showToast
         } else {
-          showToast(result.error.message, 'error'); // NEW: Use global showToast
+          showToast(result.error.error_description || result.error.message, 'error'); // NEW: Use global showToast
         }
       }
     } else {
-      const result = await addToWishlist(product.id);
+      const result = await addToWishlist(productId);
       if (!result.error) {
-        showToast(`${product.name} added to wishlist!`, 'success'); // NEW: Use global showToast
+        showToast(`${productName} added to wishlist!`, 'success'); // NEW: Use global showToast
       } else {
-        showToast(result.error.message, 'error'); // NEW: Use global showToast
+        showToast(result.error.error_description || result.error.message, 'error'); // NEW: Use global showToast
       }
     }
   };
@@ -74,7 +90,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
             </div>
           )}
           <button 
-            onClick={handleWishlistToggle}
+            onClick={(e) => handleWishlistToggle(e, product.id, product.name)} // MODIFIED: Pass product.name
             className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md transition-all duration-300 hover:bg-white" // MODIFIED: Removed opacity-0 group-hover:opacity-100
           >
             <Heart 
@@ -144,3 +160,4 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
 };
 
 export default ProductCard;
+

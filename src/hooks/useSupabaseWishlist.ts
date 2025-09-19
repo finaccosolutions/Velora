@@ -10,11 +10,21 @@ interface WishlistItem {
 export const useSupabaseWishlist = () => {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user, userProfile, loading: authLoading } = useAuth(); // Removed isVisible
+  const { user, userProfile, loading: authLoading } = useAuth(); // Keep userProfile here
   const isFetchingRef = useRef(false);
 
   const fetchWishlistItems = useCallback(async () => {
-    // isFetchingRef.current is managed by the useEffect now
+    if (isFetchingRef.current) {
+      console.log('fetchWishlistItems: Fetch already in progress, skipping.');
+      return;
+    }
+    if (!user?.id || !userProfile) { // Ensure user ID and userProfile exist before attempting to fetch
+      console.log('fetchWishlistItems: No user ID or userProfile available, cannot fetch wishlist items.');
+      setWishlistItems([]);
+      return;
+    }
+
+    isFetchingRef.current = true;
     setLoading(true); // Set loading true when the fetch actually starts
     console.time('fetchWishlistItemsQuery');
     try {
@@ -40,7 +50,7 @@ export const useSupabaseWishlist = () => {
               categories(name)
             )
           `)
-          .eq('user_id', user?.id); // Use optional chaining for user?.id
+          .eq('user_id', user.id); // Use user.id directly
 
       console.log('fetchWishlistItems: Supabase wishlist query executed.');
       console.timeEnd('fetchWishlistItemsQuery');
@@ -59,6 +69,7 @@ export const useSupabaseWishlist = () => {
           }
         }));
         setWishlistItems(mappedData || []);
+        console.log('fetchWishlistItems: Wishlist items state updated to:', mappedData); // NEW LOG
       }
     } catch (error: any) {
       console.error('Error fetching wishlist items (caught exception):', error.message);
@@ -67,38 +78,24 @@ export const useSupabaseWishlist = () => {
       setLoading(false);
       isFetchingRef.current = false; // Reset ref in finally block
     }
-  }, [user, authLoading]); // Keep user and authLoading as dependencies for fetchWishlistItems
+  }, [user?.id, userProfile]); // Dependency on user.id and userProfile ensures fetchWishlistItems is stable and re-created only when user changes
 
   useEffect(() => {
     console.log('useSupabaseWishlist useEffect: authLoading:', authLoading, 'user:', user, 'userProfile:', userProfile);
-    // Removed timeoutId as setTimeout is removed
 
-    // Only fetch if auth is not loading, userProfile is available
-    // MODIFIED START: Remove isVisible from condition
-    if (!authLoading && user && userProfile && !isFetchingRef.current) {
-      if (isFetchingRef.current) {
-        console.log('useSupabaseWishlist useEffect: Fetch already in progress, skipping scheduling.');
-        return;
+    if (!authLoading) {
+      if (user && userProfile) { // Ensure both user and userProfile are available
+        console.log('useSupabaseWishlist useEffect: User and profile available, triggering fetchWishlistItems.');
+        fetchWishlistItems();
+      } else {
+        console.log('useSupabaseWishlist useEffect: No user or profile, clearing wishlist items.');
+        setWishlistItems([]);
       }
-      
-      isFetchingRef.current = true; // Set ref to true before scheduling
-      console.log('useSupabaseWishlist useEffect: Triggering fetchWishlistItems.');
-      fetchWishlistItems();
-    } else if (!authLoading && !user) {
-      // If auth is done loading and no user, clear wishlist items immediately
-      console.log('useSupabaseWishlist useEffect: No user and auth done loading, clearing wishlist items.');
-      setWishlistItems([]);
-    } else {
-      console.log('useSupabaseWishlist useEffect: Skipping fetch. authLoading:', authLoading, 'userProfile:', userProfile);
     }
-    // MODIFIED END: Remove isVisible from condition
-
-    return () => {
-      // No cleanup for setTimeout needed
-    };
-  }, [user, userProfile, authLoading, fetchWishlistItems]); // Removed isVisible from dependencies
+  }, [user, userProfile, authLoading, fetchWishlistItems]); // Dependencies for the useEffect
 
   const addToWishlist = async (productId: string) => {
+    console.log(`addToWishlist: Called for product ID: ${productId}`); // NEW LOG
     if (!user) return { error: new Error('Please login to add items to wishlist') };
 
     try {
@@ -111,6 +108,7 @@ export const useSupabaseWishlist = () => {
         .maybeSingle();
 
       if (existingItem) {
+        console.log('addToWishlist: Product already in wishlist, skipping insert.'); // NEW LOG
         return { error: new Error('Product already in wishlist') };
       }
       console.log('addToWishlist: Using supabase (authenticated) client to insert new item...');
@@ -123,6 +121,7 @@ export const useSupabaseWishlist = () => {
 
       if (error) throw error;
 
+      console.log('addToWishlist: Item inserted successfully, triggering fetchWishlistItems.'); // NEW LOG
       await fetchWishlistItems();
       return { error: null };
     } catch (error: any) {
@@ -132,6 +131,7 @@ export const useSupabaseWishlist = () => {
   };
 
   const removeFromWishlist = async (wishlistItemId: string) => {
+    console.log(`removeFromWishlist: Called for wishlist item ID: ${wishlistItemId}`); // NEW LOG
     if (!user) return { error: new Error('Please login') };
 
     try {
@@ -144,6 +144,7 @@ export const useSupabaseWishlist = () => {
 
       if (error) throw error;
 
+      console.log('removeFromWishlist: Item deleted successfully, triggering fetchWishlistItems.'); // NEW LOG
       await fetchWishlistItems();
       return { error: null };
     } catch (error: any) {
@@ -170,3 +171,4 @@ export const useSupabaseWishlist = () => {
     fetchWishlistItems,
   };
 };
+
