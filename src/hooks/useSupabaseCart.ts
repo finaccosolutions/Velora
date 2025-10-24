@@ -147,13 +147,32 @@ export const useSupabaseCart = () => {
       } else {
         console.log('addToCart: Using supabase (authenticated) client to insert new item...');
 
-        const tempItem: any = {
-          id: 'temp-' + productId,
-          product_id: productId,
-          quantity: quantity,
-          product: { id: productId }
-        };
-        setCartItems(prev => [...prev, tempItem]);
+        const { data: productData } = await supabase
+          .from('products')
+          .select(`
+            id,
+            name,
+            price,
+            image_url,
+            category,
+            in_stock,
+            categories(name)
+          `)
+          .eq('id', productId)
+          .single();
+
+        if (productData) {
+          const tempItem: any = {
+            id: 'temp-' + productId,
+            product_id: productId,
+            quantity: quantity,
+            product: {
+              ...productData,
+              category_name: productData.categories.name
+            }
+          };
+          setCartItems(prev => [...prev, tempItem]);
+        }
 
         const { error } = await supabase
           .from('cart_items')
@@ -170,6 +189,7 @@ export const useSupabaseCart = () => {
       return { error: null };
     } catch (error: any) {
       console.error('Error adding to cart:', error.message);
+      await fetchCartItems(true);
       return { error };
     }
   };

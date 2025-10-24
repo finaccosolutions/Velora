@@ -16,7 +16,7 @@ declare global {
   }
 }
 
-const NewCheckout: React.FC = () => {
+const Checkout: React.FC = () => {
   const { cartItems, getCartTotal, clearCart, loading: cartLoading } = useSupabaseCart();
   const { user, userProfile } = useAuth();
   const { products } = useSupabaseProducts();
@@ -533,4 +533,4 @@ const NewCheckout: React.FC = () => {
   );
 };
 
-export default NewCheckout;
+export default Checkout;
