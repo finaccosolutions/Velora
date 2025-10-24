@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Package, Calendar, DollarSign, MapPin, Eye } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Package, Calendar, DollarSign, MapPin, Eye, XCircle, Truck, CheckCircle, Clock, Phone, Mail, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
+import { useToast } from '../context/ToastContext';
+import { Link } from 'react-router-dom';
+
+interface OrderTracking {
+  id: string;
+  status: string;
+  location: string | null;
+  description: string;
+  created_at: string;
+}
 
 interface Order {
   id: string;
@@ -11,6 +21,9 @@ interface Order {
   payment_method: string;
   payment_status: string;
   shipping_address: any;
+  tracking_number: string | null;
+  estimated_delivery: string | null;
+  cancellation_reason: string | null;
   created_at: string;
   order_items: {
     id: string;
@@ -22,13 +35,16 @@ interface Order {
       image_url: string;
     };
   }[];
+  order_tracking?: OrderTracking[];
 }
 
 const Orders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
+  const [trackingExpanded, setTrackingExpanded] = useState<string | null>(null);
   const { user, loading: authLoading } = useAuth();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -40,19 +56,14 @@ const Orders: React.FC = () => {
   }, [user, authLoading]);
 
   const fetchOrders = async () => {
-    console.log('fetchOrders: Current user:', user);
     if (!user) {
-      console.log('fetchOrders: No user, returning.');
-      setOrders([]); // Ensure orders are empty if no user
+      setOrders([]);
       setLoading(false);
       return;
     }
 
     setLoading(true);
-    // Add a small delay to allow Supabase session to fully propagate
-    await new Promise(resolve => setTimeout(resolve, 100));
     try {
-      console.log('fetchOrders: About to execute Supabase orders query...');
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -62,6 +73,9 @@ const Orders: React.FC = () => {
           payment_method,
           payment_status,
           shipping_address,
+          tracking_number,
+          estimated_delivery,
+          cancellation_reason,
           created_at,
           order_items (
             id,
@@ -72,40 +86,90 @@ const Orders: React.FC = () => {
               name,
               image_url
             )
+          ),
+          order_tracking (
+            id,
+            status,
+            location,
+            description,
+            created_at
           )
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      console.log('fetchOrders: Supabase orders query executed.');
-      console.log('fetchOrders: Supabase query result for orders - Data:', data, 'Error:', error);
 
       if (error) {
-        console.error('Error fetching orders:', error.message); // Log error message
-        setOrders([]); // Clear orders on error
+        console.error('Error fetching orders:', error.message);
+        setOrders([]);
       } else {
         setOrders(data || []);
       }
-    } catch (error: any) { // Explicitly type error as any
-      console.error('Error fetching orders (caught exception):', error.message); // Log error message
-      setOrders([]); // Clear orders on exception
+    } catch (error: any) {
+      console.error('Error fetching orders (caught exception):', error.message);
+      setOrders([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (!window.confirm('Are you sure you want to cancel this order?')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({
+          status: 'cancelled',
+          cancellation_reason: 'Cancelled by customer'
+        })
+        .eq('id', orderId)
+        .eq('user_id', user?.id);
+
+      if (error) {
+        showToast('Failed to cancel order', 'error');
+      } else {
+        showToast('Order cancelled successfully', 'success');
+        fetchOrders();
+      }
+    } catch (error) {
+      showToast('Failed to cancel order', 'error');
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'delivered':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 border-green-200';
       case 'shipped':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'confirmed':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'cancelled':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 border-red-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'delivered':
+        return <CheckCircle className="h-5 w-5 text-green-600" />;
+      case 'shipped':
+        return <Truck className="h-5 w-5 text-blue-600" />;
+      case 'confirmed':
+        return <Clock className="h-5 w-5 text-yellow-600" />;
+      case 'cancelled':
+        return <XCircle className="h-5 w-5 text-red-600" />;
+      default:
+        return <Package className="h-5 w-5 text-gray-600" />;
+    }
+  };
+
+  const canCancelOrder = (order: Order) => {
+    return order.status === 'pending' || order.status === 'confirmed';
   };
 
   if (loading) {
@@ -128,19 +192,19 @@ const Orders: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center py-16"
+            className="text-center py-16 bg-white rounded-2xl shadow-lg"
           >
             <Package className="h-24 w-24 text-gray-300 mx-auto mb-6" />
             <h2 className="text-3xl font-bold text-gray-900 mb-4">No Orders Yet</h2>
             <p className="text-xl text-gray-600 mb-8">
               You haven't placed any orders yet. Start shopping to see your orders here!
             </p>
-            <a
-              href="/products"
+            <Link
+              to="/products"
               className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white font-semibold rounded-lg hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200"
             >
               Start Shopping
-            </a>
+            </Link>
           </motion.div>
         </div>
       </div>
@@ -169,14 +233,14 @@ const Orders: React.FC = () => {
               className="bg-white rounded-2xl shadow-lg overflow-hidden"
             >
               <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                   <div className="flex items-center space-x-4">
-                    <div className="bg-[#815536] p-2 rounded-lg">
-                      <Package className="h-5 w-5 text-white" />
+                    <div className="bg-[#815536] p-3 rounded-lg">
+                      {getStatusIcon(order.status)}
                     </div>
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">
-                        Order #{order.id.slice(-8)}
+                        Order #{order.id.slice(-8).toUpperCase()}
                       </h3>
                       <p className="text-sm text-gray-600">
                         {new Date(order.created_at).toLocaleDateString('en-US', {
@@ -187,41 +251,50 @@ const Orders: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-4">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(order.status)}`}>
+                  <div className="flex items-center gap-3">
+                    <span className={`px-4 py-2 rounded-full text-sm font-medium border ${getStatusColor(order.status)}`}>
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                     </span>
-                    <button
-                      onClick={() => setSelectedOrder(selectedOrder?.id === order.id ? null : order)}
-                      className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <Eye className="h-4 w-4" />
-                      <span>{selectedOrder?.id === order.id ? 'Hide' : 'View'} Details</span>
-                    </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div className="flex items-center space-x-3">
+                {order.tracking_number && (
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <Truck className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium text-blue-900">
+                        Tracking Number: {order.tracking_number}
+                      </span>
+                    </div>
+                    {order.estimated_delivery && (
+                      <p className="text-sm text-blue-700 mt-1 ml-6">
+                        Estimated Delivery: {new Date(order.estimated_delivery).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                     <DollarSign className="h-5 w-5 text-[#815536]" />
                     <div>
-                      <p className="text-sm text-gray-600">Total Amount</p>
+                      <p className="text-xs text-gray-600">Total Amount</p>
                       <p className="font-semibold text-gray-900">₹{order.total_amount.toLocaleString()}</p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                     <Calendar className="h-5 w-5 text-[#815536]" />
                     <div>
-                      <p className="text-sm text-gray-600">Payment Method</p>
+                      <p className="text-xs text-gray-600">Payment Method</p>
                       <p className="font-semibold text-gray-900">
                         {order.payment_method === 'cod' ? 'Cash on Delivery' : 'Online Payment'}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                     <MapPin className="h-5 w-5 text-[#815536]" />
                     <div>
-                      <p className="text-sm text-gray-600">Payment Status</p>
+                      <p className="text-xs text-gray-600">Payment Status</p>
                       <p className="font-semibold text-gray-900">
                         {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
                       </p>
@@ -229,45 +302,137 @@ const Orders: React.FC = () => {
                   </div>
                 </div>
 
-                {selectedOrder?.id === order.id && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="border-t pt-4 mt-4"
-                  >
-                    <h4 className="font-semibold text-gray-900 mb-4">Order Items</h4>
-                    <div className="space-y-3">
-                      {order.order_items.map((item) => (
-                        <div key={item.id} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
-                          <img
-                            src={item.product.image_url}
-                            alt={item.product.name}
-                            className="w-16 h-16 object-cover rounded-lg"
-                          />
-                          <div className="flex-1">
-                            <h5 className="font-medium text-gray-900">{item.product.name}</h5>
-                            <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-semibold text-gray-900">₹{item.price.toLocaleString()}</p>
-                            <p className="text-sm text-gray-600">per item</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                      <h4 className="font-semibold text-gray-900 mb-2">Shipping Address</h4>
-                      <div className="text-gray-700">
-                        <p>{order.shipping_address.firstName} {order.shipping_address.lastName}</p>
-                        <p>{order.shipping_address.address}</p>
-                        <p>{order.shipping_address.city}, {order.shipping_address.state} {order.shipping_address.zipCode}</p>
-                        <p>{order.shipping_address.phone}</p>
+                {/* Order Tracking Timeline */}
+                {order.order_tracking && order.order_tracking.length > 0 && (
+                  <div className="mb-6">
+                    <button
+                      onClick={() => setTrackingExpanded(trackingExpanded === order.id ? null : order.id)}
+                      className="flex items-center justify-between w-full p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Truck className="h-5 w-5 text-[#815536]" />
+                        <span className="font-medium text-gray-900">Track Order</span>
                       </div>
-                    </div>
-                  </motion.div>
+                      {trackingExpanded === order.id ? (
+                        <ChevronUp className="h-5 w-5 text-gray-600" />
+                      ) : (
+                        <ChevronDown className="h-5 w-5 text-gray-600" />
+                      )}
+                    </button>
+
+                    <AnimatePresence>
+                      {trackingExpanded === order.id && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mt-4 pl-4 border-l-2 border-[#815536]"
+                        >
+                          {[...order.order_tracking].reverse().map((tracking, idx) => (
+                            <div key={tracking.id} className="mb-4 pl-4 relative">
+                              <div className="absolute -left-6 top-1 w-4 h-4 bg-[#815536] rounded-full border-4 border-white"></div>
+                              <div className="text-sm">
+                                <p className="font-semibold text-gray-900">{tracking.description}</p>
+                                {tracking.location && (
+                                  <p className="text-gray-600 mt-1">Location: {tracking.location}</p>
+                                )}
+                                <p className="text-gray-500 text-xs mt-1">
+                                  {new Date(tracking.created_at).toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 )}
+
+                {/* Action Buttons */}
+                <div className="flex flex-wrap gap-3 mb-4">
+                  <button
+                    onClick={() => setSelectedOrder(selectedOrder === order.id ? null : order.id)}
+                    className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <Eye className="h-4 w-4" />
+                    <span>{selectedOrder === order.id ? 'Hide' : 'View'} Details</span>
+                  </button>
+
+                  {canCancelOrder(order) && (
+                    <button
+                      onClick={() => handleCancelOrder(order.id)}
+                      className="flex items-center space-x-2 px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                    >
+                      <XCircle className="h-4 w-4" />
+                      <span>Cancel Order</span>
+                    </button>
+                  )}
+
+                  <a
+                    href="mailto:orders@veloratradings.com"
+                    className="flex items-center space-x-2 px-4 py-2 border border-[#815536] text-[#815536] rounded-lg hover:bg-[#815536]/10 transition-colors"
+                  >
+                    <Mail className="h-4 w-4" />
+                    <span>Contact Support</span>
+                  </a>
+
+                  <a
+                    href="tel:+919876543210"
+                    className="flex items-center space-x-2 px-4 py-2 border border-[#815536] text-[#815536] rounded-lg hover:bg-[#815536]/10 transition-colors"
+                  >
+                    <Phone className="h-4 w-4" />
+                    <span>Call Us</span>
+                  </a>
+                </div>
+
+                <AnimatePresence>
+                  {selectedOrder === order.id && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="border-t pt-4 mt-4"
+                    >
+                      <h4 className="font-semibold text-gray-900 mb-4">Order Items</h4>
+                      <div className="space-y-3">
+                        {order.order_items.map((item) => (
+                          <div key={item.id} className="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                            <img
+                              src={item.product.image_url}
+                              alt={item.product.name}
+                              className="w-16 h-16 object-cover rounded-lg"
+                            />
+                            <div className="flex-1">
+                              <h5 className="font-medium text-gray-900">{item.product.name}</h5>
+                              <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-gray-900">₹{item.price.toLocaleString()}</p>
+                              <p className="text-sm text-gray-600">per item</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                        <h4 className="font-semibold text-gray-900 mb-2">Shipping Address</h4>
+                        <div className="text-gray-700">
+                          <p>{order.shipping_address.firstName} {order.shipping_address.lastName}</p>
+                          <p>{order.shipping_address.address}</p>
+                          <p>{order.shipping_address.city}, {order.shipping_address.state} {order.shipping_address.zipCode}</p>
+                          <p>Phone: {order.shipping_address.phone}</p>
+                        </div>
+                      </div>
+
+                      {order.cancellation_reason && (
+                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                          <h4 className="font-semibold text-red-900 mb-2">Cancellation Reason</h4>
+                          <p className="text-red-700">{order.cancellation_reason}</p>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           ))}
@@ -278,4 +443,3 @@ const Orders: React.FC = () => {
 };
 
 export default Orders;
-

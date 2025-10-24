@@ -11,15 +11,15 @@ import { useSiteSettings } from '../hooks/useSiteSettings';
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const { cartItems } = useSupabaseCart();
-  const { wishlistItems } = useSupabaseWishlist();
+  const { cartItems, getCartItemsCount } = useSupabaseCart();
+  const { wishlistItems, getWishlistItemsCount } = useSupabaseWishlist();
   const { user, userProfile, signOut, loading: authLoading, isAdmin } = useAuth();
   const { settings } = useSiteSettings();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const cartItemsCount = cartItems.reduce((total, item) => total + item.quantity, 0);
-  const wishlistItemsCount = wishlistItems.length;
+  const cartItemsCount = getCartItemsCount();
+  const wishlistItemsCount = getWishlistItemsCount();
 
   useEffect(() => {
     console.log('Header - Cart items changed:', cartItems.length, 'Total count:', cartItemsCount);
@@ -294,6 +294,14 @@ const Header: React.FC = () => {
                                       {wishlistItemsCount}
                                     </span>
                                   )}
+                                </Link>
+                                <Link
+                                  to="/addresses"
+                                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
+                                  onClick={() => setIsProfileOpen(false)}
+                                >
+                                  <MapPin className="h-4 w-4 mr-3" />
+                                  My Addresses
                                 </Link>
                                 {isAdmin && (
                                   <Link

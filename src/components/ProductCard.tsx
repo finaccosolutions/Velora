@@ -78,31 +78,35 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
       transition={{ duration: 0.5, delay: index * 0.1 }}
       className="group relative bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
     >
-      <Link to={`/product/${product.id}`}>
-        <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden">
+        <Link to={`/product/${product.id}`}>
           <img
             src={product.image_url}
             alt={product.name}
             className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500"
           />
-          {product.original_price && (
-            <div className="absolute top-4 left-4 bg-[#815536] text-white px-2 py-1 rounded-lg text-sm font-semibold z-10">
-              {Math.round(((product.original_price - product.price) / product.original_price) * 100)}% OFF
-            </div>
-          )}
-          <button
-            onClick={(e) => handleWishlistToggle(e, product.id, product.name)}
-            className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-10"
-          >
-            <Heart
-              className={`h-5 w-5 ${
-                isInWishlist(product.id)
-                  ? 'text-red-500 fill-red-500'
-                  : 'text-gray-600'
-              }`}
-            />
-          </button>
-        </div>
+        </Link>
+        {product.original_price && (
+          <div className="absolute top-4 left-4 bg-[#815536] text-white px-2 py-1 rounded-lg text-sm font-semibold z-10 pointer-events-none">
+            {Math.round(((product.original_price - product.price) / product.original_price) * 100)}% OFF
+          </div>
+        )}
+        <button
+          onClick={(e) => handleWishlistToggle(e, product.id, product.name)}
+          className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-20"
+          aria-label={isInWishlist(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
+        >
+          <Heart
+            className={`h-5 w-5 ${
+              isInWishlist(product.id)
+                ? 'text-red-500 fill-red-500'
+                : 'text-gray-600'
+            }`}
+          />
+        </button>
+      </div>
+
+      <Link to={`/product/${product.id}`}>
 
         <div className="p-6">
           <div className="flex items-center mb-2">

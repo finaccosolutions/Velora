@@ -180,8 +180,8 @@ const Home: React.FC = () => {
       </section> */}
       {/* REMOVE END: NEW: Temporary Direct Fetch Button for testing */}
 
-      {/* Featured Products */}
-      <FeaturedProducts />
+      {/* All Products */}
+      <FeaturedProducts showAll={true} />
 
       {/* Newsletter Section */}
       <section className="py-20 bg-gradient-to-r from-[#815536] to-[#c9baa8]">

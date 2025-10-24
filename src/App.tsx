@@ -19,6 +19,7 @@ import Orders from './pages/Orders';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import Wishlist from './pages/Wishlist';
+import Addresses from './pages/Addresses';
 import { supabase } from './lib/supabase'; // Import supabase client
 import AdminLayout from './components/admin/AdminLayout'; // NEW: Import AdminLayout
 import AdminCategories from './pages/admin/AdminCategories'; // NEW: Import AdminCategories
@@ -63,6 +64,7 @@ function App() {
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/wishlist" element={<Wishlist />} />
+                <Route path="/addresses" element={<Addresses />} />
                 <Route path="/order-success" element={
                   <div className="min-h-screen flex items-center justify-center bg-gray-50">
                     <motion.div
