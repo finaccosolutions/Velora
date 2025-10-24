@@ -22,13 +22,12 @@ const Header: React.FC = () => {
   const wishlistItemsCount = wishlistItems.length;
 
   useEffect(() => {
-    console.log('Header Component - Current User (from useEffect):', user);
-    console.log('Header Component - Current User Profile (from useEffect):', userProfile);
-    console.log('Header Component - isAdmin (from useEffect):', isAdmin);
-    if (userProfile) {
-      console.log('Header Component - userProfile is now AVAILABLE:', userProfile);
-    }
-  }, [user, userProfile, isAdmin]);
+    console.log('Header - Cart items changed:', cartItems.length, 'Total count:', cartItemsCount);
+  }, [cartItems, cartItemsCount]);
+
+  useEffect(() => {
+    console.log('Header - Wishlist items changed:', wishlistItems.length);
+  }, [wishlistItems]);
 
   const handleLogout = async () => {
     const { error } = await signOut();

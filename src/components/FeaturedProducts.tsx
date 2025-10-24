@@ -43,23 +43,31 @@ const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
       if (!result.error) {
         showToast(`${productName} removed from wishlist!`, 'success');
       } else {
-        showToast(result.error.error_description || result.error.message, 'error');
+        if (result.error.message === 'Please login to add items to wishlist' || result.error.message === 'Please login') {
+          showToast('Please login to manage your wishlist', 'error');
+        } else {
+          showToast(result.error.error_description || result.error.message, 'error');
+        }
       }
     } else {
       const result = await addToWishlist(productId);
       if (!result.error) {
         showToast(`${productName} added to wishlist!`, 'success');
       } else {
-        showToast(result.error.error_description || result.error.message, 'error');
+        if (result.error.message === 'Please login to add items to wishlist' || result.error.message === 'Please login') {
+          showToast('Please login to add items to wishlist', 'error');
+        } else {
+          showToast(result.error.error_description || result.error.message, 'error');
+        }
       }
     }
   };
 
-  // NEW: Handle Buy Now
+  // Handle Buy Now
   const handleBuyNow = (e: React.MouseEvent, productId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    navigate('/checkout', { state: { productId } });
+    navigate('/checkout', { state: { buyNowProductId: productId } });
   };
 
   if (loading) {
@@ -131,29 +139,25 @@ const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
                     alt={product.name}
                     className="w-full h-96 object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  {/* NEW WISHLIST BUTTON ON IMAGE */}
-                  <button 
+                  <button
                     onClick={(e) => handleWishlistToggle(e, product.id, product.name)}
-                    className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md transition-all duration-300 hover:bg-white" // MODIFIED: Removed opacity-0 group-hover:opacity-100
+                    className="absolute top-4 right-4 p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-10"
                   >
-                    <Heart 
-                      className={`h-4 w-4 ${
-                        isInWishlist(product.id) 
-                          ? 'text-red-500 fill-current' 
+                    <Heart
+                      className={`h-5 w-5 ${
+                        isInWishlist(product.id)
+                          ? 'text-red-500 fill-red-500'
                           : 'text-gray-600'
-                      }`} 
+                      }`}
                     />
                   </button>
-                  {/* END NEW WISHLIST BUTTON */}
 
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0 }}
                     whileHover={{ opacity: 1 }}
                     transition={{ duration: 0.3 }}
-                    className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"
-                  >
-                    {/* REMOVED: Buy Now button from image overlay */}
-                  </motion.div>
+                    className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none"
+                  ></motion.div>
                   
                   {product.original_price && (
                     <div className="absolute top-6 left-6 bg-[#815536] text-white px-3 py-1 rounded-lg text-sm font-semibold">

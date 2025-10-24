@@ -44,14 +44,22 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
       if (!result.error) {
         showToast(`${productName} removed from wishlist!`, 'success');
       } else {
-        showToast(result.error.error_description || result.error.message, 'error');
+        if (result.error.message === 'Please login to add items to wishlist' || result.error.message === 'Please login') {
+          showToast('Please login to manage your wishlist', 'error');
+        } else {
+          showToast(result.error.error_description || result.error.message, 'error');
+        }
       }
     } else {
       const result = await addToWishlist(productId);
       if (!result.error) {
         showToast(`${productName} added to wishlist!`, 'success');
       } else {
-        showToast(result.error.error_description || result.error.message, 'error');
+        if (result.error.message === 'Please login to add items to wishlist' || result.error.message === 'Please login') {
+          showToast('Please login to add items to wishlist', 'error');
+        } else {
+          showToast(result.error.error_description || result.error.message, 'error');
+        }
       }
     }
   };
@@ -60,7 +68,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
   const handleBuyNow = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    navigate('/checkout', { state: { productId: product.id } });
+    navigate('/checkout', { state: { buyNowProductId: product.id } });
   };
 
   return (
@@ -78,20 +86,20 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
             className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-500"
           />
           {product.original_price && (
-            <div className="absolute top-4 left-4 bg-[#815536] text-white px-2 py-1 rounded-lg text-sm font-semibold">
+            <div className="absolute top-4 left-4 bg-[#815536] text-white px-2 py-1 rounded-lg text-sm font-semibold z-10">
               {Math.round(((product.original_price - product.price) / product.original_price) * 100)}% OFF
             </div>
           )}
-          <button 
-            onClick={(e) => handleWishlistToggle(e, product.id, product.name)} // MODIFIED: Pass product.name
-            className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-md transition-all duration-300 hover:bg-white" // MODIFIED: Removed opacity-0 group-hover:opacity-100
+          <button
+            onClick={(e) => handleWishlistToggle(e, product.id, product.name)}
+            className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-10"
           >
-            <Heart 
-              className={`h-4 w-4 ${
-                isInWishlist(product.id) 
-                  ? 'text-red-500 fill-current' 
+            <Heart
+              className={`h-5 w-5 ${
+                isInWishlist(product.id)
+                  ? 'text-red-500 fill-red-500'
                   : 'text-gray-600'
-              }`} 
+              }`}
             />
           </button>
         </div>
