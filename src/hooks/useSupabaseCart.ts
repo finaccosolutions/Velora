@@ -122,12 +122,13 @@ export const useSupabaseCart = () => {
           .insert({
             user_id: user.id,
             product_id: productId,
-            quantity: quantity, // ADDED: Ensure quantity is passed for new inserts
+            quantity: quantity,
           });
 
         if (error) throw error;
       }
 
+      isFetchingRef.current = false;
       await fetchCartItems();
       return { error: null };
     } catch (error: any) {

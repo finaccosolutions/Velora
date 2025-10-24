@@ -95,7 +95,7 @@ export const useSupabaseWishlist = () => {
   }, [user, authLoading, fetchWishlistItems]); // Dependencies for the useEffect
 
   const addToWishlist = async (productId: string) => {
-    console.log(`addToWishlist: Called for product ID: ${productId}`); // NEW LOG
+    console.log(`addToWishlist: Called for product ID: ${productId}`);
     if (!user) return { error: new Error('Please login to add items to wishlist') };
 
     try {
@@ -108,7 +108,7 @@ export const useSupabaseWishlist = () => {
         .maybeSingle();
 
       if (existingItem) {
-        console.log('addToWishlist: Product already in wishlist, skipping insert.'); // NEW LOG
+        console.log('addToWishlist: Product already in wishlist, skipping insert.');
         return { error: new Error('Product already in wishlist') };
       }
       console.log('addToWishlist: Using supabase (authenticated) client to insert new item...');
@@ -121,7 +121,8 @@ export const useSupabaseWishlist = () => {
 
       if (error) throw error;
 
-      console.log('addToWishlist: Item inserted successfully, triggering fetchWishlistItems.'); // NEW LOG
+      console.log('addToWishlist: Item inserted successfully, triggering fetchWishlistItems.');
+      isFetchingRef.current = false;
       await fetchWishlistItems();
       return { error: null };
     } catch (error: any) {
@@ -131,7 +132,7 @@ export const useSupabaseWishlist = () => {
   };
 
   const removeFromWishlist = async (wishlistItemId: string) => {
-    console.log(`removeFromWishlist: Called for wishlist item ID: ${wishlistItemId}`); // NEW LOG
+    console.log(`removeFromWishlist: Called for wishlist item ID: ${wishlistItemId}`);
     if (!user) return { error: new Error('Please login') };
 
     try {
@@ -144,7 +145,8 @@ export const useSupabaseWishlist = () => {
 
       if (error) throw error;
 
-      console.log('removeFromWishlist: Item deleted successfully, triggering fetchWishlistItems.'); // NEW LOG
+      console.log('removeFromWishlist: Item deleted successfully, triggering fetchWishlistItems.');
+      isFetchingRef.current = false;
       await fetchWishlistItems();
       return { error: null };
     } catch (error: any) {
@@ -161,11 +163,20 @@ export const useSupabaseWishlist = () => {
     return wishlistItems.some(item => item.product_id === productId);
   };
 
+  const removeFromWishlistByProductId = async (productId: string) => {
+    const wishlistItem = wishlistItems.find(item => item.product_id === productId);
+    if (wishlistItem) {
+      return await removeFromWishlist(wishlistItem.id);
+    }
+    return { error: new Error('Item not found in wishlist') };
+  };
+
   return {
     wishlistItems,
     loading,
     addToWishlist,
     removeFromWishlist,
+    removeFromWishlistByProductId,
     getWishlistItemsCount,
     isInWishlist,
     fetchWishlistItems,

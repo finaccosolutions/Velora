@@ -13,12 +13,12 @@ const ProductDetail: React.FC = () => {
   const navigate = useNavigate();
   const { getProductById } = useSupabaseProducts();
   const { addToCart } = useSupabaseCart();
-  const { wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useSupabaseWishlist();
+  const { addToWishlist, removeFromWishlistByProductId, isInWishlist } = useSupabaseWishlist();
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'description' | 'features' | 'reviews'>('description');
-  const { showToast } = useToast(); // NEW: Use useToast hook
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (id) {
@@ -54,35 +54,29 @@ const ProductDetail: React.FC = () => {
 
   // REMOVED: Local showToast function
 
-  // NEW: Handle wishlist toggle
   const handleWishlistToggle = async () => {
     if (!product) return;
     const isCurrentlyInWishlist = isInWishlist(product.id);
-    
+
     if (isCurrentlyInWishlist) {
-      const wishlistItem = wishlistItems.find(item => item.product_id === product.id);
-      if (wishlistItem) {
-        const result = await removeFromWishlist(wishlistItem.id);
-        if (!result.error) {
-          showToast(`${product.name} removed from wishlist!`, 'success'); // NEW: Use global showToast
-        } else {
-          showToast(result.error.message, 'error'); // NEW: Use global showToast
-        }
+      const result = await removeFromWishlistByProductId(product.id);
+      if (!result.error) {
+        showToast(`${product.name} removed from wishlist!`, 'success');
+      } else {
+        showToast(result.error.message, 'error');
       }
     } else {
       const result = await addToWishlist(product.id);
       if (!result.error) {
-        showToast(`${product.name} added to wishlist!`, 'success'); // NEW: Use global showToast
+        showToast(`${product.name} added to wishlist!`, 'success');
       } else {
-        showToast(result.error.message, 'error'); // NEW: Use global showToast
+        showToast(result.error.message, 'error');
       }
     }
   };
 
-  // NEW: Handle Buy Now
   const handleBuyNow = () => {
     if (product) {
-      sessionStorage.setItem('buyNowProductId', product.id); // Save product ID to sessionStorage
       navigate('/checkout', { state: { productId: product.id } });
     }
   };

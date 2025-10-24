@@ -32,11 +32,8 @@ const Checkout: React.FC = () => {
   const [loadingSingleProduct, setLoadingSingleProduct] = useState(true); 
   const [checkoutItems, setCheckoutItems] = useState<any[]>([]); // NEW: State for items to checkout
 
-  // Effect to handle "Buy Now" from product page
   useEffect(() => {
     const currentProductId: string | undefined = location.state?.productId;
-
-    console.log('Checkout useEffect [Buy Now]: currentProductId from state:', currentProductId);
 
     if (currentProductId) {
       setLoadingSingleProduct(true);
@@ -44,46 +41,36 @@ const Checkout: React.FC = () => {
 
       const fetchSingleProduct = async () => {
         try {
-          console.log('Checkout useEffect [Buy Now]: Attempting to fetch product with ID:', currentProductId);
           const { data, error } = await getProductById(currentProductId);
-          console.log('Checkout useEffect [Buy Now]: getProductById returned - Data:', data, 'Error:', error);
 
           if (error || !data) {
-            console.error('Checkout useEffect [Buy Now]: Failed to fetch product for buy now:', error);
+            console.error('Failed to fetch product for buy now:', error);
             setSingleProductCheckout(null);
           } else {
-            console.log('Checkout useEffect [Buy Now]: Product fetched successfully:', data);
             setSingleProductCheckout(data);
           }
         } catch (err) {
-          console.error('Checkout useEffect [Buy Now]: Exception during fetch:', err);
+          console.error('Exception during fetch:', err);
           setSingleProductCheckout(null);
         } finally {
           setLoadingSingleProduct(false);
-          console.log('Checkout useEffect [Buy Now]: loadingSingleProduct set to false.');
         }
       };
 
       fetchSingleProduct();
     } else {
-      console.log('Checkout useEffect [Buy Now]: No single product ID found, setting loadingSingleProduct to false.');
       setLoadingSingleProduct(false);
       setSingleProductCheckout(null);
     }
   }, [location.state?.productId, getProductById]);
 
-  // Effect to update checkoutItems state
   useEffect(() => {
-    console.log('Checkout useEffect [Update checkoutItems]: singleProductCheckout:', singleProductCheckout, 'cartItems.length:', cartItems.length, 'cartLoading:', cartLoading, 'loadingSingleProduct:', loadingSingleProduct);
-
     if (singleProductCheckout) {
       setCheckoutItems([{ product: singleProductCheckout, quantity: 1 }]);
-      console.log('Checkout useEffect [Update checkoutItems]: Setting checkoutItems from singleProductCheckout');
-    } else if (!loadingSingleProduct) {
+    } else if (!loadingSingleProduct && !cartLoading) {
       setCheckoutItems(cartItems);
-      console.log('Checkout useEffect [Update checkoutItems]: Setting checkoutItems from cartItems:', cartItems.length);
     }
-  }, [singleProductCheckout, cartItems, loadingSingleProduct]);
+  }, [singleProductCheckout, cartItems, loadingSingleProduct, cartLoading]);
 
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<CheckoutForm>({
@@ -108,22 +95,16 @@ const Checkout: React.FC = () => {
   const tax = Math.round(subtotal * 0.18);
   const total = subtotal + shipping + tax;
 
-  // Effect for navigation logic
   useEffect(() => {
-    console.log('Checkout useEffect [Navigation]: loadingSingleProduct:', loadingSingleProduct, 'checkoutItems.length:', checkoutItems.length, 'singleProductCheckout:', !!singleProductCheckout, 'location.state:', location.state);
-
     const hasBuyNowIntent = location.state?.productId;
 
-    if (!loadingSingleProduct && !hasBuyNowIntent && checkoutItems.length === 0) {
-      console.log('Checkout useEffect [Navigation]: Redirecting to cart: No items to checkout.');
+    if (!loadingSingleProduct && !cartLoading && !hasBuyNowIntent && checkoutItems.length === 0) {
       navigate('/cart');
     }
-  }, [loadingSingleProduct, singleProductCheckout, checkoutItems.length, location.state, navigate]);
+  }, [loadingSingleProduct, cartLoading, checkoutItems.length, location.state, navigate]);
 
 
-  // Render loading state only if we're loading a single product for Buy Now
-  if (loadingSingleProduct) {
-    console.log('Checkout: Rendering loading state. loadingSingleProduct:', loadingSingleProduct);
+  if (loadingSingleProduct || (cartLoading && !location.state?.productId)) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -138,12 +119,10 @@ const Checkout: React.FC = () => {
 
   const onSubmit = async (data: CheckoutForm) => {
     setIsProcessing(true);
-    
-    // Simulate order processing
+
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Clear cart only if it was a multi-item cart checkout
-    if (!singleProductCheckout) { // This check is now more reliable
+
+    if (!singleProductCheckout) {
       clearCart();
     }
     navigate('/order-success', { state: { orderData: data, total } });
@@ -362,9 +341,8 @@ const Checkout: React.FC = () => {
               >
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
 
-                {/* Order Items */}
                 <div className="space-y-4 mb-6 max-h-60 overflow-y-auto">
-                  {checkoutItems.map((item) => ( // Use checkoutItems here
+                  {checkoutItems.map((item) => (
                     <div key={item.product.id} className="flex items-center space-x-3">
                       <img
                         src={item.product.image_url}

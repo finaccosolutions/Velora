@@ -12,51 +12,45 @@ import { useNavigate } from 'react-router-dom'; // NEW: Import useNavigate
 const FeaturedProducts: React.FC = () => {
   const { products, loading } = useSupabaseProducts();
   const { addToCart } = useSupabaseCart();
-  const { wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useSupabaseWishlist();
-  const { showToast } = useToast(); // NEW: Use useToast hook
-  const navigate = useNavigate(); // NEW: Initialize useNavigate
-  
-  const featuredProducts = products.slice(0, 4);
+  const { addToWishlist, removeFromWishlistByProductId, isInWishlist } = useSupabaseWishlist();
+  const { showToast } = useToast();
+  const navigate = useNavigate();
 
-  // REMOVED: Local showToast function
+  const featuredProducts = products.slice(0, 4);
 
 const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
   if (event) {
     event.preventDefault();
     event.stopPropagation();
   }
-   
+
   const result = await addToCart(productId, 1);
   if (!result.error) {
-    showToast('Product added to cart!', 'success'); // NEW: Use global showToast
+    showToast('Product added to cart!', 'success');
   } else {
-    showToast(result.error.error_description || result.error.message, 'error'); // NEW: Use global showToast
+    showToast(result.error.error_description || result.error.message, 'error');
   }
 };
 
-  // Unified function to toggle wishlist status
   const handleWishlistToggle = async (e: React.MouseEvent, productId: string, productName: string) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const isCurrentlyInWishlist = isInWishlist(productId);
-    
+
     if (isCurrentlyInWishlist) {
-      const wishlistItem = wishlistItems.find(item => item.product_id === productId);
-      if (wishlistItem) {
-        const result = await removeFromWishlist(wishlistItem.id);
-        if (!result.error) {
-          showToast(`${productName} removed from wishlist!`, 'success'); // NEW: Use global showToast
-        } else {
-          showToast(result.error.error_description || result.error.message, 'error'); // NEW: Use global showToast
-        }
+      const result = await removeFromWishlistByProductId(productId);
+      if (!result.error) {
+        showToast(`${productName} removed from wishlist!`, 'success');
+      } else {
+        showToast(result.error.error_description || result.error.message, 'error');
       }
     } else {
       const result = await addToWishlist(productId);
       if (!result.error) {
-        showToast(`${productName} added to wishlist!`, 'success'); // NEW: Use global showToast
+        showToast(`${productName} added to wishlist!`, 'success');
       } else {
-        showToast(result.error.error_description || result.error.message, 'error'); // NEW: Use global showToast
+        showToast(result.error.error_description || result.error.message, 'error');
       }
     }
   };
