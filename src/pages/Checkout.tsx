@@ -24,53 +24,8 @@ const Checkout: React.FC = () => {
   const { cartItems, getCartTotal, clearCart, loading: cartLoading } = useSupabaseCart();
   const { userProfile } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
-  const { getProductById } = useSupabaseProducts();
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [singleProductCheckout, setSingleProductCheckout] = useState<any | null>(null); 
-  const [loadingSingleProduct, setLoadingSingleProduct] = useState(true); 
-  const [checkoutItems, setCheckoutItems] = useState<any[]>([]); // NEW: State for items to checkout
-
-  useEffect(() => {
-    const currentProductId: string | undefined = location.state?.productId;
-
-    if (currentProductId) {
-      setLoadingSingleProduct(true);
-      setSingleProductCheckout(null);
-
-      const fetchSingleProduct = async () => {
-        try {
-          const { data, error } = await getProductById(currentProductId);
-
-          if (error || !data) {
-            console.error('Failed to fetch product for buy now:', error);
-            setSingleProductCheckout(null);
-          } else {
-            setSingleProductCheckout(data);
-          }
-        } catch (err) {
-          console.error('Exception during fetch:', err);
-          setSingleProductCheckout(null);
-        } finally {
-          setLoadingSingleProduct(false);
-        }
-      };
-
-      fetchSingleProduct();
-    } else {
-      setLoadingSingleProduct(false);
-      setSingleProductCheckout(null);
-    }
-  }, [location.state?.productId, getProductById]);
-
-  useEffect(() => {
-    if (singleProductCheckout) {
-      setCheckoutItems([{ product: singleProductCheckout, quantity: 1 }]);
-    } else if (!loadingSingleProduct && !cartLoading) {
-      setCheckoutItems(cartItems);
-    }
-  }, [singleProductCheckout, cartItems, loadingSingleProduct, cartLoading]);
 
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<CheckoutForm>({
@@ -89,22 +44,21 @@ const Checkout: React.FC = () => {
 
   const paymentMethod = watch('paymentMethod');
 
-  // Use checkoutItems for calculations
-  const subtotal = checkoutItems.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+  const subtotal = getCartTotal();
   const shipping = subtotal > 2000 ? 0 : 100;
   const tax = Math.round(subtotal * 0.18);
   const total = subtotal + shipping + tax;
 
   useEffect(() => {
-    const hasBuyNowIntent = location.state?.productId;
-
-    if (!loadingSingleProduct && !cartLoading && !hasBuyNowIntent && checkoutItems.length === 0) {
-      navigate('/cart');
+    if (!cartLoading && cartItems.length === 0) {
+      const timer = setTimeout(() => {
+        navigate('/cart');
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [loadingSingleProduct, cartLoading, checkoutItems.length, location.state, navigate]);
+  }, [cartLoading, cartItems.length, navigate]);
 
-
-  if (loadingSingleProduct || (cartLoading && !location.state?.productId)) {
+  if (cartLoading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -117,14 +71,16 @@ const Checkout: React.FC = () => {
     );
   }
 
+  if (cartItems.length === 0) {
+    return null;
+  }
+
   const onSubmit = async (data: CheckoutForm) => {
     setIsProcessing(true);
 
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    if (!singleProductCheckout) {
-      clearCart();
-    }
+    clearCart();
     navigate('/order-success', { state: { orderData: data, total } });
   };
 
@@ -342,7 +298,7 @@ const Checkout: React.FC = () => {
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
 
                 <div className="space-y-4 mb-6 max-h-60 overflow-y-auto">
-                  {checkoutItems.map((item) => (
+                  {cartItems.map((item) => (
                     <div key={item.product.id} className="flex items-center space-x-3">
                       <img
                         src={item.product.image_url}

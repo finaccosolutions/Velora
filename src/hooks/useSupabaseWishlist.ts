@@ -87,6 +87,28 @@ export const useSupabaseWishlist = () => {
       if (user) {
         console.log('useSupabaseWishlist useEffect: User available, triggering fetchWishlistItems.');
         fetchWishlistItems();
+
+        // Subscribe to wishlist changes
+        const channel = supabase
+          .channel('wishlist_changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'wishlist_items',
+              filter: `user_id=eq.${user.id}`
+            },
+            (payload) => {
+              console.log('Wishlist change detected:', payload);
+              fetchWishlistItems();
+            }
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
       } else {
         console.log('useSupabaseWishlist useEffect: No user, clearing wishlist items.');
         setWishlistItems([]);
@@ -122,7 +144,6 @@ export const useSupabaseWishlist = () => {
       if (error) throw error;
 
       console.log('addToWishlist: Item inserted successfully, triggering fetchWishlistItems.');
-      isFetchingRef.current = false;
       await fetchWishlistItems();
       return { error: null };
     } catch (error: any) {
@@ -146,7 +167,6 @@ export const useSupabaseWishlist = () => {
       if (error) throw error;
 
       console.log('removeFromWishlist: Item deleted successfully, triggering fetchWishlistItems.');
-      isFetchingRef.current = false;
       await fetchWishlistItems();
       return { error: null };
     } catch (error: any) {

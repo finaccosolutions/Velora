@@ -13,8 +13,8 @@ export const useSupabaseCart = () => {
   const { user, userProfile, loading: authLoading } = useAuth(); // Keep userProfile here
   const isFetchingRef = useRef(false);
 
-  const fetchCartItems = useCallback(async () => {
-    if (isFetchingRef.current) {
+  const fetchCartItems = useCallback(async (force = false) => {
+    if (!force && isFetchingRef.current) {
       console.log('fetchCartItems: Fetch already in progress, skipping.');
       return;
     }
@@ -88,6 +88,28 @@ export const useSupabaseCart = () => {
       if (user) {
         console.log('useSupabaseCart useEffect: User available, triggering fetchCartItems.');
         fetchCartItems();
+
+        // Subscribe to cart changes
+        const channel = supabase
+          .channel('cart_changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'cart_items',
+              filter: `user_id=eq.${user.id}`
+            },
+            (payload) => {
+              console.log('Cart change detected:', payload);
+              fetchCartItems(true);
+            }
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
       } else {
         console.log('useSupabaseCart useEffect: No user, clearing cart items.');
         setCartItems([]);
@@ -128,7 +150,6 @@ export const useSupabaseCart = () => {
         if (error) throw error;
       }
 
-      isFetchingRef.current = false;
       await fetchCartItems();
       return { error: null };
     } catch (error: any) {
