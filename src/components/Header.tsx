@@ -11,12 +11,15 @@ import { useSiteSettings } from '../hooks/useSiteSettings';
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const { getCartItemsCount } = useSupabaseCart();
-  const { getWishlistItemsCount } = useSupabaseWishlist();
+  const { cartItems } = useSupabaseCart();
+  const { wishlistItems } = useSupabaseWishlist();
   const { user, userProfile, signOut, loading: authLoading, isAdmin } = useAuth();
   const { settings } = useSiteSettings();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const cartItemsCount = cartItems.reduce((total, item) => total + item.quantity, 0);
+  const wishlistItemsCount = wishlistItems.length;
 
   useEffect(() => {
     console.log('Header Component - Current User (from useEffect):', user);
@@ -157,14 +160,14 @@ const Header: React.FC = () => {
                 >
                   <Heart className="h-5 w-5" />
                   <AnimatePresence>
-                    {getWishlistItemsCount() > 0 && (
+                    {wishlistItemsCount > 0 && (
                       <motion.span
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0, opacity: 0 }}
                         className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-semibold shadow-lg"
                       >
-                        {getWishlistItemsCount()}
+                        {wishlistItemsCount}
                       </motion.span>
                     )}
                   </AnimatePresence>
@@ -186,14 +189,14 @@ const Header: React.FC = () => {
                 >
                   <ShoppingCart className="h-5 w-5" />
                   <AnimatePresence>
-                    {getCartItemsCount() > 0 && (
+                    {cartItemsCount > 0 && (
                       <motion.span
                         initial={{ scale: 0, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0, opacity: 0 }}
                         className="absolute -top-1 -right-1 bg-[#815536] text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-semibold shadow-lg"
                       >
-                        {getCartItemsCount()}
+                        {cartItemsCount}
                       </motion.span>
                     )}
                   </AnimatePresence>
@@ -287,9 +290,9 @@ const Header: React.FC = () => {
                                 >
                                   <Heart className="h-4 w-4 mr-3" />
                                   My Wishlist
-                                  {getWishlistItemsCount() > 0 && (
+                                  {wishlistItemsCount > 0 && (
                                     <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                                      {getWishlistItemsCount()}
+                                      {wishlistItemsCount}
                                     </span>
                                   )}
                                 </Link>

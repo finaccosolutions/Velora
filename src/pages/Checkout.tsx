@@ -34,55 +34,56 @@ const Checkout: React.FC = () => {
 
   // Effect to handle "Buy Now" from product page
   useEffect(() => {
-    let currentProductId: string | undefined = location.state?.productId;
-    if (!currentProductId) {
-      currentProductId = sessionStorage.getItem('buyNowProductId') || undefined;
-    }
+    const currentProductId: string | undefined = location.state?.productId;
 
-    console.log('Checkout useEffect [Buy Now]: currentProductId from state/sessionStorage:', currentProductId);
+    console.log('Checkout useEffect [Buy Now]: currentProductId from state:', currentProductId);
 
     if (currentProductId) {
       setLoadingSingleProduct(true);
+      setSingleProductCheckout(null);
+
       const fetchSingleProduct = async () => {
         try {
           console.log('Checkout useEffect [Buy Now]: Attempting to fetch product with ID:', currentProductId);
-          const { data, error } = await getProductById(currentProductId!);
-          console.log('Checkout useEffect [Buy Now]: getProductById returned - Data:', data, 'Error:', error); // NEW LOG
-          if (data) {
-            console.log('Checkout useEffect [Buy Now]: Product fetched successfully:', data);
-            setSingleProductCheckout(data);
-          } else {
+          const { data, error } = await getProductById(currentProductId);
+          console.log('Checkout useEffect [Buy Now]: getProductById returned - Data:', data, 'Error:', error);
+
+          if (error || !data) {
             console.error('Checkout useEffect [Buy Now]: Failed to fetch product for buy now:', error);
             setSingleProductCheckout(null);
+          } else {
+            console.log('Checkout useEffect [Buy Now]: Product fetched successfully:', data);
+            setSingleProductCheckout(data);
           }
+        } catch (err) {
+          console.error('Checkout useEffect [Buy Now]: Exception during fetch:', err);
+          setSingleProductCheckout(null);
         } finally {
           setLoadingSingleProduct(false);
-          sessionStorage.removeItem('buyNowProductId');
-          console.log('Checkout useEffect [Buy Now]: loadingSingleProduct set to false, sessionStorage cleared.');
+          console.log('Checkout useEffect [Buy Now]: loadingSingleProduct set to false.');
         }
       };
+
       fetchSingleProduct();
     } else {
       console.log('Checkout useEffect [Buy Now]: No single product ID found, setting loadingSingleProduct to false.');
-      setLoadingSingleProduct(false); 
+      setLoadingSingleProduct(false);
       setSingleProductCheckout(null);
     }
-  }, [location.state, getProductById]);
+  }, [location.state?.productId, getProductById]);
 
-  // NEW: Effect to update checkoutItems state
+  // Effect to update checkoutItems state
   useEffect(() => {
     console.log('Checkout useEffect [Update checkoutItems]: singleProductCheckout:', singleProductCheckout, 'cartItems.length:', cartItems.length, 'cartLoading:', cartLoading, 'loadingSingleProduct:', loadingSingleProduct);
-    if (!loadingSingleProduct && singleProductCheckout) {
+
+    if (singleProductCheckout) {
       setCheckoutItems([{ product: singleProductCheckout, quantity: 1 }]);
-      console.log('Checkout useEffect [Update checkoutItems]: Setting checkoutItems from singleProductCheckout:', [{ product: singleProductCheckout, quantity: 1 }]);
-    } else if (!cartLoading && cartItems.length > 0) {
+      console.log('Checkout useEffect [Update checkoutItems]: Setting checkoutItems from singleProductCheckout');
+    } else if (!loadingSingleProduct) {
       setCheckoutItems(cartItems);
-      console.log('Checkout useEffect [Update checkoutItems]: Setting checkoutItems from cartItems:', cartItems);
-    } else {
-      setCheckoutItems([]);
-      console.log('Checkout useEffect [Update checkoutItems]: Setting checkoutItems to empty.');
+      console.log('Checkout useEffect [Update checkoutItems]: Setting checkoutItems from cartItems:', cartItems.length);
     }
-  }, [singleProductCheckout, cartItems, cartLoading, loadingSingleProduct]);
+  }, [singleProductCheckout, cartItems, loadingSingleProduct]);
 
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<CheckoutForm>({
@@ -107,23 +108,22 @@ const Checkout: React.FC = () => {
   const tax = Math.round(subtotal * 0.18);
   const total = subtotal + shipping + tax;
 
-  // NEW: useEffect for navigation logic
+  // Effect for navigation logic
   useEffect(() => {
-    console.log('Checkout useEffect [Navigation]: cartLoading:', cartLoading, 'loadingSingleProduct:', loadingSingleProduct, 'checkoutItems.length:', checkoutItems.length);
-    // Only proceed with navigation check if all loading is complete
-    if (!cartLoading && !loadingSingleProduct) {
-      // If there are no items to checkout
-      if (checkoutItems.length === 0) {
-        console.log('Checkout useEffect [Navigation]: Redirecting to cart: No items to checkout after all loading is complete.');
-        navigate('/cart');
-      }
+    console.log('Checkout useEffect [Navigation]: loadingSingleProduct:', loadingSingleProduct, 'checkoutItems.length:', checkoutItems.length, 'singleProductCheckout:', !!singleProductCheckout, 'location.state:', location.state);
+
+    const hasBuyNowIntent = location.state?.productId;
+
+    if (!loadingSingleProduct && !hasBuyNowIntent && checkoutItems.length === 0) {
+      console.log('Checkout useEffect [Navigation]: Redirecting to cart: No items to checkout.');
+      navigate('/cart');
     }
-  }, [cartLoading, loadingSingleProduct, checkoutItems.length, navigate]);
+  }, [loadingSingleProduct, singleProductCheckout, checkoutItems.length, location.state, navigate]);
 
 
-  // Render loading state if data is still being fetched
-  if (cartLoading || loadingSingleProduct) {
-    console.log('Checkout: Rendering loading state. cartLoading:', cartLoading, 'loadingSingleProduct:', loadingSingleProduct);
+  // Render loading state only if we're loading a single product for Buy Now
+  if (loadingSingleProduct) {
+    console.log('Checkout: Rendering loading state. loadingSingleProduct:', loadingSingleProduct);
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -10,7 +10,6 @@ import { useToast } from '../context/ToastContext'; // NEW: Import useToast
 import { useNavigate } from 'react-router-dom'; // NEW: Import useNavigate
 
 const FeaturedProducts: React.FC = () => {
-  console.log(`FeaturedProducts re-rendered. Wishlist status for first product: ${useSupabaseWishlist().isInWishlist(useSupabaseProducts().products[0]?.id)}`); // ADD THIS LINE
   const { products, loading } = useSupabaseProducts();
   const { addToCart } = useSupabaseCart();
   const { wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useSupabaseWishlist();

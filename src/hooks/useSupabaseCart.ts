@@ -18,8 +18,8 @@ export const useSupabaseCart = () => {
       console.log('fetchCartItems: Fetch already in progress, skipping.');
       return;
     }
-    if (!user?.id || !userProfile) { // Ensure user ID and userProfile exist before attempting to fetch
-      console.log('fetchCartItems: No user ID or userProfile available, cannot fetch cart items.');
+    if (!user?.id) {
+      console.log('fetchCartItems: No user ID available, cannot fetch cart items.');
       setCartItems([]);
       return;
     }
@@ -79,21 +79,21 @@ export const useSupabaseCart = () => {
       setLoading(false);
       isFetchingRef.current = false; // Reset ref in finally block
     }
-  }, [user?.id, userProfile]); // Dependency on user.id and userProfile ensures fetchCartItems is stable and re-created only when user changes
+  }, [user?.id]); // Dependency on user.id only
 
   useEffect(() => {
-    console.log('useSupabaseCart useEffect: authLoading:', authLoading, 'user:', user, 'userProfile:', userProfile);
+    console.log('useSupabaseCart useEffect: authLoading:', authLoading, 'user:', user);
 
     if (!authLoading) {
-      if (user && userProfile) { // Ensure both user and userProfile are available
-        console.log('useSupabaseCart useEffect: User and profile available, triggering fetchCartItems.');
+      if (user) {
+        console.log('useSupabaseCart useEffect: User available, triggering fetchCartItems.');
         fetchCartItems();
       } else {
-        console.log('useSupabaseCart useEffect: No user or profile, clearing cart items.');
+        console.log('useSupabaseCart useEffect: No user, clearing cart items.');
         setCartItems([]);
       }
     }
-  }, [user, userProfile, authLoading, fetchCartItems]); // Dependencies for the useEffect
+  }, [user, authLoading, fetchCartItems]); // Dependencies for the useEffect
 
   const addToCart = async (productId: string, quantity: number = 1) => {
     if (!user) return { error: new Error('Please login to add items to cart') };

@@ -18,8 +18,8 @@ export const useSupabaseWishlist = () => {
       console.log('fetchWishlistItems: Fetch already in progress, skipping.');
       return;
     }
-    if (!user?.id || !userProfile) { // Ensure user ID and userProfile exist before attempting to fetch
-      console.log('fetchWishlistItems: No user ID or userProfile available, cannot fetch wishlist items.');
+    if (!user?.id) {
+      console.log('fetchWishlistItems: No user ID available, cannot fetch wishlist items.');
       setWishlistItems([]);
       return;
     }
@@ -78,21 +78,21 @@ export const useSupabaseWishlist = () => {
       setLoading(false);
       isFetchingRef.current = false; // Reset ref in finally block
     }
-  }, [user?.id, userProfile]); // Dependency on user.id and userProfile ensures fetchWishlistItems is stable and re-created only when user changes
+  }, [user?.id]); // Dependency on user.id only
 
   useEffect(() => {
-    console.log('useSupabaseWishlist useEffect: authLoading:', authLoading, 'user:', user, 'userProfile:', userProfile);
+    console.log('useSupabaseWishlist useEffect: authLoading:', authLoading, 'user:', user);
 
     if (!authLoading) {
-      if (user && userProfile) { // Ensure both user and userProfile are available
-        console.log('useSupabaseWishlist useEffect: User and profile available, triggering fetchWishlistItems.');
+      if (user) {
+        console.log('useSupabaseWishlist useEffect: User available, triggering fetchWishlistItems.');
         fetchWishlistItems();
       } else {
-        console.log('useSupabaseWishlist useEffect: No user or profile, clearing wishlist items.');
+        console.log('useSupabaseWishlist useEffect: No user, clearing wishlist items.');
         setWishlistItems([]);
       }
     }
-  }, [user, userProfile, authLoading, fetchWishlistItems]); // Dependencies for the useEffect
+  }, [user, authLoading, fetchWishlistItems]); // Dependencies for the useEffect
 
   const addToWishlist = async (productId: string) => {
     console.log(`addToWishlist: Called for product ID: ${productId}`); // NEW LOG

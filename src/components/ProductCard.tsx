@@ -14,7 +14,6 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
-  console.log(`ProductCard ${product.id} re-rendered. Wishlist status: ${useSupabaseWishlist().isInWishlist(product.id)}`); // ADD THIS LINE
   const { addToCart } = useSupabaseCart();
   const { wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useSupabaseWishlist();
   const { showToast } = useToast(); // NEW: Use useToast hook
