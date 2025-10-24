@@ -13,28 +13,21 @@ export const useSupabaseWishlist = () => {
   const { user, userProfile, loading: authLoading } = useAuth(); // Keep userProfile here
   const isFetchingRef = useRef(false);
 
-  const fetchWishlistItems = useCallback(async () => {
-    if (isFetchingRef.current) {
-      console.log('fetchWishlistItems: Fetch already in progress, skipping.');
-      return;
-    }
+  const fetchWishlistItems = useCallback(async (force = false) => {
     if (!user?.id) {
       console.log('fetchWishlistItems: No user ID available, cannot fetch wishlist items.');
       setWishlistItems([]);
       return;
     }
 
+    if (!force && isFetchingRef.current) {
+      console.log('fetchWishlistItems: Fetch already in progress, skipping.');
+      return;
+    }
+
     isFetchingRef.current = true;
-    setLoading(true); // Set loading true when the fetch actually starts
-    console.time('fetchWishlistItemsQuery');
+    setLoading(true);
     try {
-      console.log('fetchWishlistItems: Current authLoading state:', authLoading);
-      const { data: currentSessionData } = await supabase.auth.getSession();
-      console.log('fetchWishlistItems: Supabase client session at query time:', currentSessionData.session);
-      console.log('fetchWishlistItems: Supabase client user at query time:', currentSessionData.session?.user);
-      console.log('fetchWishlistItems: Supabase client access token at query time (first 5 chars):', currentSessionData.session?.access_token?.substring(0, 5) + '...');
-      console.log('Debug: Supabase client in fetchWishlistItems:', supabase);
-      console.log('fetchWishlistItems: Using supabase to fetch wishlist items...');
       const { data, error } = await supabase
         .from('wishlist_items')
         .select(`
@@ -50,35 +43,29 @@ export const useSupabaseWishlist = () => {
               categories(name)
             )
           `)
-          .eq('user_id', user.id); // Use user.id directly
-
-      console.log('fetchWishlistItems: Supabase wishlist query executed.');
-      console.timeEnd('fetchWishlistItemsQuery');
-      console.log('fetchWishlistItems: Supabase query result for wishlist items - Data:', data, 'Error:', error);
+          .eq('user_id', user.id);
 
       if (error) {
         console.error('Error fetching wishlist items:', error.message);
         setWishlistItems([]);
       } else {
-        // Map the fetched data to include category_name
         const mappedData = data.map(item => ({
           ...item,
           product: {
             ...item.product,
-            category_name: item.product.categories.name // Map category name
+            category_name: item.product.categories.name
           }
         }));
         setWishlistItems(mappedData || []);
-        console.log('fetchWishlistItems: Wishlist items state updated to:', mappedData); // NEW LOG
       }
     } catch (error: any) {
       console.error('Error fetching wishlist items (caught exception):', error.message);
       setWishlistItems([]);
     } finally {
       setLoading(false);
-      isFetchingRef.current = false; // Reset ref in finally block
+      isFetchingRef.current = false;
     }
-  }, [user?.id]); // Dependency on user.id only
+  }, [user?.id]);
 
   useEffect(() => {
     console.log('useSupabaseWishlist useEffect: authLoading:', authLoading, 'user:', user);
@@ -101,8 +88,8 @@ export const useSupabaseWishlist = () => {
             },
             (payload) => {
               console.log('Wishlist change detected:', payload);
-              // Force immediate refetch
-              setTimeout(() => fetchWishlistItems(), 100);
+              // Force immediate refetch without delay
+              fetchWishlistItems(true);
             }
           )
           .subscribe((status) => {
@@ -139,15 +126,6 @@ export const useSupabaseWishlist = () => {
 
       console.log('addToWishlist: Inserting new item...');
 
-      // Optimistic update with temp item
-      const tempItem: any = {
-        id: 'temp-' + Date.now(),
-        product_id: productId,
-        created_at: new Date().toISOString(),
-        product: {} as any // Will be filled by subscription
-      };
-      setWishlistItems(prev => [...prev, tempItem]);
-
       const { error } = await supabase
         .from('wishlist_items')
         .insert({
@@ -156,6 +134,9 @@ export const useSupabaseWishlist = () => {
         });
 
       if (error) throw error;
+
+      // Force refetch to ensure item is added with full data
+      await fetchWishlistItems();
 
       console.log('addToWishlist: Item inserted successfully.');
       return { error: null };
@@ -174,9 +155,6 @@ export const useSupabaseWishlist = () => {
     try {
       console.log('removeFromWishlist: Removing item...');
 
-      // Optimistic update
-      setWishlistItems(prev => prev.filter(item => item.id !== wishlistItemId));
-
       const { error } = await supabase
         .from('wishlist_items')
         .delete()
@@ -184,6 +162,9 @@ export const useSupabaseWishlist = () => {
         .eq('user_id', user.id);
 
       if (error) throw error;
+
+      // Force refetch to ensure item is removed
+      await fetchWishlistItems();
 
       console.log('removeFromWishlist: Item deleted successfully.');
       return { error: null };

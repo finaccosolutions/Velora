@@ -34,7 +34,6 @@ const Checkout: React.FC = () => {
 
   const buyNowProductId = location.state?.buyNowProductId;
   const buyNowProduct = buyNowProductId ? products.find(p => p.id === buyNowProductId) : null;
-  const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   const displayItems = buyNowProduct ? [{
     id: 'buy-now-temp',
@@ -48,27 +47,19 @@ const Checkout: React.FC = () => {
   const tax = Math.round(subtotal * 0.18);
   const total = subtotal + shipping + tax;
 
-  // Wait for initial cart load before checking if we should redirect
+  // Only redirect if we're NOT in buy now mode and cart is empty after loading
   useEffect(() => {
-    console.log('Checkout useEffect - buyNowProduct:', buyNowProduct);
-    console.log('Checkout useEffect - cartLoading:', cartLoading);
-    console.log('Checkout useEffect - cartItems.length:', cartItems.length);
-    console.log('Checkout useEffect - initialCheckDone:', initialCheckDone);
-
-    // Mark initial check as done once loading completes
-    if (!cartLoading && !initialCheckDone) {
-      setInitialCheckDone(true);
+    // Skip redirect logic if in buy now mode
+    if (buyNowProduct) {
+      return;
     }
 
-    // Only redirect if:
-    // 1. Not in buy now mode
-    // 2. Initial check is done (cart has loaded at least once)
-    // 3. Cart is truly empty
-    if (!buyNowProduct && initialCheckDone && cartItems.length === 0) {
-      console.log('Redirecting to cart - no items found after initial load');
-      setTimeout(() => navigate('/cart'), 100);
+    // Only redirect if cart is loaded and empty
+    if (!cartLoading && cartItems.length === 0) {
+      console.log('Cart is empty, redirecting to cart page');
+      navigate('/cart', { replace: true });
     }
-  }, [buyNowProduct, cartLoading, cartItems.length, initialCheckDone, navigate]);
+  }, [buyNowProduct, cartLoading, cartItems.length, navigate]);
 
   useEffect(() => {
     if (addresses.length > 0 && !selectedAddressId) {
@@ -284,8 +275,8 @@ const Checkout: React.FC = () => {
     );
   }
 
-  // Show loading state while cart is loading initially (not in buy now mode)
-  if (!initialCheckDone && !buyNowProduct) {
+  // Show loading state only when NOT in buy now mode and cart is still loading
+  if (!buyNowProduct && cartLoading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -298,17 +289,9 @@ const Checkout: React.FC = () => {
     );
   }
 
-  // Don't render checkout if no items (will redirect)
-  if (!buyNowProduct && initialCheckDone && cartItems.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center py-16">
-            <p className="text-gray-600">Redirecting...</p>
-          </div>
-        </div>
-      </div>
-    );
+  // If NOT in buy now mode and cart is empty, show message (will redirect)
+  if (!buyNowProduct && cartItems.length === 0) {
+    return null; // Will redirect via useEffect
   }
 
   const selectedAddress = addresses.find(a => a.id === selectedAddressId);

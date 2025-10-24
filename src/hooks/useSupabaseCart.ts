@@ -14,27 +14,21 @@ export const useSupabaseCart = () => {
   const isFetchingRef = useRef(false);
 
   const fetchCartItems = useCallback(async (force = false) => {
-    if (!force && isFetchingRef.current) {
-      console.log('fetchCartItems: Fetch already in progress, skipping.');
-      return;
-    }
     if (!user?.id) {
       console.log('fetchCartItems: No user ID available, cannot fetch cart items.');
       setCartItems([]);
       return;
     }
 
+    // Allow forced refetch even if one is in progress
+    if (!force && isFetchingRef.current) {
+      console.log('fetchCartItems: Fetch already in progress, skipping.');
+      return;
+    }
+
     isFetchingRef.current = true;
     setLoading(true);
-    console.time('fetchCartItemsQuery');
     try {
-      console.log('fetchCartItems: Current authLoading state:', authLoading);
-      const { data: currentSessionData } = await supabase.auth.getSession();
-      console.log('fetchCartItems: Supabase client session at query time:', currentSessionData.session);
-      console.log('fetchCartItems: Supabase client user at query time:', currentSessionData.session?.user);
-      console.log('fetchCartItems: Supabase client access token at query time (first 5 chars):', currentSessionData.session?.access_token?.substring(0, 5) + '...');
-      console.log('Debug: Supabase client in fetchCartItems:', supabase);
-      console.log('fetchCartItems: Using supabase to fetch cart items...');
       const { data, error } = await supabase
         .from('cart_items')
         .select(`
@@ -51,35 +45,29 @@ export const useSupabaseCart = () => {
               categories(name)
             )
           `)
-          .eq('user_id', user.id); // Use user.id directly
-
-      console.log('fetchCartItems: Supabase cart query executed.');
-      console.timeEnd('fetchCartItemsQuery');
-      console.log('fetchCartItems: Supabase query result for cart items - Data:', data, 'Error:', error);
+          .eq('user_id', user.id);
 
       if (error) {
         console.error('Error fetching cart items:', error.message);
         setCartItems([]);
       } else {
-        // Map the fetched data to include category_name
         const mappedData = data.map(item => ({
           ...item,
           product: {
             ...item.product,
-            category_name: item.product.categories.name // Map category name
+            category_name: item.product.categories.name
           }
         }));
         setCartItems(mappedData || []);
-        console.log('fetchCartItems: Cart items state updated to:', mappedData); // NEW LOG
       }
     } catch (error: any) {
       console.error('Error fetching cart items (caught exception):', error.message);
       setCartItems([]);
     } finally {
       setLoading(false);
-      isFetchingRef.current = false; // Reset ref in finally block
+      isFetchingRef.current = false;
     }
-  }, [user?.id]); // Dependency on user.id only
+  }, [user?.id]);
 
   useEffect(() => {
     console.log('useSupabaseCart useEffect: authLoading:', authLoading, 'user:', user);
@@ -102,8 +90,8 @@ export const useSupabaseCart = () => {
             },
             (payload) => {
               console.log('Cart change detected:', payload);
-              // Force immediate refetch
-              setTimeout(() => fetchCartItems(true), 100);
+              // Force immediate refetch without delay
+              fetchCartItems(true);
             }
           )
           .subscribe((status) => {
@@ -135,50 +123,17 @@ export const useSupabaseCart = () => {
       if (existingItem) {
         console.log('addToCart: Updating existing item quantity...');
 
-        // Optimistic update
-        setCartItems(prev => prev.map(item =>
-          item.id === existingItem.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        ));
-
         const { error } = await supabase
           .from('cart_items')
           .update({ quantity: existingItem.quantity + quantity })
           .eq('id', existingItem.id);
 
         if (error) throw error;
+
+        // Force refetch to ensure count is updated
+        await fetchCartItems(true);
       } else {
         console.log('addToCart: Inserting new item...');
-
-        // Get product data for optimistic update
-        const { data: productData } = await supabase
-          .from('products')
-          .select(`
-            id,
-            name,
-            price,
-            image_url,
-            category,
-            in_stock,
-            categories(name)
-          `)
-          .eq('id', productId)
-          .single();
-
-        if (productData) {
-          // Optimistic update with temp ID
-          const tempItem: any = {
-            id: 'temp-' + Date.now(),
-            product_id: productId,
-            quantity: quantity,
-            product: {
-              ...productData,
-              category_name: productData.categories.name
-            }
-          };
-          setCartItems(prev => [...prev, tempItem]);
-        }
 
         const { error } = await supabase
           .from('cart_items')
@@ -189,6 +144,9 @@ export const useSupabaseCart = () => {
           });
 
         if (error) throw error;
+
+        // Force refetch to ensure count is updated
+        await fetchCartItems(true);
       }
 
       return { error: null };
@@ -209,13 +167,6 @@ export const useSupabaseCart = () => {
       }
       console.log('updateQuantity: Updating item quantity...');
 
-      // Optimistic update
-      setCartItems(prev => prev.map(item =>
-        item.id === cartItemId
-          ? { ...item, quantity }
-          : item
-      ));
-
       const { error } = await supabase
         .from('cart_items')
         .update({ quantity })
@@ -223,6 +174,9 @@ export const useSupabaseCart = () => {
         .eq('user_id', user.id);
 
       if (error) throw error;
+
+      // Force refetch to ensure count is updated
+      await fetchCartItems(true);
 
       return { error: null };
     } catch (error: any) {
@@ -239,9 +193,6 @@ export const useSupabaseCart = () => {
     try {
       console.log('removeFromCart: Removing item...');
 
-      // Optimistic update
-      setCartItems(prev => prev.filter(item => item.id !== cartItemId));
-
       const { error } = await supabase
         .from('cart_items')
         .delete()
@@ -249,6 +200,9 @@ export const useSupabaseCart = () => {
         .eq('user_id', user.id);
 
       if (error) throw error;
+
+      // Force refetch to ensure count is updated
+      await fetchCartItems(true);
 
       return { error: null };
     } catch (error: any) {
