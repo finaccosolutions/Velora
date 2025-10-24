@@ -60,7 +60,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
   const handleBuyNow = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    navigate('/checkout', { state: { productId: product.id } });
+    navigate('/checkout', { state: { buyNowProductId: product.id } });
   };
 
   return (

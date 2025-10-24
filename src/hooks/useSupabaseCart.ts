@@ -131,6 +131,13 @@ export const useSupabaseCart = () => {
 
       if (existingItem) {
         console.log('addToCart: Using supabase (authenticated) client to update existing item quantity...');
+
+        setCartItems(prev => prev.map(item =>
+          item.id === existingItem.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        ));
+
         const { error } = await supabase
           .from('cart_items')
           .update({ quantity: existingItem.quantity + quantity })
@@ -139,6 +146,15 @@ export const useSupabaseCart = () => {
         if (error) throw error;
       } else {
         console.log('addToCart: Using supabase (authenticated) client to insert new item...');
+
+        const tempItem: any = {
+          id: 'temp-' + productId,
+          product_id: productId,
+          quantity: quantity,
+          product: { id: productId }
+        };
+        setCartItems(prev => [...prev, tempItem]);
+
         const { error } = await supabase
           .from('cart_items')
           .insert({
@@ -150,7 +166,7 @@ export const useSupabaseCart = () => {
         if (error) throw error;
       }
 
-      await fetchCartItems();
+      await fetchCartItems(true);
       return { error: null };
     } catch (error: any) {
       console.error('Error adding to cart:', error.message);
@@ -174,7 +190,7 @@ export const useSupabaseCart = () => {
 
       if (error) throw error;
 
-      await fetchCartItems();
+      await fetchCartItems(true);
       return { error: null };
     } catch (error: any) {
       console.error('Error updating quantity:', error.message);
@@ -186,6 +202,8 @@ export const useSupabaseCart = () => {
     if (!user) return { error: new Error('Please login') };
 
     try {
+      setCartItems(prev => prev.filter(item => item.id !== cartItemId));
+
       console.log('removeFromCart: Using supabase (authenticated) client to delete item...');
       const { error } = await supabase
         .from('cart_items')
@@ -195,10 +213,11 @@ export const useSupabaseCart = () => {
 
       if (error) throw error;
 
-      await fetchCartItems();
+      await fetchCartItems(true);
       return { error: null };
     } catch (error: any) {
       console.error('Error removing from cart:', error.message);
+      await fetchCartItems(true);
       return { error };
     }
   };

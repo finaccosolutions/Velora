@@ -56,19 +56,10 @@ const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
   };
 
   // Handle Buy Now
-  const handleBuyNow = async (e: React.MouseEvent, productId: string) => {
+  const handleBuyNow = (e: React.MouseEvent, productId: string) => {
     e.preventDefault();
     e.stopPropagation();
-
-    const result = await addToCart(productId, 1);
-    if (!result.error) {
-      // Small delay to ensure cart is updated
-      setTimeout(() => {
-        navigate('/checkout');
-      }, 200);
-    } else {
-      showToast(result.error.error_description || result.error.message, 'error');
-    }
+    navigate('/checkout', { state: { buyNowProductId: productId } });
   };
 
   if (loading) {

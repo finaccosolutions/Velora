@@ -143,8 +143,15 @@ export const useSupabaseWishlist = () => {
 
       if (error) throw error;
 
+      setWishlistItems(prev => [...prev, {
+        id: 'temp-' + productId,
+        product_id: productId,
+        created_at: new Date().toISOString(),
+        product: {} as any
+      }]);
+
       console.log('addToWishlist: Item inserted successfully, triggering fetchWishlistItems.');
-      await fetchWishlistItems();
+      setTimeout(() => fetchWishlistItems(), 100);
       return { error: null };
     } catch (error: any) {
       console.error('Error adding to wishlist:', error.message);
@@ -157,6 +164,8 @@ export const useSupabaseWishlist = () => {
     if (!user) return { error: new Error('Please login') };
 
     try {
+      setWishlistItems(prev => prev.filter(item => item.id !== wishlistItemId));
+
       console.log('removeFromWishlist: Using supabase (authenticated) client to delete item...');
       const { error } = await supabase
         .from('wishlist_items')
@@ -167,7 +176,7 @@ export const useSupabaseWishlist = () => {
       if (error) throw error;
 
       console.log('removeFromWishlist: Item deleted successfully, triggering fetchWishlistItems.');
-      await fetchWishlistItems();
+      setTimeout(() => fetchWishlistItems(), 100);
       return { error: null };
     } catch (error: any) {
       console.error('Error removing from wishlist:', error.message);
