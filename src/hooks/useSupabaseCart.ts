@@ -13,22 +13,28 @@ export const useSupabaseCart = () => {
   const { user, userProfile, loading: authLoading } = useAuth(); // Keep userProfile here
   const isFetchingRef = useRef(false);
 
-  const fetchCartItems = useCallback(async (force = false) => {
+  const fetchCartItems = useCallback(async () => {
+    if (isFetchingRef.current) {
+      console.log('fetchCartItems: Fetch already in progress, skipping.');
+      return;
+    }
     if (!user?.id) {
       console.log('fetchCartItems: No user ID available, cannot fetch cart items.');
       setCartItems([]);
       return;
     }
 
-    // Allow forced refetch even if one is in progress
-    if (!force && isFetchingRef.current) {
-      console.log('fetchCartItems: Fetch already in progress, skipping.');
-      return;
-    }
-
     isFetchingRef.current = true;
     setLoading(true);
+    console.time('fetchCartItemsQuery');
     try {
+      console.log('fetchCartItems: Current authLoading state:', authLoading);
+      const { data: currentSessionData } = await supabase.auth.getSession();
+      console.log('fetchCartItems: Supabase client session at query time:', currentSessionData.session);
+      console.log('fetchCartItems: Supabase client user at query time:', currentSessionData.session?.user);
+      console.log('fetchCartItems: Supabase client access token at query time (first 5 chars):', currentSessionData.session?.access_token?.substring(0, 5) + '...');
+      console.log('Debug: Supabase client in fetchCartItems:', supabase);
+      console.log('fetchCartItems: Using supabase to fetch cart items...');
       const { data, error } = await supabase
         .from('cart_items')
         .select(`
@@ -45,29 +51,35 @@ export const useSupabaseCart = () => {
               categories(name)
             )
           `)
-          .eq('user_id', user.id);
+          .eq('user_id', user.id); // Use user.id directly
+
+      console.log('fetchCartItems: Supabase cart query executed.');
+      console.timeEnd('fetchCartItemsQuery');
+      console.log('fetchCartItems: Supabase query result for cart items - Data:', data, 'Error:', error);
 
       if (error) {
         console.error('Error fetching cart items:', error.message);
         setCartItems([]);
       } else {
+        // Map the fetched data to include category_name
         const mappedData = data.map(item => ({
           ...item,
           product: {
             ...item.product,
-            category_name: item.product.categories.name
+            category_name: item.product.categories.name // Map category name
           }
         }));
         setCartItems(mappedData || []);
+        console.log('fetchCartItems: Cart items state updated to:', mappedData); // NEW LOG
       }
     } catch (error: any) {
       console.error('Error fetching cart items (caught exception):', error.message);
       setCartItems([]);
     } finally {
       setLoading(false);
-      isFetchingRef.current = false;
+      isFetchingRef.current = false; // Reset ref in finally block
     }
-  }, [user?.id]);
+  }, [user?.id]); // Dependency on user.id only
 
   useEffect(() => {
     console.log('useSupabaseCart useEffect: authLoading:', authLoading, 'user:', user);
@@ -76,31 +88,6 @@ export const useSupabaseCart = () => {
       if (user) {
         console.log('useSupabaseCart useEffect: User available, triggering fetchCartItems.');
         fetchCartItems();
-
-        // Subscribe to cart changes
-        const channel = supabase
-          .channel('cart_changes_' + user.id)
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'cart_items',
-              filter: `user_id=eq.${user.id}`
-            },
-            (payload) => {
-              console.log('Cart change detected:', payload);
-              // Force immediate refetch without delay
-              fetchCartItems(true);
-            }
-          )
-          .subscribe((status) => {
-            console.log('Cart subscription status:', status);
-          });
-
-        return () => {
-          supabase.removeChannel(channel);
-        };
       } else {
         console.log('useSupabaseCart useEffect: No user, clearing cart items.');
         setCartItems([]);
@@ -121,20 +108,15 @@ export const useSupabaseCart = () => {
         .maybeSingle();
 
       if (existingItem) {
-        console.log('addToCart: Updating existing item quantity...');
-
+        console.log('addToCart: Using supabase (authenticated) client to update existing item quantity...');
         const { error } = await supabase
           .from('cart_items')
           .update({ quantity: existingItem.quantity + quantity })
           .eq('id', existingItem.id);
 
         if (error) throw error;
-
-        // Force refetch to ensure count is updated
-        await fetchCartItems(true);
       } else {
-        console.log('addToCart: Inserting new item...');
-
+        console.log('addToCart: Using supabase (authenticated) client to insert new item...');
         const { error } = await supabase
           .from('cart_items')
           .insert({
@@ -144,16 +126,13 @@ export const useSupabaseCart = () => {
           });
 
         if (error) throw error;
-
-        // Force refetch to ensure count is updated
-        await fetchCartItems(true);
       }
 
+      isFetchingRef.current = false;
+      await fetchCartItems();
       return { error: null };
     } catch (error: any) {
       console.error('Error adding to cart:', error.message);
-      // Revert on error
-      fetchCartItems(true);
       return { error };
     }
   };
@@ -165,8 +144,7 @@ export const useSupabaseCart = () => {
       if (quantity <= 0) {
         return await removeFromCart(cartItemId);
       }
-      console.log('updateQuantity: Updating item quantity...');
-
+      console.log('updateQuantity: Using supabase (authenticated) client to update item quantity...');
       const { error } = await supabase
         .from('cart_items')
         .update({ quantity })
@@ -175,14 +153,10 @@ export const useSupabaseCart = () => {
 
       if (error) throw error;
 
-      // Force refetch to ensure count is updated
-      await fetchCartItems(true);
-
+      await fetchCartItems();
       return { error: null };
     } catch (error: any) {
       console.error('Error updating quantity:', error.message);
-      // Revert on error
-      fetchCartItems(true);
       return { error };
     }
   };
@@ -191,8 +165,7 @@ export const useSupabaseCart = () => {
     if (!user) return { error: new Error('Please login') };
 
     try {
-      console.log('removeFromCart: Removing item...');
-
+      console.log('removeFromCart: Using supabase (authenticated) client to delete item...');
       const { error } = await supabase
         .from('cart_items')
         .delete()
@@ -201,14 +174,10 @@ export const useSupabaseCart = () => {
 
       if (error) throw error;
 
-      // Force refetch to ensure count is updated
-      await fetchCartItems(true);
-
+      await fetchCartItems();
       return { error: null };
     } catch (error: any) {
       console.error('Error removing from cart:', error.message);
-      // Revert on error
-      fetchCartItems(true);
       return { error };
     }
   };

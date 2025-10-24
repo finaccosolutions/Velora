@@ -43,31 +43,23 @@ const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
       if (!result.error) {
         showToast(`${productName} removed from wishlist!`, 'success');
       } else {
-        if (result.error.message === 'Please login to add items to wishlist' || result.error.message === 'Please login') {
-          showToast('Please login to manage your wishlist', 'error');
-        } else {
-          showToast(result.error.error_description || result.error.message, 'error');
-        }
+        showToast(result.error.error_description || result.error.message, 'error');
       }
     } else {
       const result = await addToWishlist(productId);
       if (!result.error) {
         showToast(`${productName} added to wishlist!`, 'success');
       } else {
-        if (result.error.message === 'Please login to add items to wishlist' || result.error.message === 'Please login') {
-          showToast('Please login to add items to wishlist', 'error');
-        } else {
-          showToast(result.error.error_description || result.error.message, 'error');
-        }
+        showToast(result.error.error_description || result.error.message, 'error');
       }
     }
   };
 
-  // Handle Buy Now
+  // NEW: Handle Buy Now
   const handleBuyNow = (e: React.MouseEvent, productId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    navigate('/checkout', { state: { buyNowProductId: productId } });
+    navigate('/checkout', { state: { productId } });
   };
 
   if (loading) {
