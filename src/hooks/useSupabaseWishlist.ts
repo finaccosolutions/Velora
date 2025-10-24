@@ -90,7 +90,7 @@ export const useSupabaseWishlist = () => {
 
         // Subscribe to wishlist changes
         const channel = supabase
-          .channel('wishlist_changes')
+          .channel('wishlist_changes_' + user.id)
           .on(
             'postgres_changes',
             {
@@ -101,10 +101,13 @@ export const useSupabaseWishlist = () => {
             },
             (payload) => {
               console.log('Wishlist change detected:', payload);
-              fetchWishlistItems();
+              // Force immediate refetch
+              setTimeout(() => fetchWishlistItems(), 100);
             }
           )
-          .subscribe();
+          .subscribe((status) => {
+            console.log('Wishlist subscription status:', status);
+          });
 
         return () => {
           supabase.removeChannel(channel);
@@ -121,7 +124,7 @@ export const useSupabaseWishlist = () => {
     if (!user) return { error: new Error('Please login to add items to wishlist') };
 
     try {
-      console.log('addToWishlist: Using supabase (authenticated) client to check for existing item...');
+      console.log('addToWishlist: Checking for existing item...');
       const { data: existingItem } = await supabase
         .from('wishlist_items')
         .select('id')
@@ -130,10 +133,21 @@ export const useSupabaseWishlist = () => {
         .maybeSingle();
 
       if (existingItem) {
-        console.log('addToWishlist: Product already in wishlist, skipping insert.');
+        console.log('addToWishlist: Product already in wishlist.');
         return { error: new Error('Product already in wishlist') };
       }
-      console.log('addToWishlist: Using supabase (authenticated) client to insert new item...');
+
+      console.log('addToWishlist: Inserting new item...');
+
+      // Optimistic update with temp item
+      const tempItem: any = {
+        id: 'temp-' + Date.now(),
+        product_id: productId,
+        created_at: new Date().toISOString(),
+        product: {} as any // Will be filled by subscription
+      };
+      setWishlistItems(prev => [...prev, tempItem]);
+
       const { error } = await supabase
         .from('wishlist_items')
         .insert({
@@ -143,18 +157,12 @@ export const useSupabaseWishlist = () => {
 
       if (error) throw error;
 
-      setWishlistItems(prev => [...prev, {
-        id: 'temp-' + productId,
-        product_id: productId,
-        created_at: new Date().toISOString(),
-        product: {} as any
-      }]);
-
-      console.log('addToWishlist: Item inserted successfully, triggering fetchWishlistItems.');
-      setTimeout(() => fetchWishlistItems(), 100);
+      console.log('addToWishlist: Item inserted successfully.');
       return { error: null };
     } catch (error: any) {
       console.error('Error adding to wishlist:', error.message);
+      // Revert on error
+      fetchWishlistItems();
       return { error };
     }
   };
@@ -164,9 +172,11 @@ export const useSupabaseWishlist = () => {
     if (!user) return { error: new Error('Please login') };
 
     try {
+      console.log('removeFromWishlist: Removing item...');
+
+      // Optimistic update
       setWishlistItems(prev => prev.filter(item => item.id !== wishlistItemId));
 
-      console.log('removeFromWishlist: Using supabase (authenticated) client to delete item...');
       const { error } = await supabase
         .from('wishlist_items')
         .delete()
@@ -175,11 +185,12 @@ export const useSupabaseWishlist = () => {
 
       if (error) throw error;
 
-      console.log('removeFromWishlist: Item deleted successfully, triggering fetchWishlistItems.');
-      setTimeout(() => fetchWishlistItems(), 100);
+      console.log('removeFromWishlist: Item deleted successfully.');
       return { error: null };
     } catch (error: any) {
       console.error('Error removing from wishlist:', error.message);
+      // Revert on error
+      fetchWishlistItems();
       return { error };
     }
   };

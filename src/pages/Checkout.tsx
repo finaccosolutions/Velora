@@ -34,6 +34,7 @@ const Checkout: React.FC = () => {
 
   const buyNowProductId = location.state?.buyNowProductId;
   const buyNowProduct = buyNowProductId ? products.find(p => p.id === buyNowProductId) : null;
+  const [initialCheckDone, setInitialCheckDone] = useState(false);
 
   const displayItems = buyNowProduct ? [{
     id: 'buy-now-temp',
@@ -47,11 +48,27 @@ const Checkout: React.FC = () => {
   const tax = Math.round(subtotal * 0.18);
   const total = subtotal + shipping + tax;
 
+  // Wait for initial cart load before checking if we should redirect
   useEffect(() => {
-    if (!buyNowProduct && !cartLoading && cartItems.length === 0) {
-      navigate('/cart');
+    console.log('Checkout useEffect - buyNowProduct:', buyNowProduct);
+    console.log('Checkout useEffect - cartLoading:', cartLoading);
+    console.log('Checkout useEffect - cartItems.length:', cartItems.length);
+    console.log('Checkout useEffect - initialCheckDone:', initialCheckDone);
+
+    // Mark initial check as done once loading completes
+    if (!cartLoading && !initialCheckDone) {
+      setInitialCheckDone(true);
     }
-  }, [buyNowProduct, cartLoading, cartItems.length, navigate]);
+
+    // Only redirect if:
+    // 1. Not in buy now mode
+    // 2. Initial check is done (cart has loaded at least once)
+    // 3. Cart is truly empty
+    if (!buyNowProduct && initialCheckDone && cartItems.length === 0) {
+      console.log('Redirecting to cart - no items found after initial load');
+      setTimeout(() => navigate('/cart'), 100);
+    }
+  }, [buyNowProduct, cartLoading, cartItems.length, initialCheckDone, navigate]);
 
   useEffect(() => {
     if (addresses.length > 0 && !selectedAddressId) {
@@ -248,7 +265,27 @@ const Checkout: React.FC = () => {
     }
   };
 
-  if (cartLoading && !buyNowProduct) {
+  // Check if user is logged in first
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center py-16">
+            <p className="text-gray-600 mb-4">Please login to continue with checkout</p>
+            <button
+              onClick={() => navigate('/login', { state: { from: '/checkout' } })}
+              className="bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white px-8 py-3 rounded-lg font-semibold hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200"
+            >
+              Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state while cart is loading initially (not in buy now mode)
+  if (!initialCheckDone && !buyNowProduct) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -261,8 +298,17 @@ const Checkout: React.FC = () => {
     );
   }
 
-  if (!buyNowProduct && cartItems.length === 0) {
-    return null;
+  // Don't render checkout if no items (will redirect)
+  if (!buyNowProduct && initialCheckDone && cartItems.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center py-16">
+            <p className="text-gray-600">Redirecting...</p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const selectedAddress = addresses.find(a => a.id === selectedAddressId);

@@ -91,7 +91,7 @@ export const useSupabaseCart = () => {
 
         // Subscribe to cart changes
         const channel = supabase
-          .channel('cart_changes')
+          .channel('cart_changes_' + user.id)
           .on(
             'postgres_changes',
             {
@@ -102,10 +102,13 @@ export const useSupabaseCart = () => {
             },
             (payload) => {
               console.log('Cart change detected:', payload);
-              fetchCartItems(true);
+              // Force immediate refetch
+              setTimeout(() => fetchCartItems(true), 100);
             }
           )
-          .subscribe();
+          .subscribe((status) => {
+            console.log('Cart subscription status:', status);
+          });
 
         return () => {
           supabase.removeChannel(channel);
@@ -130,8 +133,9 @@ export const useSupabaseCart = () => {
         .maybeSingle();
 
       if (existingItem) {
-        console.log('addToCart: Using supabase (authenticated) client to update existing item quantity...');
+        console.log('addToCart: Updating existing item quantity...');
 
+        // Optimistic update
         setCartItems(prev => prev.map(item =>
           item.id === existingItem.id
             ? { ...item, quantity: item.quantity + quantity }
@@ -145,8 +149,9 @@ export const useSupabaseCart = () => {
 
         if (error) throw error;
       } else {
-        console.log('addToCart: Using supabase (authenticated) client to insert new item...');
+        console.log('addToCart: Inserting new item...');
 
+        // Get product data for optimistic update
         const { data: productData } = await supabase
           .from('products')
           .select(`
@@ -162,8 +167,9 @@ export const useSupabaseCart = () => {
           .single();
 
         if (productData) {
+          // Optimistic update with temp ID
           const tempItem: any = {
-            id: 'temp-' + productId,
+            id: 'temp-' + Date.now(),
             product_id: productId,
             quantity: quantity,
             product: {
@@ -185,11 +191,11 @@ export const useSupabaseCart = () => {
         if (error) throw error;
       }
 
-      await fetchCartItems(true);
       return { error: null };
     } catch (error: any) {
       console.error('Error adding to cart:', error.message);
-      await fetchCartItems(true);
+      // Revert on error
+      fetchCartItems(true);
       return { error };
     }
   };
@@ -201,7 +207,15 @@ export const useSupabaseCart = () => {
       if (quantity <= 0) {
         return await removeFromCart(cartItemId);
       }
-      console.log('updateQuantity: Using supabase (authenticated) client to update item quantity...');
+      console.log('updateQuantity: Updating item quantity...');
+
+      // Optimistic update
+      setCartItems(prev => prev.map(item =>
+        item.id === cartItemId
+          ? { ...item, quantity }
+          : item
+      ));
+
       const { error } = await supabase
         .from('cart_items')
         .update({ quantity })
@@ -210,10 +224,11 @@ export const useSupabaseCart = () => {
 
       if (error) throw error;
 
-      await fetchCartItems(true);
       return { error: null };
     } catch (error: any) {
       console.error('Error updating quantity:', error.message);
+      // Revert on error
+      fetchCartItems(true);
       return { error };
     }
   };
@@ -222,9 +237,11 @@ export const useSupabaseCart = () => {
     if (!user) return { error: new Error('Please login') };
 
     try {
+      console.log('removeFromCart: Removing item...');
+
+      // Optimistic update
       setCartItems(prev => prev.filter(item => item.id !== cartItemId));
 
-      console.log('removeFromCart: Using supabase (authenticated) client to delete item...');
       const { error } = await supabase
         .from('cart_items')
         .delete()
@@ -233,11 +250,11 @@ export const useSupabaseCart = () => {
 
       if (error) throw error;
 
-      await fetchCartItems(true);
       return { error: null };
     } catch (error: any) {
       console.error('Error removing from cart:', error.message);
-      await fetchCartItems(true);
+      // Revert on error
+      fetchCartItems(true);
       return { error };
     }
   };
