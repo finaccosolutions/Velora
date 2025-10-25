@@ -93,11 +93,14 @@ export const useSupabaseCart = () => {
               table: 'cart_items',
               filter: `user_id=eq.${user.id}`
             },
-            () => {
+            (payload) => {
+              console.log('Cart change detected:', payload);
               fetchCartItems(true);
             }
           )
-          .subscribe();
+          .subscribe((status) => {
+            console.log('Cart subscription status:', status);
+          });
 
         subscriptionRef.current = channel;
 
@@ -113,7 +116,7 @@ export const useSupabaseCart = () => {
         setInitialLoadComplete(true);
       }
     }
-  }, [user, authLoading, fetchCartItems]);
+  }, [user, authLoading]);
 
   const addToCart = async (productId: string, quantity: number = 1) => {
     if (!user) return { error: new Error('Please login to add items to cart') };
@@ -146,6 +149,8 @@ export const useSupabaseCart = () => {
 
         if (error) throw error;
       }
+
+      await fetchCartItems(true);
 
       return { error: null };
     } catch (error: any) {

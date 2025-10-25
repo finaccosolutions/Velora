@@ -32,6 +32,9 @@ const Checkout: React.FC = () => {
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const [isSubmittingAddress, setIsSubmittingAddress] = useState(false);
 
+  const isRazorpayConfigured = import.meta.env.VITE_RAZORPAY_KEY_ID &&
+    import.meta.env.VITE_RAZORPAY_KEY_ID.startsWith('rzp_');
+
   const buyNowProductId = location.state?.buyNowProductId;
   const buyNowProduct = buyNowProductId ? products.find(p => p.id === buyNowProductId) : null;
 
@@ -237,8 +240,20 @@ const Checkout: React.FC = () => {
   };
 
   const handleRazorpayPayment = async (order: any) => {
+    if (!isRazorpayConfigured) {
+      showToast('Online payment is not configured. Please use Cash on Delivery.', 'error');
+      setIsProcessing(false);
+      return;
+    }
+
+    if (!window.Razorpay) {
+      showToast('Payment gateway failed to load. Please try again.', 'error');
+      setIsProcessing(false);
+      return;
+    }
+
     const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_YOUR_KEY',
+      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
       amount: total * 100,
       currency: 'INR',
       name: 'Velora Tradings',
@@ -519,10 +534,12 @@ const Checkout: React.FC = () => {
                 </label>
 
                 <label
-                  className={`flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                    paymentMethod === 'online'
-                      ? 'border-[#815536] bg-[#815536]/5'
-                      : 'border-gray-200 hover:border-[#815536]/50'
+                  className={`flex items-center p-4 border-2 rounded-lg transition-all ${
+                    !isRazorpayConfigured
+                      ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+                      : paymentMethod === 'online'
+                      ? 'border-[#815536] bg-[#815536]/5 cursor-pointer'
+                      : 'border-gray-200 hover:border-[#815536]/50 cursor-pointer'
                   }`}
                 >
                   <input
@@ -530,12 +547,17 @@ const Checkout: React.FC = () => {
                     value="online"
                     checked={paymentMethod === 'online'}
                     onChange={(e) => setPaymentMethod(e.target.value as 'online')}
-                    className="mr-3 text-[#815536]"
+                    disabled={!isRazorpayConfigured}
+                    className="mr-3 text-[#815536] disabled:opacity-50"
                   />
                   <CreditCard className="h-5 w-5 text-gray-600 mr-3" />
-                  <div>
+                  <div className="flex-1">
                     <p className="font-medium text-gray-900">Online Payment</p>
-                    <p className="text-sm text-gray-600">UPI, Cards, NetBanking</p>
+                    <p className="text-sm text-gray-600">
+                      {isRazorpayConfigured
+                        ? 'UPI, Cards, NetBanking'
+                        : 'Not available - Configuration required'}
+                    </p>
                   </div>
                 </label>
               </div>

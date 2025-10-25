@@ -92,11 +92,14 @@ export const useSupabaseWishlist = () => {
               table: 'wishlist_items',
               filter: `user_id=eq.${user.id}`
             },
-            () => {
+            (payload) => {
+              console.log('Wishlist change detected:', payload);
               fetchWishlistItems(true);
             }
           )
-          .subscribe();
+          .subscribe((status) => {
+            console.log('Wishlist subscription status:', status);
+          });
 
         subscriptionRef.current = channel;
 
@@ -112,7 +115,7 @@ export const useSupabaseWishlist = () => {
         setInitialLoadComplete(true);
       }
     }
-  }, [user, authLoading, fetchWishlistItems]);
+  }, [user, authLoading]);
 
   const addToWishlist = async (productId: string) => {
     if (!user) return { error: new Error('Please login to add items to wishlist') };
@@ -138,6 +141,8 @@ export const useSupabaseWishlist = () => {
 
       if (error) throw error;
 
+      await fetchWishlistItems(true);
+
       return { error: null };
     } catch (error: any) {
       console.error('Error adding to wishlist:', error.message);
@@ -156,6 +161,8 @@ export const useSupabaseWishlist = () => {
         .eq('user_id', user.id);
 
       if (error) throw error;
+
+      await fetchWishlistItems(true);
 
       return { error: null };
     } catch (error: any) {
