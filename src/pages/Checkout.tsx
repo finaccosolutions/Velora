@@ -123,6 +123,73 @@ const Checkout: React.FC = () => {
     }
   };
 
+  const sendOrderEmails = async (order: any, selectedAddress: any) => {
+    try {
+      const orderItems = displayItems.map(item => ({
+        name: item.product.name,
+        quantity: item.quantity,
+        price: item.product.price
+      }));
+
+      const emailData = {
+        to: userProfile?.email || user?.email || '',
+        subject: `Order Confirmation - #${order.id.slice(-8)}`,
+        orderData: {
+          orderId: order.id,
+          customerName: userProfile?.full_name || 'Customer',
+          orderItems,
+          totalAmount: total,
+          shippingAddress: selectedAddress,
+          paymentMethod: paymentMethod,
+          orderDate: order.created_at || new Date().toISOString()
+        }
+      };
+
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-order-email`;
+
+      const customerEmailPromise = fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData)
+      });
+
+      const ownerEmailPromise = fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...emailData,
+          to: 'orders@veloratradings.com',
+          subject: `New Order Received - #${order.id.slice(-8)}`
+        })
+      });
+
+      const [customerResult, ownerResult] = await Promise.allSettled([
+        customerEmailPromise,
+        ownerEmailPromise
+      ]);
+
+      if (customerResult.status === 'fulfilled') {
+        console.log('Customer email sent successfully');
+      } else {
+        console.error('Failed to send customer email:', customerResult.reason);
+      }
+
+      if (ownerResult.status === 'fulfilled') {
+        console.log('Owner email sent successfully');
+      } else {
+        console.error('Failed to send owner email:', ownerResult.reason);
+      }
+    } catch (error) {
+      console.error('Error sending order emails:', error);
+    }
+  };
+
   const createOrder = async () => {
     try {
       const selectedAddress = addresses.find(a => a.id === selectedAddressId);
@@ -158,6 +225,8 @@ const Checkout: React.FC = () => {
         .insert(orderItems);
 
       if (itemsError) throw itemsError;
+
+      await sendOrderEmails(orderData, selectedAddress);
 
       return orderData;
     } catch (error: any) {

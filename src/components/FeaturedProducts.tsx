@@ -136,9 +136,11 @@ const FeaturedProducts: React.FC = () => {
                     alt={product.name}
                     className="w-full h-96 object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
                     onClick={(e) => handleWishlistToggle(e, product.id, product.name)}
-                    className="absolute top-4 right-4 p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-10"
+                    className="absolute top-4 right-4 p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-20"
                   >
                     <Heart
                       className={`h-5 w-5 ${
@@ -147,7 +149,7 @@ const FeaturedProducts: React.FC = () => {
                           : 'text-gray-600'
                       }`}
                     />
-                  </button>
+                  </motion.button>
 
                   <motion.div
                     initial={{ opacity: 0 }}
@@ -157,7 +159,7 @@ const FeaturedProducts: React.FC = () => {
                   ></motion.div>
 
                   {product.original_price && (
-                    <div className="absolute top-6 left-6 bg-[#815536] text-white px-3 py-1 rounded-lg text-sm font-semibold">
+                    <div className="absolute top-6 left-6 bg-[#815536] text-white px-3 py-1 rounded-lg text-sm font-semibold pointer-events-none">
                       {Math.round(((product.original_price - product.price) / product.original_price) * 100)}% OFF
                     </div>
                   )}

@@ -1,7 +1,7 @@
 // src/components/Header.tsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X, Heart, Search, LogOut, Settings } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Heart, Search, LogOut, Settings, MapPin } from 'lucide-react';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
 import { useAuth } from '../context/AuthContext';
 import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';

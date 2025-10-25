@@ -1,18 +1,9 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-
-const SMTP_CONFIG = {
-  host: 'smtp.hostinger.com',
-  port: 465,
-  username: 'orders@veloratradings.com',
-  password: 'Velora@123',
-  from: 'orders@veloratradings.com',
-  fromName: 'Velora Tradings'
-};
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
 interface EmailRequest {
@@ -55,19 +46,19 @@ function generateOrderEmailHTML(data: EmailRequest['orderData']): string {
         <h1 style="color: white; margin: 0; font-size: 28px;">Velora Tradings</h1>
         <p style="color: #f5f5f5; margin: 10px 0 0 0;">Order Confirmation</p>
       </div>
-      
+
       <div style="background: white; padding: 30px; border: 1px solid #ddd; border-top: none;">
         <h2 style="color: #815536; margin-top: 0;">Thank you for your order!</h2>
         <p>Hi ${data.customerName},</p>
         <p>We're excited to confirm that we've received your order. Your purchase is being processed and will be shipped soon.</p>
-        
+
         <div style="background: #f8f8f8; padding: 15px; border-radius: 5px; margin: 20px 0;">
           <h3 style="margin: 0 0 10px 0; color: #815536;">Order Details</h3>
           <p style="margin: 5px 0;"><strong>Order ID:</strong> #${data.orderId.slice(-8)}</p>
           <p style="margin: 5px 0;"><strong>Order Date:</strong> ${new Date(data.orderDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
           <p style="margin: 5px 0;"><strong>Payment Method:</strong> ${data.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment'}</p>
         </div>
-        
+
         <h3 style="color: #815536; margin-top: 30px;">Order Items</h3>
         <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
           <thead>
@@ -88,20 +79,20 @@ function generateOrderEmailHTML(data: EmailRequest['orderData']): string {
             </tr>
           </tfoot>
         </table>
-        
+
         <h3 style="color: #815536; margin-top: 30px;">Shipping Address</h3>
         <div style="background: #f8f8f8; padding: 15px; border-radius: 5px;">
-          <p style="margin: 5px 0;">${data.shippingAddress.firstName} ${data.shippingAddress.lastName}</p>
-          <p style="margin: 5px 0;">${data.shippingAddress.address}</p>
-          <p style="margin: 5px 0;">${data.shippingAddress.city}, ${data.shippingAddress.state} ${data.shippingAddress.zipCode}</p>
+          <p style="margin: 5px 0;">${data.shippingAddress.full_name}</p>
+          <p style="margin: 5px 0;">${data.shippingAddress.address_line_1}${data.shippingAddress.address_line_2 ? ', ' + data.shippingAddress.address_line_2 : ''}</p>
+          <p style="margin: 5px 0;">${data.shippingAddress.city}, ${data.shippingAddress.state} ${data.shippingAddress.postal_code}</p>
           <p style="margin: 5px 0;">Phone: ${data.shippingAddress.phone}</p>
         </div>
-        
+
         <div style="margin-top: 30px; padding: 20px; background: #f0f0f0; border-radius: 5px; text-align: center;">
-          <p style="margin: 0;">Need help? Contact us at <a href="mailto:orders@veloratradings.com" style="color: #815536;">orders@veloratradings.com</a></p>
+          <p style="margin: 0;">Need help? Contact us at <a href="mailto:${Deno.env.get('SMTP_FROM_EMAIL') || 'orders@veloratradings.com'}" style="color: #815536;">${Deno.env.get('SMTP_FROM_EMAIL') || 'orders@veloratradings.com'}</a></p>
         </div>
       </div>
-      
+
       <div style="background: #815536; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;">
         <p style="color: white; margin: 0; font-size: 14px;">© 2025 Velora Tradings. All rights reserved.</p>
       </div>
@@ -110,16 +101,28 @@ function generateOrderEmailHTML(data: EmailRequest['orderData']): string {
   `;
 }
 
-async function sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+async function sendEmail(to: string, subject: string, html: string): Promise<{ success: boolean; error?: string }> {
   try {
+    const smtpHost = Deno.env.get('SMTP_HOST');
+    const smtpPort = Deno.env.get('SMTP_PORT');
+    const smtpUser = Deno.env.get('SMTP_USER');
+    const smtpPassword = Deno.env.get('SMTP_PASSWORD');
+    const smtpFromEmail = Deno.env.get('SMTP_FROM_EMAIL');
+    const smtpFromName = Deno.env.get('SMTP_FROM_NAME') || 'Velora Tradings';
+
+    if (!smtpHost || !smtpPort || !smtpUser || !smtpPassword || !smtpFromEmail) {
+      console.error('Missing SMTP configuration. Please set environment variables.');
+      return { success: false, error: 'SMTP configuration missing' };
+    }
+
     const response = await fetch('https://api.smtp2go.com/v3/email/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Smtp2go-Api-Key': 'api-' + SMTP_CONFIG.password,
+        'X-Smtp2go-Api-Key': smtpPassword,
       },
       body: JSON.stringify({
-        sender: `${SMTP_CONFIG.fromName} <${SMTP_CONFIG.from}>`,
+        sender: `${smtpFromName} <${smtpFromEmail}>`,
         to: [to],
         subject: subject,
         html_body: html,
@@ -129,17 +132,19 @@ async function sendEmail(to: string, subject: string, html: string): Promise<boo
     if (!response.ok) {
       const errorText = await response.text();
       console.error('SMTP2GO API error:', errorText);
-      return false;
+      return { success: false, error: `SMTP error: ${errorText}` };
     }
 
-    return true;
+    const result = await response.json();
+    console.log('Email sent successfully:', result);
+    return { success: true };
   } catch (error) {
     console.error('Error sending email:', error);
-    return false;
+    return { success: false, error: String(error) };
   }
 }
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 200,
@@ -161,9 +166,9 @@ serve(async (req: Request) => {
     }
 
     const html = generateOrderEmailHTML(orderData);
-    const sent = await sendEmail(to, subject, html);
+    const result = await sendEmail(to, subject, html);
 
-    if (sent) {
+    if (result.success) {
       return new Response(
         JSON.stringify({ success: true, message: 'Email sent successfully' }),
         {
@@ -173,7 +178,7 @@ serve(async (req: Request) => {
       );
     } else {
       return new Response(
-        JSON.stringify({ error: 'Failed to send email' }),
+        JSON.stringify({ error: result.error || 'Failed to send email' }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
