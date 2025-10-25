@@ -301,17 +301,18 @@ const AdminDashboard: React.FC = () => {
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {[
-            { title: 'Total Products', value: stats.totalProducts, icon: Package, color: 'bg-admin-primary' },
-            { title: 'Total Users', value: stats.totalUsers, icon: Users, color: 'bg-admin-secondary' },
-            { title: 'Total Orders', value: stats.totalOrders, icon: ShoppingCart, color: 'bg-admin-warning' },
-            { title: 'Total Revenue', value: `₹${stats.totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'bg-admin-success' }
+            { title: 'Total Products', value: stats.totalProducts, icon: Package, color: 'bg-admin-primary', link: '/admin/products' },
+            { title: 'Total Users', value: stats.totalUsers, icon: Users, color: 'bg-admin-secondary', link: '/admin/users' },
+            { title: 'Total Orders', value: stats.totalOrders, icon: ShoppingCart, color: 'bg-admin-warning', link: '/admin/orders' },
+            { title: 'Total Revenue', value: `₹${stats.totalRevenue.toLocaleString()}`, icon: DollarSign, color: 'bg-admin-success', link: '/admin/reports' }
           ].map((stat, index) => (
             <motion.div
               key={stat.title}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-admin-card rounded-xl shadow-lg p-6"
+              onClick={() => navigate(stat.link)}
+              className="bg-admin-card rounded-xl shadow-lg p-6 cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-200"
             >
               <div className="flex items-center justify-between">
                 <div>

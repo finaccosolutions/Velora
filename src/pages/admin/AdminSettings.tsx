@@ -17,6 +17,7 @@ interface SiteSettingsForm {
   secondaryColor: string;
   heroTitle: string;
   heroSubtitle: string;
+  adminEmail: string;
   // NEW: About Page Content
   aboutHeroTitle: string;
   aboutHeroSubtitle: string;
@@ -105,6 +106,7 @@ const AdminSettings: React.FC = () => {
         secondaryColor: settings.secondaryColor || '#c9baa8',
         heroTitle: settings.heroTitle || 'Discover Your Signature Scent',
         heroSubtitle: settings.heroSubtitle || 'Experience luxury fragrances that define your personality.',
+        adminEmail: settings.adminEmail || 'shafeeqkpt@gmail.com',
         // NEW: About Page Content
         aboutHeroTitle: settings.aboutHeroTitle || 'About Velora Tradings',
         aboutHeroSubtitle: settings.aboutHeroSubtitle || 'Crafting memories through exquisite fragrances since 2020.',
@@ -217,6 +219,7 @@ const AdminSettings: React.FC = () => {
 
   const tabs = [
     { id: 'general', label: 'General', icon: Settings, color: 'text-admin-primary' },
+    { id: 'email', label: 'Email Settings', icon: MessageCircle, color: 'text-admin-danger' },
     { id: 'home', label: 'Home Page', icon: Home, color: 'text-admin-success' },
     { id: 'about', label: 'About Page', icon: Info, color: 'text-admin-warning' },
     { id: 'contact', label: 'Contact Page', icon: Phone, color: 'text-admin-secondary' },
@@ -318,6 +321,62 @@ const AdminSettings: React.FC = () => {
                         className="w-full h-12 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
                       />
                     </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'email' && (
+              <motion.div
+                key="email"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'email')?.color}`}>
+                    <MessageCircle className="h-6 w-6" />
+                    <span>Email Configuration</span>
+                  </h2>
+
+                  <div className="bg-admin-warning/10 border border-admin-warning/30 rounded-lg p-4 mb-6">
+                    <p className="text-admin-text text-sm">
+                      <strong>Note:</strong> SMTP configuration is managed through environment variables.
+                      The admin email below is used for receiving order notifications.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-admin-text-dark mb-2">Admin Email Address</label>
+                    <input
+                      {...register('adminEmail')}
+                      type="email"
+                      placeholder="admin@example.com"
+                      className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                    />
+                    <p className="text-sm text-admin-text-light mt-2">
+                      This email will receive all order notifications from customers.
+                    </p>
+                  </div>
+
+                  <div className="mt-6 bg-admin-info/10 border border-admin-info/30 rounded-lg p-4">
+                    <h3 className="font-semibold text-admin-text mb-2">SMTP Configuration Required</h3>
+                    <p className="text-admin-text text-sm mb-3">
+                      To enable email notifications, you need to set up SMTP environment variables:
+                    </p>
+                    <ul className="list-disc list-inside text-admin-text text-sm space-y-1 ml-2">
+                      <li>SMTP_HOST - Your SMTP server hostname</li>
+                      <li>SMTP_PORT - SMTP server port (usually 587 or 465)</li>
+                      <li>SMTP_USER - SMTP username</li>
+                      <li>SMTP_PASSWORD - SMTP password or API key</li>
+                      <li>SMTP_FROM_EMAIL - Sender email address</li>
+                      <li>SMTP_FROM_NAME - Sender name (optional)</li>
+                    </ul>
+                    <p className="text-admin-text text-sm mt-3">
+                      See the SMTP_SETUP.md file in your project root for detailed instructions.
+                    </p>
                   </div>
                 </div>
               </motion.div>

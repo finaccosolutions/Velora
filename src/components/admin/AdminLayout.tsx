@@ -3,16 +3,18 @@ import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard, Package, Tag, Settings, BarChart, LogOut, User, X, ChevronLeft, ChevronRight, Eye
+  LayoutDashboard, Package, Tag, Settings, BarChart, LogOut, User, X, ChevronLeft, ChevronRight, Eye, ShoppingCart, Users
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 const adminNavigation = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Products', href: '/admin/products', icon: Package },
+  { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
+  { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Categories', href: '/admin/categories', icon: Tag },
-  { name: 'Site Settings', href: '/admin/settings', icon: Settings },
   { name: 'Reports', href: '/admin/reports', icon: BarChart },
+  { name: 'Site Settings', href: '/admin/settings', icon: Settings },
 ];
 
 const AdminLayout: React.FC = () => {

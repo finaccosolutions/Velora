@@ -167,7 +167,7 @@ const Checkout: React.FC = () => {
         },
         body: JSON.stringify({
           ...emailData,
-          to: 'orders@veloratradings.com',
+          sendToAdmin: true,
           subject: `New Order Received - #${order.id.slice(-8)}`
         })
       });
@@ -330,8 +330,10 @@ const Checkout: React.FC = () => {
           await clearCart();
         }
 
+        setIsProcessing(false);
         navigate('/order-success', {
-          state: { orderId: order.id }
+          state: { orderId: order.id },
+          replace: true
         });
       }
     } catch (error) {

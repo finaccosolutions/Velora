@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -153,9 +154,9 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { to, subject, orderData }: EmailRequest = await req.json();
+    const { to, subject, orderData, sendToAdmin }: EmailRequest & { sendToAdmin?: boolean } = await req.json();
 
-    if (!to || !subject || !orderData) {
+    if (!subject || !orderData) {
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         {
@@ -165,8 +166,38 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    let recipientEmail = to;
+
+    if (sendToAdmin) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      const { data: settingsData, error: settingsError } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'adminEmail')
+        .maybeSingle();
+
+      if (!settingsError && settingsData) {
+        recipientEmail = settingsData.value as string;
+      } else {
+        recipientEmail = 'orders@veloratradings.com';
+      }
+    }
+
+    if (!recipientEmail) {
+      return new Response(
+        JSON.stringify({ error: 'No recipient email address' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     const html = generateOrderEmailHTML(orderData);
-    const result = await sendEmail(to, subject, html);
+    const result = await sendEmail(recipientEmail, subject, html);
 
     if (result.success) {
       return new Response(

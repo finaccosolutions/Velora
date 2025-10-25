@@ -21,11 +21,13 @@ import Contact from './pages/Contact';
 import Wishlist from './pages/Wishlist';
 import Addresses from './pages/Addresses';
 import { supabase } from './lib/supabase'; // Import supabase client
-import AdminLayout from './components/admin/AdminLayout'; // NEW: Import AdminLayout
-import AdminCategories from './pages/admin/AdminCategories'; // NEW: Import AdminCategories
-import AdminSettings from './pages/admin/AdminSettings'; // NEW: Import AdminSettings
-import AdminReports from './pages/admin/AdminReports'; // NEW: Import AdminReports
-import { ToastProvider } from './context/ToastContext'; // NEW: Import ToastProvider
+import AdminLayout from './components/admin/AdminLayout';
+import AdminCategories from './pages/admin/AdminCategories';
+import AdminSettings from './pages/admin/AdminSettings';
+import AdminReports from './pages/admin/AdminReports';
+import AdminOrders from './pages/admin/AdminOrders';
+import AdminUsers from './pages/admin/AdminUsers';
+import { ToastProvider } from './context/ToastContext';
 
 
 function App() {
@@ -34,15 +36,15 @@ function App() {
       <ToastProvider> {/* NEW: Wrap with ToastProvider */}
         <div className="min-h-screen flex flex-col">
           <Routes>
-            {/* NEW: Admin routes nested under AdminLayout */}
             <Route path="/admin" element={<AdminLayout />}>
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="products" element={<AdminProducts />} />
-              <Route path="categories" element={<AdminCategories />} /> {/* NEW */}
-              <Route path="settings" element={<AdminSettings />} /> {/* NEW */}
-              <Route path="reports" element={<AdminReports />} /> {/* NEW */}
+              <Route path="orders" element={<AdminOrders />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="categories" element={<AdminCategories />} />
+              <Route path="settings" element={<AdminSettings />} />
+              <Route path="reports" element={<AdminReports />} />
             </Route>
-            {/* END NEW ADMIN ROUTES */}
 
             {/* Public routes that should not have Header/Footer on admin pages */}
             <Route path="/adminlogin" element={null} /> {/* Admin login page does not need Header/Footer */}
