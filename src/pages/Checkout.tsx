@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreditCard, Truck, MapPin, Plus, CreditCard as Edit2, Trash2, Check, Info, X } from 'lucide-react';
+import { CreditCard, Truck, MapPin, Plus, CreditCard as Edit2, Trash2, Check, Info, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../context/AuthContext';
 import { useSupabaseProducts } from '../hooks/useSupabaseProducts';
@@ -37,6 +37,7 @@ const Checkout: React.FC = () => {
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const [isSubmittingAddress, setIsSubmittingAddress] = useState(false);
   const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
+  const [expandedAddressId, setExpandedAddressId] = useState<string | null>(null);
   const { settings } = useSiteSettings();
 
   const isRazorpayConfigured = import.meta.env.VITE_RAZORPAY_KEY_ID &&
@@ -52,14 +53,19 @@ const Checkout: React.FC = () => {
     product: buyNowProduct
   }] : cartItems;
 
-  const [guestAddress, setGuestAddress] = useState<any>({ state: 'Kerala' });
+  const [guestAddress, setGuestAddress] = useState<any>({ state: 'Kerala', is_gst_registered: false });
   const [guestEmail, setGuestEmail] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
   const [guestFullName, setGuestFullName] = useState('');
-  const [guestBillingAddress, setGuestBillingAddress] = useState<any>(null);
+  const [guestBillingAddress, setGuestBillingAddress] = useState<any>({ state: 'Kerala', is_gst_registered: false });
 
   const selectedAddress = user ? addresses.find(a => a.id === selectedAddressId) : guestAddress;
-  const customerState = selectedAddress?.state || 'Maharashtra';
+
+  const billingAddress = billingSameAsDelivery
+    ? selectedAddress
+    : (user ? addresses.find(a => a.id === billingAddressId) : guestBillingAddress);
+
+  const customerState = billingAddress?.state || selectedAddress?.state || 'Kerala';
   const businessState = settings.business_state || 'Maharashtra';
 
   const subtotal = buyNowProduct ? buyNowProduct.price : getCartTotal();
@@ -259,26 +265,57 @@ const Checkout: React.FC = () => {
     }
   };
 
+  const validateGuestCheckout = () => {
+    if (!guestFullName || !guestEmail || !guestPhone) {
+      showToast('Please fill in your contact details', 'error');
+      return false;
+    }
+
+    if (!guestAddress?.address_line_1 || !guestAddress?.city || !guestAddress?.state || !guestAddress?.postal_code) {
+      showToast('Please fill in complete delivery address', 'error');
+      return false;
+    }
+
+    if (guestAddress.is_gst_registered && !guestAddress.gstin) {
+      showToast('Please provide GSTIN for GST registered dealer', 'error');
+      return false;
+    }
+
+    if (!billingSameAsDelivery) {
+      if (!guestBillingAddress?.address_line_1 || !guestBillingAddress?.city ||
+          !guestBillingAddress?.state || !guestBillingAddress?.postal_code) {
+        showToast('Please fill in complete billing address', 'error');
+        return false;
+      }
+
+      if (guestBillingAddress.is_gst_registered && !guestBillingAddress.gstin) {
+        showToast('Please provide GSTIN for billing address', 'error');
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const createOrder = async () => {
     try {
-      if (!user && (!guestAddress?.address_line_1 || !guestAddress?.city || !guestAddress?.state || !guestAddress?.postal_code || !guestEmail || !guestFullName || !guestPhone)) {
-        showToast('Please fill in all delivery details', 'error');
-        return;
+      if (!user && !validateGuestCheckout()) {
+        return null;
       }
 
       if (user && !selectedAddress) {
         showToast('Please select a delivery address', 'error');
-        return;
+        return null;
       }
 
       const deliveryAddress = user ? selectedAddress : guestAddress;
-      const billingAddress = billingSameAsDelivery
+      const finalBillingAddress = billingSameAsDelivery
         ? deliveryAddress
         : (user ? addresses.find(a => a.id === billingAddressId) : guestBillingAddress);
 
-      if (!billingSameAsDelivery && !billingAddress) {
-        showToast('Please select a billing address', 'error');
-        return;
+      if (!billingSameAsDelivery && !finalBillingAddress) {
+        showToast('Please provide billing address', 'error');
+        return null;
       }
 
       const orderPayload: any = {
@@ -294,7 +331,7 @@ const Checkout: React.FC = () => {
         payment_method: paymentMethod,
         payment_status: paymentMethod === 'cod' ? 'pending' : 'pending',
         shipping_address: deliveryAddress,
-        billing_address: billingAddress,
+        billing_address: finalBillingAddress,
         billing_same_as_delivery: billingSameAsDelivery
       };
 
@@ -336,14 +373,14 @@ const Checkout: React.FC = () => {
 
       if (itemsError) throw itemsError;
 
-      sendOrderEmails(orderData, selectedAddress).catch(err => {
+      sendOrderEmails(orderData, deliveryAddress).catch(err => {
         console.warn('Email sending failed but order was created:', err);
       });
 
       return orderData;
     } catch (error: any) {
       console.error('Error creating order:', error);
-      showToast('Failed to create order', 'error');
+      showToast('Failed to create order. Please try again.', 'error');
       return null;
     }
   };
@@ -381,15 +418,27 @@ const Checkout: React.FC = () => {
             await clearCart();
           }
 
-          navigate('/cart', { replace: true });
+          navigate('/order-confirmation', {
+            state: {
+              orderId: order.id,
+              orderDetails: {
+                total: total,
+                paymentMethod: 'online',
+                items: displayItems
+              }
+            },
+            replace: true
+          });
         } catch (error) {
           showToast('Payment verification failed', 'error');
+        } finally {
+          setIsProcessing(false);
         }
       },
       prefill: {
-        name: userProfile?.full_name || '',
-        email: userProfile?.email || '',
-        contact: userProfile?.phone || ''
+        name: user ? (userProfile?.full_name || '') : guestFullName,
+        email: user ? (userProfile?.email || '') : guestEmail,
+        contact: user ? (userProfile?.phone || '') : guestPhone
       },
       theme: {
         color: '#815536'
@@ -423,8 +472,7 @@ const Checkout: React.FC = () => {
       return;
     }
 
-    if (!user && (!guestAddress || !guestEmail || !guestFullName || !guestPhone)) {
-      showToast('Please fill in all delivery details', 'error');
+    if (!user && !validateGuestCheckout()) {
       return;
     }
 
@@ -456,7 +504,17 @@ const Checkout: React.FC = () => {
 
         setIsProcessing(false);
 
-        navigate('/cart', { replace: true });
+        navigate('/order-confirmation', {
+          state: {
+            orderId: order.id,
+            orderDetails: {
+              total: total,
+              paymentMethod: 'cod',
+              items: displayItems
+            }
+          },
+          replace: true
+        });
       }
     } catch (error) {
       showToast('Failed to place order', 'error');
@@ -480,6 +538,102 @@ const Checkout: React.FC = () => {
   if (!buyNowProductId && cartItems.length === 0) {
     return null;
   }
+
+  const renderAddressCard = (address: any, isSelected: boolean, onSelect: () => void, isDefault: boolean) => {
+    const isExpanded = expandedAddressId === address.id || isDefault;
+
+    return (
+      <motion.div
+        key={address.id}
+        whileHover={{ scale: 1.01 }}
+        onClick={onSelect}
+        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+          isSelected
+            ? 'border-[#815536] bg-[#815536]/5'
+            : 'border-gray-200 hover:border-[#815536]/50'
+        }`}
+      >
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center space-x-2 mb-2">
+              <span className="font-semibold text-gray-900">{address.title}</span>
+              {address.is_default && (
+                <span className="px-2 py-1 bg-[#815536] text-white text-xs rounded-full">
+                  Default
+                </span>
+              )}
+              {!isDefault && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExpandedAddressId(expandedAddressId === address.id ? null : address.id);
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded transition-colors"
+                >
+                  {isExpanded ? (
+                    <ChevronUp className="h-4 w-4 text-gray-600" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-gray-600" />
+                  )}
+                </button>
+              )}
+            </div>
+
+            {isExpanded && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                <p className="text-gray-700 font-medium">{address.full_name}</p>
+                <p className="text-gray-600 text-sm mt-1">
+                  {address.address_line_1}
+                  {address.address_line_2 && `, ${address.address_line_2}`}
+                </p>
+                <p className="text-gray-600 text-sm">
+                  {address.city}, {address.state} - {address.postal_code}
+                </p>
+                <p className="text-gray-600 text-sm">Phone: {address.phone}</p>
+                {address.is_gst_registered && address.gstin && (
+                  <p className="text-gray-600 text-sm">GSTIN: {address.gstin}</p>
+                )}
+              </motion.div>
+            )}
+          </div>
+          <div className="flex items-center space-x-2">
+            {isSelected && (
+              <div className="w-6 h-6 bg-[#815536] rounded-full flex items-center justify-center">
+                <Check className="h-4 w-4 text-white" />
+              </div>
+            )}
+            {isExpanded && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditingAddress(address);
+                    setShowAddressForm(true);
+                  }}
+                  className="p-2 text-gray-600 hover:text-[#815536] hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteAddress(address.id);
+                  }}
+                  className="p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -548,7 +702,7 @@ const Checkout: React.FC = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
                     <input
@@ -560,7 +714,7 @@ const Checkout: React.FC = () => {
                       required
                     />
                   </div>
-              
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Full Address *</label>
                     <textarea
@@ -572,7 +726,7 @@ const Checkout: React.FC = () => {
                       required
                     />
                   </div>
-              
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
@@ -611,38 +765,6 @@ const Checkout: React.FC = () => {
                       />
                     </div>
                   </div>
-
-                  <div className="border-t pt-4 mt-2">
-                    <div className="flex items-center mb-4">
-                      <input
-                        type="checkbox"
-                        checked={guestAddress?.is_gst_registered || false}
-                        onChange={(e) => setGuestAddress({...guestAddress, is_gst_registered: e.target.checked})}
-                        className="w-4 h-4 text-[#815536] border-gray-300 rounded focus:ring-[#815536]"
-                      />
-                      <label className="ml-2 text-sm font-medium text-gray-700">
-                        GST Registered Dealer
-                      </label>
-                    </div>
-                  
-                    {guestAddress?.is_gst_registered && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          GSTIN (GST Identification Number) *
-                        </label>
-                        <input
-                          type="text"
-                          value={guestAddress?.gstin || ''}
-                          onChange={(e) => setGuestAddress({...guestAddress, gstin: e.target.value.toUpperCase()})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent uppercase"
-                          placeholder="e.g., 27AAPFU0939F1ZV"
-                          maxLength={15}
-                          required={guestAddress?.is_gst_registered}
-                        />
-                        <p className="text-xs text-gray-500 mt-1">15-character GST Identification Number</p>
-                      </div>
-                    )}
-                  </div>
                 </div>
               ) : addressLoading ? (
                 <div className="text-center py-8">
@@ -660,239 +782,152 @@ const Checkout: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {addresses.map((address) => (
-                    <motion.div
-                      key={address.id}
-                      whileHover={{ scale: 1.01 }}
-                      onClick={() => setSelectedAddressId(address.id)}
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        selectedAddressId === address.id
-                          ? 'border-[#815536] bg-[#815536]/5'
-                          : 'border-gray-200 hover:border-[#815536]/50'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <span className="font-semibold text-gray-900">{address.title}</span>
-                            {address.is_default && (
-                              <span className="px-2 py-1 bg-[#815536] text-white text-xs rounded-full">
-                                Default
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-gray-700 font-medium">{address.full_name}</p>
-                          <p className="text-gray-600 text-sm mt-1">
-                            {address.address_line_1}
-                            {address.address_line_2 && `, ${address.address_line_2}`}
-                          </p>
-                          <p className="text-gray-600 text-sm">
-                            {address.city}, {address.state} - {address.postal_code}
-                          </p>
-                          <p className="text-gray-600 text-sm">Phone: {address.phone}</p>
-                          {address.is_gst_registered && address.gstin && (
-                            <p className="text-gray-600 text-sm">GSTIN: {address.gstin}</p>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          {selectedAddressId === address.id && (
-                            <div className="w-6 h-6 bg-[#815536] rounded-full flex items-center justify-center">
-                              <Check className="h-4 w-4 text-white" />
-                            </div>
-                          )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEditingAddress(address);
-                              setShowAddressForm(true);
-                            }}
-                            className="p-2 text-gray-600 hover:text-[#815536] hover:bg-gray-100 rounded-lg transition-colors"
-                          >
-                            <Edit2 className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteAddress(address.id);
-                            }}
-                            className="p-2 text-gray-600 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
+                  {addresses.map((address) => renderAddressCard(
+                    address,
+                    selectedAddressId === address.id,
+                    () => setSelectedAddressId(address.id),
+                    !!address.is_default
                   ))}
                 </div>
               )}
             </motion.div>
 
-            {/* Billing Address - Only for logged in users */}
-            {user && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.05 }}
-                className="bg-white rounded-2xl shadow-lg p-6"
-              >
-                <div className="flex items-center space-x-3 mb-6">
-                  <MapPin className="h-6 w-6 text-[#815536]" />
-                  <h2 className="text-xl font-bold text-gray-900">Billing Address</h2>
-                </div>
+            {/* Billing Address */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.05 }}
+              className="bg-white rounded-2xl shadow-lg p-6"
+            >
+              <div className="flex items-center space-x-3 mb-6">
+                <MapPin className="h-6 w-6 text-[#815536]" />
+                <h2 className="text-xl font-bold text-gray-900">Billing Address</h2>
+              </div>
 
-                <div className="mb-4">
-                  <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all border-[#815536] bg-[#815536]/5">
-                    <input
-                      type="checkbox"
-                      checked={billingSameAsDelivery}
-                      onChange={(e) => setBillingSameAsDelivery(e.target.checked)}
-                      className="mr-3 text-[#815536] w-4 h-4"
-                    />
-                    <span className="font-medium text-gray-900">Billing address same as delivery address</span>
-                  </label>
-                </div>
+              <div className="mb-4">
+                <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all border-[#815536] bg-[#815536]/5">
+                  <input
+                    type="checkbox"
+                    checked={billingSameAsDelivery}
+                    onChange={(e) => setBillingSameAsDelivery(e.target.checked)}
+                    className="mr-3 text-[#815536] w-4 h-4"
+                  />
+                  <span className="font-medium text-gray-900">Billing address same as delivery address</span>
+                </label>
+              </div>
 
-                {!billingSameAsDelivery && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="space-y-3 mt-4"
-                  >
-                    {addresses.length === 0 ? (
+              {!billingSameAsDelivery && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-4 mt-4"
+                >
+                  {user ? (
+                    addresses.length === 0 ? (
                       <div className="text-center py-4">
                         <p className="text-gray-600 text-sm">No billing addresses available</p>
                       </div>
                     ) : (
-                      addresses.map((address) => (
-                        <motion.div
-                          key={address.id}
-                          whileHover={{ scale: 1.01 }}
-                          onClick={() => setSelectedBillingAddressId(address.id)}
-                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                            billingAddressId === address.id
-                              ? 'border-[#815536] bg-[#815536]/5'
-                              : 'border-gray-200 hover:border-[#815536]/50'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center space-x-2 mb-2">
-                                <span className="font-semibold text-gray-900">{address.title}</span>
-                                {address.is_default && (
-                                  <span className="px-2 py-1 bg-[#815536] text-white text-xs rounded-full">
-                                    Default
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-gray-700 font-medium">{address.full_name}</p>
-                              <p className="text-gray-600 text-sm mt-1">
-                                {address.address_line_1}
-                                {address.address_line_2 && `, ${address.address_line_2}`}
-                              </p>
-                              <p className="text-gray-600 text-sm">
-                                {address.city}, {address.state} - {address.postal_code}
-                              </p>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              {billingAddressId === address.id && (
-                                <div className="w-6 h-6 bg-[#815536] rounded-full flex items-center justify-center">
-                                  <Check className="h-4 w-4 text-white" />
-                                </div>
-                              )}
-                            </div>
+                      <div className="space-y-3">
+                        {addresses.map((address) => renderAddressCard(
+                          address,
+                          billingAddressId === address.id,
+                          () => setSelectedBillingAddressId(address.id),
+                          false
+                        ))}
+                      </div>
+                    )
+                  ) : (
+                    <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                      <h3 className="font-semibold text-gray-900 mb-3">Billing Address Details</h3>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Full Address *</label>
+                        <textarea
+                          value={guestBillingAddress?.address_line_1 || ''}
+                          onChange={(e) => setGuestBillingAddress({...guestBillingAddress, address_line_1: e.target.value})}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                          placeholder="Billing Address"
+                          rows={2}
+                          required={!billingSameAsDelivery}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
+                          <input
+                            type="text"
+                            value={guestBillingAddress?.city || ''}
+                            onChange={(e) => setGuestBillingAddress({...guestBillingAddress, city: e.target.value})}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                            placeholder="City"
+                            required={!billingSameAsDelivery}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
+                          <select
+                            value={guestBillingAddress?.state || 'Kerala'}
+                            onChange={(e) => setGuestBillingAddress({...guestBillingAddress, state: e.target.value})}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                            required={!billingSameAsDelivery}
+                          >
+                            {INDIAN_STATES.map(state => (
+                              <option key={state} value={state}>{state}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">PIN Code *</label>
+                          <input
+                            type="text"
+                            value={guestBillingAddress?.postal_code || ''}
+                            onChange={(e) => setGuestBillingAddress({...guestBillingAddress, postal_code: e.target.value})}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                            placeholder="PIN Code"
+                            maxLength={6}
+                            required={!billingSameAsDelivery}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="border-t pt-4 mt-4">
+                        <div className="flex items-center mb-4">
+                          <input
+                            type="checkbox"
+                            checked={guestBillingAddress?.is_gst_registered || false}
+                            onChange={(e) => setGuestBillingAddress({...guestBillingAddress, is_gst_registered: e.target.checked})}
+                            className="w-4 h-4 text-[#815536] border-gray-300 rounded focus:ring-[#815536]"
+                          />
+                          <label className="ml-2 text-sm font-medium text-gray-700">
+                            GST Registered Dealer
+                          </label>
+                        </div>
+
+                        {guestBillingAddress?.is_gst_registered && (
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              GSTIN (GST Identification Number) *
+                            </label>
+                            <input
+                              type="text"
+                              value={guestBillingAddress?.gstin || ''}
+                              onChange={(e) => setGuestBillingAddress({...guestBillingAddress, gstin: e.target.value.toUpperCase()})}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent uppercase"
+                              placeholder="e.g., 27AAPFU0939F1ZV"
+                              maxLength={15}
+                              required={guestBillingAddress?.is_gst_registered}
+                            />
+                            <p className="text-xs text-gray-500 mt-1">15-character GST Identification Number</p>
                           </div>
-                        </motion.div>
-                      ))
-                    )}
-                  </motion.div>
-                )}
-              </motion.div>
-            )}
-
-            {/* Billing Address Section for Guest Users */}
-            {!user && (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.05 }}
-                className="bg-white rounded-2xl shadow-lg p-6"
-              >
-                <div className="flex items-center space-x-3 mb-6">
-                  <MapPin className="h-6 w-6 text-[#815536]" />
-                  <h2 className="text-xl font-bold text-gray-900">Billing Address</h2>
-                </div>
-
-                <div className="mb-4">
-                  <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all border-[#815536] bg-[#815536]/5">
-                    <input
-                      type="checkbox"
-                      checked={billingSameAsDelivery}
-                      onChange={(e) => setBillingSameAsDelivery(e.target.checked)}
-                      className="mr-3 text-[#815536] w-4 h-4"
-                    />
-                    <span className="font-medium text-gray-900">Billing address same as delivery address</span>
-                  </label>
-                </div>
-
-                {!billingSameAsDelivery && (
-                  <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                    <h3 className="font-semibold text-gray-900 mb-3">Billing Address</h3>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Full Address *</label>
-                      <textarea
-                        value={guestBillingAddress?.address_line_1 || ''}
-                        onChange={(e) => setGuestBillingAddress({...guestBillingAddress, address_line_1: e.target.value})}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
-                        placeholder="Billing Address"
-                        rows={2}
-                        required={!billingSameAsDelivery}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
-                        <input
-                          type="text"
-                          value={guestBillingAddress?.city || ''}
-                          onChange={(e) => setGuestBillingAddress({...guestBillingAddress, city: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
-                          placeholder="City"
-                          required={!billingSameAsDelivery}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
-                        <select
-                          value={guestBillingAddress?.state || ''}
-                          onChange={(e) => setGuestBillingAddress({...guestBillingAddress, state: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
-                          required={!billingSameAsDelivery}
-                        >
-                          <option value="">Select State</option>
-                          {INDIAN_STATES.map(state => (
-                            <option key={state} value={state}>{state}</option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">PIN Code *</label>
-                        <input
-                          type="text"
-                          value={guestBillingAddress?.postal_code || ''}
-                          onChange={(e) => setGuestBillingAddress({...guestBillingAddress, postal_code: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
-                          placeholder="PIN Code"
-                          maxLength={6}
-                          required={!billingSameAsDelivery}
-                        />
+                        )}
                       </div>
                     </div>
-                  </div>
-                )}
-              </motion.div>
-            )}
+                  )}
+                </motion.div>
+              )}
+            </motion.div>
 
             {/* Payment Method */}
             <motion.div
@@ -1026,7 +1061,7 @@ const Checkout: React.FC = () => {
 
               <motion.button
                 onClick={handlePlaceOrder}
-                disabled={isProcessing || (user && !selectedAddressId) || (!user && (!guestAddress || !guestEmail || !guestFullName || !guestPhone))}
+                disabled={isProcessing || (user && !selectedAddressId)}
                 whileHover={{ scale: !isProcessing ? 1.02 : 1 }}
                 whileTap={{ scale: !isProcessing ? 0.98 : 1 }}
                 className="w-full bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white py-4 px-6 rounded-lg font-semibold hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1041,11 +1076,6 @@ const Checkout: React.FC = () => {
               {user && !selectedAddressId && addresses.length > 0 && (
                 <p className="text-red-500 text-sm text-center mt-3">
                   Please select a delivery address
-                </p>
-              )}
-              {!user && (!guestAddress || !guestEmail || !guestFullName || !guestPhone) && (
-                <p className="text-red-500 text-sm text-center mt-3">
-                  Please fill in all delivery details
                 </p>
               )}
             </motion.div>
@@ -1201,7 +1231,7 @@ const Checkout: React.FC = () => {
                 </div>
 
                 <div className="text-xs text-gray-500 text-center pt-2">
-                  <p>Customer State: {customerState}</p>
+                  <p>Tax calculated based on: {customerState}</p>
                   <p>Business State: {businessState}</p>
                 </div>
               </div>
