@@ -278,8 +278,8 @@ const Cart: React.FC = () => {
                     {cartItems.map((item) => {
                       const itemMRP = item.product.original_price || item.product.price;
                       const itemPrice = item.product.price;
-                      const itemDiscount = itemMRP - itemPrice;
-                      const discountPercent = itemMRP > 0 ? Math.round((itemDiscount / itemMRP) * 100) : 0;
+                      const itemDiscount = item.product.original_price ? (itemMRP - itemPrice) : 0;
+                      const discountPercent = itemMRP > itemPrice ? Math.round((itemDiscount / itemMRP) * 100) : 0;
 
                       return (
                         <div key={item.id} className="border-b pb-2 last:border-b-0">
@@ -312,8 +312,14 @@ const Cart: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Discount</span>
                       <span className="font-medium text-green-600">
-                        {cartItems.reduce((sum, item) => sum + (((item.product.original_price || item.product.price) - item.product.price) * item.quantity), 0) > 0
-                          ? `-₹${cartItems.reduce((sum, item) => sum + (((item.product.original_price || item.product.price) - item.product.price) * item.quantity), 0).toLocaleString()}`
+                        {cartItems.reduce((sum, item) => {
+                          const discount = item.product.original_price ? ((item.product.original_price - item.product.price) * item.quantity) : 0;
+                          return sum + discount;
+                        }, 0) > 0
+                          ? `-₹${cartItems.reduce((sum, item) => {
+                              const discount = item.product.original_price ? ((item.product.original_price - item.product.price) * item.quantity) : 0;
+                              return sum + discount;
+                            }, 0).toLocaleString()}`
                           : '₹0'}
                       </span>
                     </div>

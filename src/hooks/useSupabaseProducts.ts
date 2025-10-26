@@ -231,7 +231,7 @@ export const useSupabaseProducts = () => {
       await fetchProducts();
       await fetchCategoriesForFilter();
 
-      return { data: null, error };
+      return { data, error: null };
     } catch (error: any) {
       console.error('Error updating product:', error.message);
       return { data: null, error };

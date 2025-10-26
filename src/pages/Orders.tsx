@@ -152,7 +152,8 @@ const Orders: React.FC = () => {
     if (!orderToCancel) return;
 
     try {
-      const { error } = await supabase
+      // Update order status
+      const { error: orderError } = await supabase
         .from('orders')
         .update({
           status: 'cancelled',
@@ -162,15 +163,28 @@ const Orders: React.FC = () => {
         .eq('id', orderToCancel.id)
         .eq('user_id', user?.id);
 
-      if (error) {
+      if (orderError) {
         showToast('Failed to cancel order', 'error');
-        throw error;
-      } else {
-        showToast('Order cancelled successfully', 'success');
-        setCancelModalOpen(false);
-        setOrderToCancel(null);
-        await fetchOrders();
+        throw orderError;
       }
+
+      // Insert cancellation reason into order_cancellation_reasons table
+      const { error: reasonError } = await supabase
+        .from('order_cancellation_reasons')
+        .insert({
+          order_id: orderToCancel.id,
+          reason_type: reasonType.toLowerCase().replace(/ /g, '_'),
+          custom_reason: reasonType === 'Other' ? reasonText : null
+        });
+
+      if (reasonError) {
+        console.error('Failed to insert cancellation reason:', reasonError);
+      }
+
+      showToast('Order cancelled successfully', 'success');
+      setCancelModalOpen(false);
+      setOrderToCancel(null);
+      await fetchOrders();
     } catch (error) {
       console.error('Error cancelling order:', error);
       throw error;

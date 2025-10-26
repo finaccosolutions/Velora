@@ -684,6 +684,9 @@ const AdminReports: React.FC = () => {
     );
   }
 
+  const generalReports = reportDefinitions.filter(r => !r.id.startsWith('gst_'));
+  const gstReports = reportDefinitions.filter(r => r.id.startsWith('gst_'));
+
   return (
     <div className="min-h-screen bg-admin-background text-admin-text p-8">
       {/* Header */}
@@ -736,21 +739,47 @@ const AdminReports: React.FC = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              className="space-y-8"
             >
-              {reportDefinitions.map((report) => (
-                <motion.button
-                  key={report.id}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleReportSelect(report.id)}
-                  className="bg-admin-card rounded-xl shadow-lg p-6 flex flex-col items-center text-center hover:shadow-xl transition-shadow"
-                >
-                  <report.icon className="h-12 w-12 text-admin-primary mb-4" />
-                  <h2 className="text-xl font-bold text-admin-text mb-2">{report.name}</h2>
-                  <p className="text-admin-text-light">View detailed {report.name.toLowerCase()} in tabular format.</p>
-                </motion.button>
-              ))}
+              {/* General Reports Section */}
+              <div>
+                <h2 className="text-2xl font-bold text-admin-text mb-4">General Reports</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {generalReports.map((report) => (
+                    <motion.button
+                      key={report.id}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleReportSelect(report.id)}
+                      className="bg-admin-card rounded-xl shadow-lg p-6 flex flex-col items-center text-center hover:shadow-xl transition-shadow"
+                    >
+                      <report.icon className="h-12 w-12 text-admin-primary mb-4" />
+                      <h3 className="text-xl font-bold text-admin-text mb-2">{report.name}</h3>
+                      <p className="text-admin-text-light">View detailed {report.name.toLowerCase()} in tabular format.</p>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* GST Reports Section */}
+              <div>
+                <h2 className="text-2xl font-bold text-admin-text mb-4">GST Reports</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {gstReports.map((report) => (
+                    <motion.button
+                      key={report.id}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleReportSelect(report.id)}
+                      className="bg-admin-card rounded-xl shadow-lg p-6 flex flex-col items-center text-center hover:shadow-xl transition-shadow"
+                    >
+                      <report.icon className="h-12 w-12 text-admin-primary mb-4" />
+                      <h3 className="text-xl font-bold text-admin-text mb-2">{report.name}</h3>
+                      <p className="text-admin-text-light">View detailed {report.name.toLowerCase()} in tabular format.</p>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
             </motion.div>
           ) : (
             <motion.div
@@ -769,7 +798,7 @@ const AdminReports: React.FC = () => {
                   <p>No data available for this report.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto max-w-full">
+                <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-admin-border">
                     <thead className="bg-admin-background">
                       <tr>
@@ -777,7 +806,7 @@ const AdminReports: React.FC = () => {
                           <th
                             key={col.key}
                             scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium text-admin-text-light uppercase tracking-wider"
+                            className="px-6 py-3 text-left text-xs font-medium text-admin-text-light uppercase tracking-wider whitespace-nowrap"
                           >
                             {col.label}
                           </th>

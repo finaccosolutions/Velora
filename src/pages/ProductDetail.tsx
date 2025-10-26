@@ -77,7 +77,7 @@ const ProductDetail: React.FC = () => {
 
   const handleBuyNow = () => {
     if (product) {
-      navigate('/checkout', { state: { productId: product.id } });
+      navigate('/checkout', { state: { buyNowProductId: product.id } });
     }
   };
 

@@ -815,8 +815,8 @@ const Checkout: React.FC = () => {
                 {isProcessing
                   ? 'Processing...'
                   : paymentMethod === 'online'
-                  ? `Pay ₹${total.toLocaleString()}`
-                  : `Place Order - ₹${total.toLocaleString()}`}
+                  ? `Pay ₹${Math.round(total).toLocaleString()}`
+                  : `Place Order - ₹${Math.round(total).toLocaleString()}`}
               </motion.button>
 
               {!selectedAddressId && addresses.length > 0 && (
