@@ -7,6 +7,7 @@ import { useToast } from '../context/ToastContext';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { Link } from 'react-router-dom';
 import { downloadInvoice, InvoiceData } from '../utils/invoiceGenerator';
+import CancelOrderModal from '../components/CancelOrderModal';
 
 interface OrderTracking {
   id: string;
@@ -58,6 +59,8 @@ const Orders: React.FC = () => {
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [trackingExpanded, setTrackingExpanded] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
   const { user, loading: authLoading, userProfile } = useAuth();
   const { showToast } = useToast();
   const { settings } = useSiteSettings();
@@ -140,29 +143,37 @@ const Orders: React.FC = () => {
     }
   };
 
-  const handleCancelOrder = async (orderId: string) => {
-    if (!window.confirm('Are you sure you want to cancel this order?')) {
-      return;
-    }
+  const openCancelModal = (order: Order) => {
+    setOrderToCancel(order);
+    setCancelModalOpen(true);
+  };
+
+  const handleCancelOrder = async (reasonType: string, reasonText: string) => {
+    if (!orderToCancel) return;
 
     try {
       const { error } = await supabase
         .from('orders')
         .update({
           status: 'cancelled',
-          cancellation_reason: 'Cancelled by customer'
+          cancellation_reason: reasonText,
+          cancellation_reason_type: reasonType
         })
-        .eq('id', orderId)
+        .eq('id', orderToCancel.id)
         .eq('user_id', user?.id);
 
       if (error) {
         showToast('Failed to cancel order', 'error');
+        throw error;
       } else {
         showToast('Order cancelled successfully', 'success');
+        setCancelModalOpen(false);
+        setOrderToCancel(null);
         await fetchOrders();
       }
     } catch (error) {
-      showToast('Failed to cancel order', 'error');
+      console.error('Error cancelling order:', error);
+      throw error;
     }
   };
 
@@ -469,17 +480,19 @@ const Orders: React.FC = () => {
                     <span>{selectedOrder === order.id ? 'Hide' : 'View'} Details</span>
                   </button>
 
-                  <button
-                    onClick={() => handleDownloadInvoice(order)}
-                    className="flex items-center space-x-2 px-4 py-2 border border-[#815536] text-[#815536] rounded-lg hover:bg-[#815536]/10 transition-colors"
-                  >
-                    <Download className="h-4 w-4" />
-                    <span>Download Invoice</span>
-                  </button>
+                  {order.status === 'delivered' && (
+                    <button
+                      onClick={() => handleDownloadInvoice(order)}
+                      className="flex items-center space-x-2 px-4 py-2 border border-[#815536] text-[#815536] rounded-lg hover:bg-[#815536]/10 transition-colors"
+                    >
+                      <Download className="h-4 w-4" />
+                      <span>Download Invoice</span>
+                    </button>
+                  )}
 
                   {canCancelOrder(order) && (
                     <button
-                      onClick={() => handleCancelOrder(order.id)}
+                      onClick={() => openCancelModal(order)}
                       className="flex items-center space-x-2 px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                     >
                       <XCircle className="h-4 w-4" />
@@ -557,6 +570,16 @@ const Orders: React.FC = () => {
           ))}
         </div>
       </div>
+
+      <CancelOrderModal
+        isOpen={cancelModalOpen}
+        onClose={() => {
+          setCancelModalOpen(false);
+          setOrderToCancel(null);
+        }}
+        onConfirm={handleCancelOrder}
+        orderNumber={orderToCancel?.id.slice(-8).toUpperCase() || ''}
+      />
     </div>
   );
 };

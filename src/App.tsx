@@ -26,6 +26,7 @@ import AdminLayout from './components/admin/AdminLayout';
 import AdminCategories from './pages/admin/AdminCategories';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminReports from './pages/admin/AdminReports';
+import AdminGSTReports from './pages/admin/AdminGSTReports';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminUsers from './pages/admin/AdminUsers';
 import { ToastProvider } from './context/ToastContext';
@@ -47,6 +48,7 @@ function App() {
               <Route path="categories" element={<AdminCategories />} />
               <Route path="settings" element={<AdminSettings />} />
               <Route path="reports" element={<AdminReports />} />
+              <Route path="gst-reports" element={<AdminGSTReports />} />
             </Route>
 
             {/* Public routes that should not have Header/Footer on admin pages */}

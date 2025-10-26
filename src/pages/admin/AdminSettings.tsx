@@ -116,6 +116,7 @@ interface SiteSettingsForm {
   gstNumber: string;
   invoiceTerms: string;
   invoiceFooter: string;
+  deliveryCharge: number;
 }
 
 const AdminSettings: React.FC = () => {
@@ -240,6 +241,7 @@ const AdminSettings: React.FC = () => {
         gstNumber: formData.gstNumber || '',
         invoiceTerms: formData.invoiceTerms || 'All sales are final. Returns accepted within 7 days.',
         invoiceFooter: formData.invoiceFooter || 'This is a computer generated invoice.',
+        deliveryCharge: formData.deliveryCharge || 0,
       });
     }
   }, [settingsLoading, settingsError, settings, reset]);
@@ -736,6 +738,17 @@ const AdminSettings: React.FC = () => {
                         className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
                       />
                       <p className="text-xs text-admin-text-light mt-1">Minimum order value for free shipping (0 = no free shipping)</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Delivery Charge (₹)</label>
+                      <input
+                        {...register('deliveryCharge', { valueAsNumber: true })}
+                        type="number"
+                        step="0.01"
+                        placeholder="0"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Flat delivery charge for all orders (0 = free delivery, overridden by free shipping threshold)</p>
                     </div>
                     <div className="md:col-span-2">
                       <label className="flex items-center space-x-2">

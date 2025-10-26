@@ -100,13 +100,22 @@ const Checkout: React.FC = () => {
   }, [billingSameAsDelivery, selectedAddressId]);
 
   useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.async = true;
-    document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
+    const loadRazorpayScript = () => {
+      return new Promise((resolve) => {
+        if (window.Razorpay) {
+          resolve(true);
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.async = true;
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+      });
     };
+
+    loadRazorpayScript();
   }, []);
 
   const handleAddressSubmit = async (data: any) => {
@@ -314,11 +323,10 @@ const Checkout: React.FC = () => {
 
     const options = {
       key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-      amount: total * 100,
+      amount: Math.round(total * 100),
       currency: 'INR',
-      name: 'Velora Tradings',
-      description: 'Purchase from Velora Tradings',
-      order_id: order.id,
+      name: settings.business_name || 'Velora Tradings',
+      description: `Order #${order.id.slice(-8).toUpperCase()}`,
       handler: async function (response: any) {
         try {
           await supabase
@@ -360,8 +368,19 @@ const Checkout: React.FC = () => {
       }
     };
 
-    const razorpay = new window.Razorpay(options);
-    razorpay.open();
+    try {
+      const razorpay = new window.Razorpay(options);
+      razorpay.on('payment.failed', function (response: any) {
+        console.error('Payment failed:', response.error);
+        showToast(`Payment failed: ${response.error.description}`, 'error');
+        setIsProcessing(false);
+      });
+      razorpay.open();
+    } catch (error: any) {
+      console.error('Razorpay initialization error:', error);
+      showToast('Failed to initialize payment. Please try again or use COD.', 'error');
+      setIsProcessing(false);
+    }
   };
 
   const handlePlaceOrder = async () => {

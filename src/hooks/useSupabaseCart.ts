@@ -167,13 +167,22 @@ export const useSupabaseCart = () => {
         return await removeFromCart(cartItemId);
       }
 
+      setCartItems(prev =>
+        prev.map(item =>
+          item.id === cartItemId ? { ...item, quantity } : item
+        )
+      );
+
       const { error } = await supabase
         .from('cart_items')
         .update({ quantity })
         .eq('id', cartItemId)
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        await fetchCartItems(true);
+        throw error;
+      }
 
       return { error: null };
     } catch (error: any) {
@@ -186,13 +195,18 @@ export const useSupabaseCart = () => {
     if (!user) return { error: new Error('Please login') };
 
     try {
+      setCartItems(prev => prev.filter(item => item.id !== cartItemId));
+
       const { error } = await supabase
         .from('cart_items')
         .delete()
         .eq('id', cartItemId)
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        await fetchCartItems(true);
+        throw error;
+      }
 
       return { error: null };
     } catch (error: any) {

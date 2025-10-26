@@ -28,6 +28,8 @@ interface ProductForm {
   reviews_count: number;
   gst_percentage: number;
   hsn_code: string;
+  price_inclusive_of_tax: boolean;
+  default_delivery_days: number;
 }
 
 const AdminProducts: React.FC = () => {
@@ -81,6 +83,8 @@ const AdminProducts: React.FC = () => {
         reviews_count: product.reviews_count || 0,
         gst_percentage: product.gst_percentage || 18,
         hsn_code: product.hsn_code || '',
+        price_inclusive_of_tax: product.price_inclusive_of_tax || false,
+        default_delivery_days: product.default_delivery_days || 7,
       });
     } else {
       reset({
@@ -98,6 +102,8 @@ const AdminProducts: React.FC = () => {
         reviews_count: 0,
         gst_percentage: 18,
         hsn_code: '',
+        price_inclusive_of_tax: false,
+        default_delivery_days: 7,
       });
     }
     setIsModalOpen(true);
@@ -122,6 +128,8 @@ const AdminProducts: React.FC = () => {
       reviews_count: data.reviews_count,
       gst_percentage: data.gst_percentage || 18,
       hsn_code: data.hsn_code || '',
+      price_inclusive_of_tax: data.price_inclusive_of_tax || false,
+      default_delivery_days: data.default_delivery_days || 7,
     };
 
     try {
@@ -545,15 +553,45 @@ const AdminProducts: React.FC = () => {
                     />
                   </div>
 
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      {...register('in_stock')}
-                      className="h-4 w-4 text-admin-primary focus:ring-admin-primary border-admin-border rounded"
-                    />
-                    <label className="ml-2 block text-sm text-admin-text">
-                      In Stock
-                    </label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        {...register('in_stock')}
+                        className="h-4 w-4 text-admin-primary focus:ring-admin-primary border-admin-border rounded"
+                      />
+                      <label className="ml-2 block text-sm text-admin-text">
+                        In Stock
+                      </label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        {...register('price_inclusive_of_tax')}
+                        className="h-4 w-4 text-admin-primary focus:ring-admin-primary border-admin-border rounded"
+                      />
+                      <label className="ml-2 block text-sm text-admin-text">
+                        Price Inclusive of Tax
+                      </label>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">
+                        Default Delivery Days
+                      </label>
+                      <input
+                        type="number"
+                        step="1"
+                        {...register('default_delivery_days', {
+                          required: 'Delivery days required',
+                          min: { value: 1, message: 'Must be at least 1 day' }
+                        })}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                        placeholder="7"
+                      />
+                      {errors.default_delivery_days && (
+                        <p className="text-red-500 text-sm mt-1">{errors.default_delivery_days.message}</p>
+                      )}
+                    </div>
                   </div>
 
                   <div className="flex space-x-4 pt-4">

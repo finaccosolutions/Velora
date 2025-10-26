@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  LayoutDashboard, Package, Tag, Settings, BarChart, LogOut, User, X, ChevronLeft, ChevronRight, Eye, ShoppingCart, Users
+  LayoutDashboard, Package, Tag, Settings, BarChart, LogOut, User, X, ChevronLeft, ChevronRight, Eye, ShoppingCart, Users, FileText
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -14,6 +14,7 @@ const adminNavigation = [
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Categories', href: '/admin/categories', icon: Tag },
   { name: 'Reports', href: '/admin/reports', icon: BarChart },
+  { name: 'GST Reports', href: '/admin/gst-reports', icon: FileText },
   { name: 'Site Settings', href: '/admin/settings', icon: Settings },
 ];
 
