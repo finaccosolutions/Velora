@@ -74,50 +74,54 @@ export const useSupabaseCart = () => {
     }
   }, [user?.id, initialLoadComplete]);
 
-  useEffect(() => {
-    if (subscriptionRef.current) {
-      supabase.removeChannel(subscriptionRef.current);
-      subscriptionRef.current = null;
-    }
+useEffect(() => {
+  if (subscriptionRef.current) {
+    supabase.removeChannel(subscriptionRef.current);
+    subscriptionRef.current = null;
+  }
 
-    if (!authLoading) {
-      if (user) {
+  if (!authLoading) {
+    if (user) {
+      // Only fetch if this is a new user login, not a token refresh
+      if (!initialLoadComplete || cartItems.length === 0) {
         fetchCartItems();
-
-        const channel = supabase
-          .channel('cart_changes_' + user.id)
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'cart_items',
-              filter: `user_id=eq.${user.id}`
-            },
-            (payload) => {
-              console.log('Cart change detected:', payload);
-              fetchCartItems(true);
-            }
-          )
-          .subscribe((status) => {
-            console.log('Cart subscription status:', status);
-          });
-
-        subscriptionRef.current = channel;
-
-        return () => {
-          if (subscriptionRef.current) {
-            supabase.removeChannel(subscriptionRef.current);
-            subscriptionRef.current = null;
-          }
-        };
-      } else {
-        setCartItems([]);
-        setLoading(false);
-        setInitialLoadComplete(true);
       }
+
+      const channel = supabase
+        .channel('cart_changes_' + user.id)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'cart_items',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Cart change detected:', payload);
+            fetchCartItems(true);
+          }
+        )
+        .subscribe((status) => {
+          console.log('Cart subscription status:', status);
+        });
+
+      subscriptionRef.current = channel;
+
+      return () => {
+        if (subscriptionRef.current) {
+          supabase.removeChannel(subscriptionRef.current);
+          subscriptionRef.current = null;
+        }
+      };
+    } else {
+      setCartItems([]);
+      setLoading(false);
+      setInitialLoadComplete(true);
     }
-  }, [user, authLoading]);
+  }
+}, [user?.id, authLoading]); // Changed from user to user?.id to prevent reference changes
+
 
   const addToCart = async (productId: string, quantity: number = 1) => {
     if (!user) return { error: new Error('Please login to add items to cart') };

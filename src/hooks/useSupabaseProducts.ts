@@ -95,40 +95,41 @@ export const useSupabaseProducts = () => {
     }
   }, []);
 
-  useEffect(() => {
-    console.log('useSupabaseProducts useEffect: user:', user, 'session:', session);
-
-    let isMounted = true;
-
-    const executeFetch = async () => {
-      if (!isMounted || isFetchingRef.current) return;
-
-      isFetchingRef.current = true;
-      console.log('useSupabaseProducts: Starting fetch operations...');
-
-      try {
-        await fetchProducts();
-        await fetchCategoriesForFilter();
-      } catch (error) {
-        console.error('useSupabaseProducts: Error during fetch operations:', error);
-      } finally {
-        if (isMounted) {
-          isFetchingRef.current = false;
-          console.log('useSupabaseProducts: Fetch operations completed');
+    useEffect(() => {
+      console.log('useSupabaseProducts useEffect: user:', user);
+    
+      let isMounted = true;
+    
+      const executeFetch = async () => {
+        if (!isMounted || isFetchingRef.current) return;
+    
+        isFetchingRef.current = true;
+        console.log('useSupabaseProducts: Starting fetch operations...');
+    
+        try {
+          await fetchProducts();
+          await fetchCategoriesForFilter();
+        } catch (error) {
+          console.error('useSupabaseProducts: Error during fetch operations:', error);
+        } finally {
+          if (isMounted) {
+            isFetchingRef.current = false;
+            console.log('useSupabaseProducts: Fetch operations completed');
+          }
         }
+      };
+    
+      // Only fetch on initial mount, not when session changes
+      if (!isFetchingRef.current) {
+        console.log('useSupabaseProducts: Executing fetch.');
+        executeFetch();
       }
-    };
+    
+      return () => {
+        isMounted = false;
+      };
+    }, [fetchProducts, fetchCategoriesForFilter]); // Removed user and session from dependencies
 
-    // MODIFIED: Removed isVisible from condition
-    if (!isFetchingRef.current) {
-      console.log('useSupabaseProducts: Executing fetch.');
-      executeFetch();
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user, session, fetchProducts, fetchCategoriesForFilter]); // Removed isVisible from dependencies
 
   const getProductById = async (id: string) => {
     console.log(`getProductById: Attempting to fetch product with ID: ${id}`);

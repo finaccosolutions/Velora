@@ -72,50 +72,54 @@ export const useSupabaseWishlist = () => {
     }
   }, [user?.id, initialLoadComplete]);
 
-  useEffect(() => {
-    if (subscriptionRef.current) {
-      supabase.removeChannel(subscriptionRef.current);
-      subscriptionRef.current = null;
-    }
+useEffect(() => {
+  if (subscriptionRef.current) {
+    supabase.removeChannel(subscriptionRef.current);
+    subscriptionRef.current = null;
+  }
 
-    if (!authLoading) {
-      if (user) {
+  if (!authLoading) {
+    if (user) {
+      // Only fetch if this is a new user login, not a token refresh
+      if (!initialLoadComplete || wishlistItems.length === 0) {
         fetchWishlistItems();
-
-        const channel = supabase
-          .channel('wishlist_changes_' + user.id)
-          .on(
-            'postgres_changes',
-            {
-              event: '*',
-              schema: 'public',
-              table: 'wishlist_items',
-              filter: `user_id=eq.${user.id}`
-            },
-            (payload) => {
-              console.log('Wishlist change detected:', payload);
-              fetchWishlistItems(true);
-            }
-          )
-          .subscribe((status) => {
-            console.log('Wishlist subscription status:', status);
-          });
-
-        subscriptionRef.current = channel;
-
-        return () => {
-          if (subscriptionRef.current) {
-            supabase.removeChannel(subscriptionRef.current);
-            subscriptionRef.current = null;
-          }
-        };
-      } else {
-        setWishlistItems([]);
-        setLoading(false);
-        setInitialLoadComplete(true);
       }
+
+      const channel = supabase
+        .channel('wishlist_changes_' + user.id)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'wishlist_items',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            console.log('Wishlist change detected:', payload);
+            fetchWishlistItems(true);
+          }
+        )
+        .subscribe((status) => {
+          console.log('Wishlist subscription status:', status);
+        });
+
+      subscriptionRef.current = channel;
+
+      return () => {
+        if (subscriptionRef.current) {
+          supabase.removeChannel(subscriptionRef.current);
+          subscriptionRef.current = null;
+        }
+      };
+    } else {
+      setWishlistItems([]);
+      setLoading(false);
+      setInitialLoadComplete(true);
     }
-  }, [user, authLoading]);
+  }
+}, [user?.id, authLoading]); // Changed from user to user?.id to prevent reference changes
+
 
   const addToWishlist = async (productId: string) => {
     if (!user) return { error: new Error('Please login to add items to wishlist') };

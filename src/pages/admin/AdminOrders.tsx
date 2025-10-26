@@ -11,7 +11,10 @@ import { useNavigate } from 'react-router-dom';
 
 interface Order {
   id: string;
-  user_id: string;
+  user_id: string | null;
+  guest_name?: string;
+  guest_email?: string;
+  guest_phone?: string;
   total_amount: number;
   status: string;
   payment_method: string;
@@ -25,7 +28,7 @@ interface Order {
     full_name: string;
     email: string;
     phone: string | null;
-  };
+  } | null;
   order_items: {
     id: string;
     quantity: number;
@@ -110,11 +113,13 @@ const AdminOrders: React.FC = () => {
 
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
-      filtered = filtered.filter(order =>
-        order.id.toLowerCase().includes(search) ||
-        order.users.full_name.toLowerCase().includes(search) ||
-        order.users.email.toLowerCase().includes(search)
-      );
+      filtered = filtered.filter(order => {
+        const customerName = order.users?.full_name || order.guest_name || '';
+        const customerEmail = order.users?.email || order.guest_email || '';
+        return order.id.toLowerCase().includes(search) ||
+          customerName.toLowerCase().includes(search) ||
+          customerEmail.toLowerCase().includes(search);
+      });
     }
 
     setFilteredOrders(filtered);
@@ -310,7 +315,7 @@ const AdminOrders: React.FC = () => {
                     <User className="h-5 w-5 text-admin-primary" />
                     <div>
                       <p className="text-xs text-admin-text-light">Customer</p>
-                      <p className="font-semibold text-admin-text">{order.users.full_name}</p>
+                      <p className="font-semibold text-admin-text">{order.users?.full_name || order.guest_name || 'Guest'}</p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-3 p-3 bg-admin-sidebar rounded-lg">
@@ -423,9 +428,10 @@ const AdminOrders: React.FC = () => {
                           <span>Customer Information</span>
                         </h4>
                         <div className="bg-admin-sidebar p-4 rounded-lg space-y-2">
-                          <p className="text-admin-text"><strong>Name:</strong> {order.users.full_name}</p>
-                          <p className="text-admin-text"><strong>Email:</strong> {order.users.email}</p>
-                          <p className="text-admin-text"><strong>Phone:</strong> {order.users.phone || 'N/A'}</p>
+                          <p className="text-admin-text"><strong>Name:</strong> {order.users?.full_name || order.guest_name || 'Guest'}</p>
+                          <p className="text-admin-text"><strong>Email:</strong> {order.users?.email || order.guest_email || 'N/A'}</p>
+                          <p className="text-admin-text"><strong>Phone:</strong> {order.users?.phone || order.guest_phone || 'N/A'}</p>
+                          {!order.users && <p className="text-sm text-admin-warning mt-2">(Guest Order)</p>}
                         </div>
 
                         <h4 className="font-semibold text-admin-text mb-3 mt-4 flex items-center space-x-2">

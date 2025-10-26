@@ -41,6 +41,7 @@ const Checkout: React.FC = () => {
   const { settings } = useSiteSettings();
 
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: boolean}>({});
+  const [isOrderPlaced, setIsOrderPlaced] = useState(false);
 
   const isRazorpayConfigured = import.meta.env.VITE_RAZORPAY_KEY_ID &&
     import.meta.env.VITE_RAZORPAY_KEY_ID.startsWith('rzp_');
@@ -93,7 +94,7 @@ const Checkout: React.FC = () => {
   const total = gstBreakdown.total;
 
   useEffect(() => {
-    if (buyNowProductId) {
+    if (buyNowProductId || isOrderPlaced) {
       return;
     }
 
@@ -101,7 +102,7 @@ const Checkout: React.FC = () => {
       console.log('Cart is empty after loading, redirecting to cart page');
       navigate('/cart', { replace: true });
     }
-  }, [buyNowProductId, cartLoading, cartItems.length, navigate]);
+  }, [buyNowProductId, cartLoading, cartItems.length, navigate, isOrderPlaced]);
 
   useEffect(() => {
     if (addresses.length > 0 && !selectedAddressId) {
@@ -468,6 +469,8 @@ const Checkout: React.FC = () => {
             })
             .eq('id', order.id);
 
+          setIsOrderPlaced(true);
+
           if (!buyNowProduct) {
             await clearCart();
           }
@@ -551,6 +554,8 @@ const Checkout: React.FC = () => {
           console.error('Error updating order status:', updateError);
           showToast('Order placed but status update failed', 'warning');
         }
+
+        setIsOrderPlaced(true);
 
         if (!buyNowProduct) {
           await clearCart();

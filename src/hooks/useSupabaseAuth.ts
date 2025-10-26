@@ -194,18 +194,18 @@ export const useSupabaseAuth = () => {
       (event, session) => {
         console.log('Auth State Change Listener: Event:', event, 'Session:', session);
     
-        // Only handle specific events, ignore TOKEN_REFRESHED
+        // Only handle specific events, ignore TOKEN_REFRESHED to prevent unnecessary reloads
         if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
           (async () => {
             await handleAuth(session, event);
           })();
         } else if (event === 'TOKEN_REFRESHED') {
-          // Just update session silently without triggering full re-render
-          console.log('Auth State Change: Token refreshed silently');
-          setSession(session);
+          // Do nothing - don't even update session state to prevent cascading re-renders
+          console.log('Auth State Change: Token refreshed - ignoring to prevent page reload');
         }
       }
     );
+
 
 
     return () => {
