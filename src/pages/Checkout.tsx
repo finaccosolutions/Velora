@@ -135,6 +135,15 @@ const Checkout: React.FC = () => {
   const handleAddressSubmit = async (data: any) => {
     setIsSubmittingAddress(true);
     try {
+      if (!user) {
+        setGuestAddress(data);
+        showToast('Address saved', 'success');
+        setShowAddressForm(false);
+        setEditingAddress(null);
+        setIsSubmittingAddress(false);
+        return;
+      }
+
       if (editingAddress) {
         const result = await updateAddress(editingAddress.id, data);
         if (!result.error) {
@@ -185,12 +194,15 @@ const Checkout: React.FC = () => {
         price: item.product.price
       }));
 
+      const customerEmail = user ? (userProfile?.email || user?.email || '') : guestEmail;
+      const customerName = user ? (userProfile?.full_name || 'Customer') : guestFullName;
+
       const emailData = {
-        to: userProfile?.email || user?.email || '',
+        to: customerEmail,
         subject: `Order Confirmation - #${order.id.slice(-8)}`,
         orderData: {
           orderId: order.id,
-          customerName: userProfile?.full_name || 'Customer',
+          customerName: customerName,
           orderItems,
           totalAmount: total,
           shippingAddress: selectedAddress,
@@ -250,39 +262,54 @@ const Checkout: React.FC = () => {
 
   const createOrder = async () => {
     try {
-      if (!selectedAddress) {
+      if (!user && (!guestAddress || !guestEmail || !guestFullName || !guestPhone)) {
+        showToast('Please fill in all delivery details', 'error');
+        return;
+      }
+
+      if (user && !selectedAddress) {
         showToast('Please select a delivery address', 'error');
         return;
       }
 
+      const deliveryAddress = user ? selectedAddress : guestAddress;
       const billingAddress = billingSameAsDelivery
-        ? selectedAddress
-        : addresses.find(a => a.id === billingAddressId);
+        ? deliveryAddress
+        : (user ? addresses.find(a => a.id === billingAddressId) : guestAddress);
 
       if (!billingSameAsDelivery && !billingAddress) {
         showToast('Please select a billing address', 'error');
         return;
       }
 
+      const orderPayload: any = {
+        total_amount: total,
+        subtotal: gstBreakdown.subtotal,
+        cgst_amount: gstBreakdown.cgst || 0,
+        sgst_amount: gstBreakdown.sgst || 0,
+        igst_amount: gstBreakdown.igst || 0,
+        shipping_charges: gstBreakdown.shipping,
+        discount_amount: gstBreakdown.discount,
+        customer_state: customerState,
+        status: 'pending',
+        payment_method: paymentMethod,
+        payment_status: paymentMethod === 'cod' ? 'pending' : 'pending',
+        shipping_address: deliveryAddress,
+        billing_address: billingAddress,
+        billing_same_as_delivery: billingSameAsDelivery
+      };
+
+      if (user) {
+        orderPayload.user_id = user.id;
+      } else {
+        orderPayload.guest_email = guestEmail;
+        orderPayload.guest_phone = guestPhone;
+        orderPayload.guest_name = guestFullName;
+      }
+
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
-        .insert({
-          user_id: user?.id,
-          total_amount: total,
-          subtotal: gstBreakdown.subtotal,
-          cgst_amount: gstBreakdown.cgst || 0,
-          sgst_amount: gstBreakdown.sgst || 0,
-          igst_amount: gstBreakdown.igst || 0,
-          shipping_charges: gstBreakdown.shipping,
-          discount_amount: gstBreakdown.discount,
-          customer_state: customerState,
-          status: 'pending',
-          payment_method: paymentMethod,
-          payment_status: paymentMethod === 'cod' ? 'pending' : 'pending',
-          shipping_address: selectedAddress,
-          billing_address: billingAddress,
-          billing_same_as_delivery: billingSameAsDelivery
-        })
+        .insert(orderPayload)
         .select()
         .single();
 
@@ -398,8 +425,13 @@ const Checkout: React.FC = () => {
   };
 
   const handlePlaceOrder = async () => {
-    if (!selectedAddressId) {
+    if (user && !selectedAddressId) {
       showToast('Please select a delivery address', 'error');
+      return;
+    }
+
+    if (!user && (!guestAddress || !guestEmail || !guestFullName || !guestPhone)) {
+      showToast('Please fill in all delivery details', 'error');
       return;
     }
 
@@ -442,24 +474,6 @@ const Checkout: React.FC = () => {
     }
   };
 
-  // Check if user is logged in first
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center py-16">
-            <p className="text-gray-600 mb-4">Please login to continue with checkout</p>
-            <button
-              onClick={() => navigate('/login', { state: { from: '/checkout' } })}
-              className="bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white px-8 py-3 rounded-lg font-semibold hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200"
-            >
-              Login
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   // Show loading state only when NOT in buy now mode and cart is still loading
   if (!buyNowProduct && cartLoading) {
@@ -505,21 +519,78 @@ const Checkout: React.FC = () => {
                   <MapPin className="h-6 w-6 text-[#815536]" />
                   <h2 className="text-xl font-bold text-gray-900">Delivery Address</h2>
                 </div>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    setEditingAddress(null);
-                    setShowAddressForm(true);
-                  }}
-                  className="flex items-center space-x-2 px-4 py-2 bg-[#815536] text-white rounded-lg hover:bg-[#6d4429] transition-colors"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>Add New</span>
-                </motion.button>
+                {user && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => {
+                      setEditingAddress(null);
+                      setShowAddressForm(true);
+                    }}
+                    className="flex items-center space-x-2 px-4 py-2 bg-[#815536] text-white rounded-lg hover:bg-[#6d4429] transition-colors"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Add New</span>
+                  </motion.button>
+                )}
               </div>
 
-              {addressLoading ? (
+              {!user ? (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                    <input
+                      type="text"
+                      value={guestFullName}
+                      onChange={(e) => setGuestFullName(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                      placeholder="Enter your full name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                    <input
+                      type="email"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                      placeholder="Enter your email"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                    <input
+                      type="tel"
+                      value={guestPhone}
+                      onChange={(e) => setGuestPhone(e.target.value)}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                      placeholder="Enter your phone number"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Address *</label>
+                    <button
+                      onClick={() => setShowAddressForm(true)}
+                      className="w-full px-4 py-3 border-2 border-dashed border-[#815536] rounded-lg text-[#815536] font-semibold hover:bg-[#815536]/5 transition-colors"
+                    >
+                      {guestAddress ? 'Edit Address' : 'Add Delivery Address'}
+                    </button>
+                    {guestAddress && (
+                      <div className="mt-3 p-4 bg-gray-50 rounded-lg">
+                        <p className="font-medium text-gray-900">{guestAddress.full_name}</p>
+                        <p className="text-gray-600 text-sm mt-1">
+                          {guestAddress.address_line_1}
+                          {guestAddress.address_line_2 && `, ${guestAddress.address_line_2}`}
+                        </p>
+                        <p className="text-gray-600 text-sm">
+                          {guestAddress.city}, {guestAddress.state} - {guestAddress.postal_code}
+                        </p>
+                        <p className="text-gray-600 text-sm">Phone: {guestAddress.phone}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : addressLoading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#815536] mx-auto"></div>
                 </div>
@@ -812,9 +883,9 @@ const Checkout: React.FC = () => {
 
               <motion.button
                 onClick={handlePlaceOrder}
-                disabled={isProcessing || !selectedAddressId || addresses.length === 0}
-                whileHover={{ scale: !isProcessing && selectedAddressId ? 1.02 : 1 }}
-                whileTap={{ scale: !isProcessing && selectedAddressId ? 0.98 : 1 }}
+                disabled={isProcessing || (user && !selectedAddressId) || (!user && (!guestAddress || !guestEmail || !guestFullName || !guestPhone))}
+                whileHover={{ scale: !isProcessing ? 1.02 : 1 }}
+                whileTap={{ scale: !isProcessing ? 0.98 : 1 }}
                 className="w-full bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white py-4 px-6 rounded-lg font-semibold hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing
@@ -824,9 +895,14 @@ const Checkout: React.FC = () => {
                   : `Place Order - ₹${Math.round(total).toLocaleString()}`}
               </motion.button>
 
-              {!selectedAddressId && addresses.length > 0 && (
+              {user && !selectedAddressId && addresses.length > 0 && (
                 <p className="text-red-500 text-sm text-center mt-3">
                   Please select a delivery address
+                </p>
+              )}
+              {!user && (!guestAddress || !guestEmail || !guestFullName || !guestPhone) && (
+                <p className="text-red-500 text-sm text-center mt-3">
+                  Please fill in all delivery details
                 </p>
               )}
             </motion.div>
