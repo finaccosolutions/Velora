@@ -4,7 +4,9 @@ import { indianStates } from '../data/indianStates';
 interface CartItemWithGST {
   product: {
     price: number;
+    original_price?: number;
     gst_percentage?: number;
+    price_inclusive_of_tax?: boolean;
   };
   quantity: number;
 }
@@ -24,12 +26,23 @@ export function calculateGSTBreakdown(
   let totalGST = 0;
 
   items.forEach(item => {
-    const itemSubtotal = item.product.price * item.quantity;
     const gstPercentage = item.product.gst_percentage || 18;
-    const itemGST = (itemSubtotal * gstPercentage) / 100;
+    const priceInclusiveOfTax = item.product.price_inclusive_of_tax || false;
 
-    subtotal += itemSubtotal;
-    totalGST += itemGST;
+    if (priceInclusiveOfTax) {
+      const priceWithTax = item.product.price * item.quantity;
+      const taxableValue = (priceWithTax * 100) / (100 + gstPercentage);
+      const itemGST = priceWithTax - taxableValue;
+
+      subtotal += taxableValue;
+      totalGST += itemGST;
+    } else {
+      const itemSubtotal = item.product.price * item.quantity;
+      const itemGST = (itemSubtotal * gstPercentage) / 100;
+
+      subtotal += itemSubtotal;
+      totalGST += itemGST;
+    }
   });
 
   const isSameState = customerState.toLowerCase() === businessState.toLowerCase();

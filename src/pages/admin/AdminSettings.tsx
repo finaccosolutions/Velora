@@ -298,9 +298,10 @@ const AdminSettings: React.FC = () => {
 
   const tabs = [
     { id: 'general', label: 'General', icon: Settings, color: 'text-admin-primary' },
+    { id: 'branding', label: 'Branding & Contact', icon: ImageIcon, color: 'text-purple-500' },
     { id: 'business', label: 'Business/GST', icon: Building2, color: 'text-indigo-500' },
     { id: 'email', label: 'Email & SMTP', icon: Mail, color: 'text-red-500' },
-    { id: 'payment', label: 'Payment & Currency', icon: DollarSign, color: 'text-green-500' },
+    { id: 'payment', label: 'Payment & Shipping', icon: DollarSign, color: 'text-green-500' },
     { id: 'seo', label: 'SEO & Analytics', icon: Globe, color: 'text-blue-500' },
     { id: 'maintenance', label: 'Maintenance', icon: ShieldCheck, color: 'text-orange-500' },
     { id: 'home', label: 'Home Page', icon: Home, color: 'text-admin-success' },
@@ -688,9 +689,9 @@ const AdminSettings: React.FC = () => {
               </motion.div>
             )}
 
-            {activeTab === 'payment' && (
+            {activeTab === 'branding' && (
               <motion.div
-                key="payment"
+                key="branding"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
@@ -698,86 +699,10 @@ const AdminSettings: React.FC = () => {
                 className="space-y-6"
               >
                 <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
-                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'payment')?.color}`}>
-                    <DollarSign className="h-6 w-6" />
-                    <span>Currency Settings</span>
+                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'branding')?.color}`}>
+                    <ImageIcon className="h-6 w-6" />
+                    <span>Branding</span>
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Currency Symbol</label>
-                      <input
-                        {...register('currencySymbol')}
-                        type="text"
-                        placeholder="₹"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Currency Code</label>
-                      <input
-                        {...register('currencyCode')}
-                        type="text"
-                        placeholder="INR"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Free Shipping Threshold</label>
-                      <input
-                        {...register('freeShippingThreshold', { valueAsNumber: true })}
-                        type="number"
-                        placeholder="0"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                      <p className="text-xs text-admin-text-light mt-1">Minimum order value for free shipping (0 = no free shipping)</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Delivery Charge (₹)</label>
-                      <input
-                        {...register('deliveryCharge', { valueAsNumber: true })}
-                        type="number"
-                        step="0.01"
-                        placeholder="0"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                      <p className="text-xs text-admin-text-light mt-1">Flat delivery charge for all orders (0 = free delivery, overridden by free shipping threshold)</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Bulk Discount Threshold (₹)</label>
-                      <input
-                        {...register('bulkDiscountThreshold', { valueAsNumber: true })}
-                        type="number"
-                        placeholder="0"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                      <p className="text-xs text-admin-text-light mt-1">Minimum order value for bulk discount (0 = no bulk discount)</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Bulk Discount Percentage (%)</label>
-                      <input
-                        {...register('bulkDiscountPercentage', { valueAsNumber: true })}
-                        type="number"
-                        step="0.1"
-                        placeholder="0"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                      <p className="text-xs text-admin-text-light mt-1">Discount percentage to apply when order value exceeds threshold</p>
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="flex items-center space-x-2">
-                        <input
-                          {...register('shippingEnabled')}
-                          type="checkbox"
-                          className="w-5 h-5 text-admin-primary focus:ring-2 focus:ring-admin-primary border-admin-border rounded"
-                        />
-                        <span className="text-sm font-medium text-admin-text-dark">Enable Shipping</span>
-                      </label>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
-                  <h2 className="text-2xl font-bold mb-4 text-admin-text">Branding</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-admin-text-dark mb-2">Site Logo URL</label>
@@ -862,6 +787,102 @@ const AdminSettings: React.FC = () => {
                         placeholder="https://linkedin.com/company/yourcompany"
                         className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
                       />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'payment' && (
+              <motion.div
+                key="payment"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
+                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'payment')?.color}`}>
+                    <DollarSign className="h-6 w-6" />
+                    <span>Currency Settings</span>
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Currency Symbol</label>
+                      <input
+                        {...register('currencySymbol')}
+                        type="text"
+                        placeholder="₹"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Currency Code</label>
+                      <input
+                        {...register('currencyCode')}
+                        type="text"
+                        placeholder="INR"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
+                  <h2 className="text-2xl font-bold mb-4 text-admin-text">Shipping & Discounts</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Free Shipping Threshold (₹)</label>
+                      <input
+                        {...register('freeShippingThreshold', { valueAsNumber: true })}
+                        type="number"
+                        placeholder="0"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Minimum order value for free shipping (0 = no free shipping)</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Delivery Charge (₹)</label>
+                      <input
+                        {...register('deliveryCharge', { valueAsNumber: true })}
+                        type="number"
+                        step="0.01"
+                        placeholder="0"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Flat delivery charge for all orders (0 = free delivery)</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Bulk Discount Threshold (₹)</label>
+                      <input
+                        {...register('bulkDiscountThreshold', { valueAsNumber: true })}
+                        type="number"
+                        placeholder="0"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Minimum order value for bulk discount (0 = no bulk discount)</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Bulk Discount Percentage (%)</label>
+                      <input
+                        {...register('bulkDiscountPercentage', { valueAsNumber: true })}
+                        type="number"
+                        step="0.1"
+                        placeholder="0"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Discount percentage to apply when order value exceeds threshold</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="flex items-center space-x-2">
+                        <input
+                          {...register('shippingEnabled')}
+                          type="checkbox"
+                          className="w-5 h-5 text-admin-primary focus:ring-2 focus:ring-admin-primary border-admin-border rounded"
+                        />
+                        <span className="text-sm font-medium text-admin-text-dark">Enable Shipping</span>
+                      </label>
                     </div>
                   </div>
                 </div>

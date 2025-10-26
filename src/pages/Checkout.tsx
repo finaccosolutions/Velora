@@ -56,13 +56,22 @@ const Checkout: React.FC = () => {
   const businessState = settings.business_state || 'Maharashtra';
 
   const subtotal = buyNowProduct ? buyNowProduct.price : getCartTotal();
-  const shipping = subtotal > 2000 ? 0 : 100;
+
+  const freeShippingThreshold = settings.free_shipping_threshold || 0;
+  const deliveryCharge = settings.delivery_charge || 0;
+  const shipping = freeShippingThreshold > 0 && subtotal >= freeShippingThreshold ? 0 : deliveryCharge;
+
+  const bulkDiscountThreshold = settings.bulk_discount_threshold || 0;
+  const bulkDiscountPercentage = settings.bulk_discount_percentage || 0;
+  const discount = bulkDiscountThreshold > 0 && subtotal >= bulkDiscountThreshold
+    ? (subtotal * bulkDiscountPercentage) / 100
+    : 0;
 
   const gstBreakdown = calculateGSTBreakdown(
     displayItems,
     customerState,
     shipping,
-    0,
+    discount,
     businessState
   );
 
@@ -766,6 +775,12 @@ const Checkout: React.FC = () => {
                   <span>Subtotal</span>
                   <span>₹{gstBreakdown.subtotal.toLocaleString()}</span>
                 </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount ({bulkDiscountPercentage}%)</span>
+                    <span>-₹{discount.toLocaleString()}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-gray-600">
                   <span>Shipping</span>
                   <span>{gstBreakdown.shipping === 0 ? 'Free' : `₹${gstBreakdown.shipping}`}</span>

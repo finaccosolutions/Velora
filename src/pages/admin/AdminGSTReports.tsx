@@ -77,7 +77,7 @@ const AdminGSTReports: React.FC = () => {
           gst_percentage,
           gst_amount,
           subtotal,
-          product:products (name, hsn_code)
+          product:products (name, hsn_code, price_inclusive_of_tax)
         )
       `)
       .order('created_at', { ascending: false });
@@ -87,9 +87,23 @@ const AdminGSTReports: React.FC = () => {
     const billWiseData: any[] = [];
     orders?.forEach(order => {
       order.order_items?.forEach((item: any) => {
-        const itemSubtotal = item.subtotal || (item.price * item.quantity);
-        const itemGST = item.gst_amount || 0;
-        const itemTotal = itemSubtotal + itemGST;
+        const priceInclusiveOfTax = item.product?.price_inclusive_of_tax || false;
+        const gstPercentage = item.gst_percentage || 18;
+
+        let taxableValue: number;
+        let itemGST: number;
+        let itemTotal: number;
+
+        if (priceInclusiveOfTax) {
+          itemTotal = item.price * item.quantity;
+          taxableValue = (itemTotal * 100) / (100 + gstPercentage);
+          itemGST = itemTotal - taxableValue;
+        } else {
+          taxableValue = item.price * item.quantity;
+          itemGST = item.gst_amount || 0;
+          itemTotal = taxableValue + itemGST;
+        }
+
         const customerGSTIN = order.billing_address?.gstin || 'N/A';
 
         billWiseData.push({
@@ -101,10 +115,10 @@ const AdminGSTReports: React.FC = () => {
           hsnCode: item.product?.hsn_code || 'N/A',
           quantity: item.quantity,
           rate: item.price,
-          taxableValue: itemSubtotal,
-          cgst: order.cgst_amount ? (order.cgst_amount * (itemSubtotal / order.subtotal)) : 0,
-          sgst: order.sgst_amount ? (order.sgst_amount * (itemSubtotal / order.subtotal)) : 0,
-          igst: order.igst_amount ? (order.igst_amount * (itemSubtotal / order.subtotal)) : 0,
+          taxableValue: taxableValue,
+          cgst: order.cgst_amount ? (order.cgst_amount * (taxableValue / order.subtotal)) : 0,
+          sgst: order.sgst_amount ? (order.sgst_amount * (taxableValue / order.subtotal)) : 0,
+          igst: order.igst_amount ? (order.igst_amount * (taxableValue / order.subtotal)) : 0,
           totalGST: itemGST,
           invoiceValue: itemTotal,
           customerState: order.customer_state
@@ -179,7 +193,7 @@ const AdminGSTReports: React.FC = () => {
         gst_percentage,
         gst_amount,
         subtotal,
-        product:products (name, hsn_code)
+        product:products (name, hsn_code, price_inclusive_of_tax)
       `);
 
     if (itemError) throw itemError;
@@ -189,8 +203,22 @@ const AdminGSTReports: React.FC = () => {
     orderItems?.forEach((item: any) => {
       const hsnCode = item.product?.hsn_code || 'N/A';
       const productName = item.product?.name || 'N/A';
-      const itemSubtotal = item.subtotal || (item.price * item.quantity);
-      const itemGST = item.gst_amount || 0;
+      const priceInclusiveOfTax = item.product?.price_inclusive_of_tax || false;
+      const gstPercentage = item.gst_percentage || 18;
+
+      let taxableValue: number;
+      let itemGST: number;
+      let itemTotal: number;
+
+      if (priceInclusiveOfTax) {
+        itemTotal = item.price * item.quantity;
+        taxableValue = (itemTotal * 100) / (100 + gstPercentage);
+        itemGST = itemTotal - taxableValue;
+      } else {
+        taxableValue = item.price * item.quantity;
+        itemGST = item.gst_amount || 0;
+        itemTotal = taxableValue + itemGST;
+      }
 
       if (!hsnMap.has(hsnCode)) {
         hsnMap.set(hsnCode, {
@@ -198,7 +226,7 @@ const AdminGSTReports: React.FC = () => {
           productName,
           totalQuantity: 0,
           totalTaxableValue: 0,
-          gstRate: item.gst_percentage || 18,
+          gstRate: gstPercentage,
           totalGST: 0,
           totalValue: 0
         });
@@ -206,9 +234,9 @@ const AdminGSTReports: React.FC = () => {
 
       const hsn = hsnMap.get(hsnCode);
       hsn.totalQuantity += item.quantity;
-      hsn.totalTaxableValue += itemSubtotal;
+      hsn.totalTaxableValue += taxableValue;
       hsn.totalGST += itemGST;
-      hsn.totalValue += (itemSubtotal + itemGST);
+      hsn.totalValue += itemTotal;
     });
 
     return Array.from(hsnMap.values());
@@ -400,34 +428,40 @@ const AdminGSTReports: React.FC = () => {
                 <p>No data available for this report</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-admin-border">
-                  <thead className="bg-admin-sidebar">
-                    <tr>
-                      {Object.keys(reportData[0]).map(key => (
-                        <th
-                          key={key}
-                          className="px-4 py-3 text-left text-xs font-medium text-admin-text-light uppercase tracking-wider whitespace-nowrap"
-                        >
-                          {key.replace(/([A-Z])/g, ' $1').trim()}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="bg-admin-card divide-y divide-admin-border">
-                    {reportData.map((row, idx) => (
-                      <tr key={idx} className="hover:bg-admin-sidebar transition-colors">
-                        {Object.entries(row).map(([key, value], cellIdx) => (
-                          <td key={cellIdx} className="px-4 py-3 whitespace-nowrap text-sm text-admin-text">
-                            {typeof value === 'number' && key.toLowerCase().includes('value') || key.toLowerCase().includes('gst') || key.toLowerCase().includes('cgst') || key.toLowerCase().includes('sgst') || key.toLowerCase().includes('igst')
-                              ? `₹${Math.round(value as number).toLocaleString()}`
-                              : String(value)}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="overflow-x-auto max-w-full">
+                <div className="inline-block min-w-full align-middle">
+                  <div className="overflow-hidden border border-admin-border rounded-lg">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-admin-border">
+                        <thead className="bg-admin-sidebar sticky top-0 z-10">
+                          <tr>
+                            {Object.keys(reportData[0]).map(key => (
+                              <th
+                                key={key}
+                                className="px-4 py-3 text-left text-xs font-medium text-admin-text-light uppercase tracking-wider whitespace-nowrap"
+                              >
+                                {key.replace(/([A-Z])/g, ' $1').trim()}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="bg-admin-card divide-y divide-admin-border">
+                          {reportData.map((row, idx) => (
+                            <tr key={idx} className="hover:bg-admin-sidebar transition-colors">
+                              {Object.entries(row).map(([key, value], cellIdx) => (
+                                <td key={cellIdx} className="px-4 py-3 whitespace-nowrap text-sm text-admin-text">
+                                  {typeof value === 'number' && (key.toLowerCase().includes('value') || key.toLowerCase().includes('gst') || key.toLowerCase().includes('cgst') || key.toLowerCase().includes('sgst') || key.toLowerCase().includes('igst'))
+                                    ? `₹${Math.round(value as number).toLocaleString()}`
+                                    : String(value)}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </motion.div>

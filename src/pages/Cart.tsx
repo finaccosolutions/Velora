@@ -17,13 +17,22 @@ const Cart: React.FC = () => {
   const customerState = userProfile?.state || 'Maharashtra';
   const businessState = settings.business_state || 'Maharashtra';
   const subtotal = getCartTotal();
-  const shipping = subtotal > 2000 ? 0 : 100;
+
+  const freeShippingThreshold = settings.free_shipping_threshold || 0;
+  const deliveryCharge = settings.delivery_charge || 0;
+  const shipping = freeShippingThreshold > 0 && subtotal >= freeShippingThreshold ? 0 : deliveryCharge;
+
+  const bulkDiscountThreshold = settings.bulk_discount_threshold || 0;
+  const bulkDiscountPercentage = settings.bulk_discount_percentage || 0;
+  const discount = bulkDiscountThreshold > 0 && subtotal >= bulkDiscountThreshold
+    ? (subtotal * bulkDiscountPercentage) / 100
+    : 0;
 
   const gstBreakdown = calculateGSTBreakdown(
     cartItems,
     customerState,
     shipping,
-    0,
+    discount,
     businessState
   );
 
@@ -168,6 +177,12 @@ const Cart: React.FC = () => {
                   <span>Subtotal</span>
                   <span>₹{gstBreakdown.subtotal.toLocaleString()}</span>
                 </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span>Discount ({bulkDiscountPercentage}%)</span>
+                    <span>-₹{discount.toLocaleString()}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-gray-600">
                   <span>Shipping</span>
                   <span>{gstBreakdown.shipping === 0 ? 'Free' : `₹${gstBreakdown.shipping}`}</span>
@@ -192,10 +207,18 @@ const Cart: React.FC = () => {
                 </div>
               </div>
 
-              {getCartTotal() < 2000 && (
+              {freeShippingThreshold > 0 && getCartTotal() < freeShippingThreshold && (
                 <div className="bg-[#c9baa8]/20 p-4 rounded-lg mb-6">
                   <p className="text-sm text-[#815536]">
-                    Add ₹{(2000 - getCartTotal()).toLocaleString()} more to get free shipping!
+                    Add ₹{(freeShippingThreshold - getCartTotal()).toLocaleString()} more to get free shipping!
+                  </p>
+                </div>
+              )}
+
+              {discount > 0 && (
+                <div className="bg-green-50 p-4 rounded-lg mb-6">
+                  <p className="text-sm text-green-700">
+                    Bulk discount applied: ₹{discount.toLocaleString()} ({bulkDiscountPercentage}%)
                   </p>
                 </div>
               )}
