@@ -1,12 +1,31 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Info, X } from 'lucide-react';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
+import { useAuth } from '../context/AuthContext';
+import { useSiteSettings } from '../hooks/useSiteSettings';
+import { calculateGSTBreakdown, getGSTLabel } from '../utils/gstCalculator';
 
 const Cart: React.FC = () => {
   const { cartItems, removeFromCart, updateQuantity, getCartTotal, clearCart, loading } = useSupabaseCart();
+  const { userProfile } = useAuth();
+  const { settings } = useSiteSettings();
   const navigate = useNavigate();
+  const [showBreakdown, setShowBreakdown] = useState(false);
+
+  const customerState = userProfile?.state || 'Maharashtra';
+  const businessState = settings.business_state || 'Maharashtra';
+  const subtotal = getCartTotal();
+  const shipping = subtotal > 2000 ? 0 : 100;
+
+  const gstBreakdown = calculateGSTBreakdown(
+    cartItems,
+    customerState,
+    shipping,
+    0,
+    businessState
+  );
 
   if (loading) {
     return (
@@ -143,26 +162,33 @@ const Cart: React.FC = () => {
               className="bg-white rounded-2xl shadow-lg p-6 sticky top-24"
             >
               <h2 className="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
-              
+
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
-                  <span>₹{getCartTotal().toLocaleString()}</span>
+                  <span>₹{gstBreakdown.subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Shipping</span>
-                  <span>{getCartTotal() > 2000 ? 'Free' : '₹100'}</span>
+                  <span>{gstBreakdown.shipping === 0 ? 'Free' : `₹${gstBreakdown.shipping}`}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Tax</span>
-                  <span>₹{Math.round(getCartTotal() * 0.18).toLocaleString()}</span>
+                <div className="flex justify-between items-center text-gray-600">
+                  <span>Tax ({getGSTLabel(customerState, businessState)})</span>
+                  <div className="flex items-center space-x-2">
+                    <span>₹{Math.round(gstBreakdown.totalTax).toLocaleString()}</span>
+                    <button
+                      onClick={() => setShowBreakdown(true)}
+                      className="text-[#815536] hover:text-[#6d4429] transition-colors"
+                      title="View breakdown"
+                    >
+                      <Info className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
                 <hr />
                 <div className="flex justify-between text-xl font-bold text-gray-900">
                   <span>Total</span>
-                  <span>
-                    ₹{(getCartTotal() + (getCartTotal() > 2000 ? 0 : 100) + Math.round(getCartTotal() * 0.18)).toLocaleString()}
-                  </span>
+                  <span>₹{Math.round(gstBreakdown.total).toLocaleString()}</span>
                 </div>
               </div>
 
@@ -195,6 +221,149 @@ const Cart: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showBreakdown && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowBreakdown(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900">Order Breakup</h3>
+                <button
+                  onClick={() => setShowBreakdown(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-700 mb-3">Items Breakdown</h4>
+                  <div className="space-y-3 mb-4">
+                    {cartItems.map((item) => {
+                      const itemMRP = item.product.original_price || item.product.price;
+                      const itemPrice = item.product.price;
+                      const itemDiscount = itemMRP - itemPrice;
+                      const discountPercent = itemMRP > 0 ? Math.round((itemDiscount / itemMRP) * 100) : 0;
+
+                      return (
+                        <div key={item.id} className="border-b pb-2 last:border-b-0">
+                          <p className="text-sm font-medium text-gray-900">{item.product.name}</p>
+                          <div className="text-xs text-gray-600 mt-1 space-y-1">
+                            <div className="flex justify-between">
+                              <span>MRP (₹{itemMRP} × {item.quantity})</span>
+                              <span>₹{(itemMRP * item.quantity).toLocaleString()}</span>
+                            </div>
+                            {itemDiscount > 0 && (
+                              <div className="flex justify-between text-green-600">
+                                <span>Discount ({discountPercent}%)</span>
+                                <span>-₹{(itemDiscount * item.quantity).toLocaleString()}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between font-medium">
+                              <span>Price</span>
+                              <span>₹{(itemPrice * item.quantity).toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="space-y-2 text-sm border-t pt-3">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Items Total (MRP)</span>
+                      <span className="font-medium">₹{cartItems.reduce((sum, item) => sum + ((item.product.original_price || item.product.price) * item.quantity), 0).toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Discount</span>
+                      <span className="font-medium text-green-600">
+                        {cartItems.reduce((sum, item) => sum + (((item.product.original_price || item.product.price) - item.product.price) * item.quantity), 0) > 0
+                          ? `-₹${cartItems.reduce((sum, item) => sum + (((item.product.original_price || item.product.price) - item.product.price) * item.quantity), 0).toLocaleString()}`
+                          : '₹0'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-700 mb-3">GST Breakdown</h4>
+                  <div className="space-y-2 text-sm">
+                    {gstBreakdown.cgst !== undefined && gstBreakdown.sgst !== undefined ? (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">
+                            CGST (Central GST)
+                            <span className="block text-xs text-gray-500">Same State</span>
+                          </span>
+                          <span className="font-medium">₹{Math.round(gstBreakdown.cgst).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">
+                            SGST (State GST)
+                            <span className="block text-xs text-gray-500">Same State</span>
+                          </span>
+                          <span className="font-medium">₹{Math.round(gstBreakdown.sgst).toLocaleString()}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">
+                          IGST (Integrated GST)
+                          <span className="block text-xs text-gray-500">Interstate</span>
+                        </span>
+                        <span className="font-medium">₹{Math.round(gstBreakdown.igst || 0).toLocaleString()}</span>
+                      </div>
+                    )}
+                    <div className="border-t pt-2 mt-2">
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-gray-700">Total Tax</span>
+                        <span className="font-semibold">₹{Math.round(gstBreakdown.totalTax).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Shipping Charges</span>
+                      <span className="font-medium">
+                        {gstBreakdown.shipping === 0 ? 'FREE' : `₹${gstBreakdown.shipping.toLocaleString()}`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-[#815536]/10 to-[#c9baa8]/10 rounded-lg p-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-bold text-gray-900">Grand Total</span>
+                    <span className="text-2xl font-bold text-[#815536]">
+                      ₹{Math.round(gstBreakdown.total).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-xs text-gray-500 text-center pt-2">
+                  <p>Customer State: {customerState}</p>
+                  <p>Business State: {businessState}</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

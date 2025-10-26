@@ -57,6 +57,7 @@ const Orders: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [trackingExpanded, setTrackingExpanded] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const { user, loading: authLoading, userProfile } = useAuth();
   const { showToast } = useToast();
   const { settings } = useSiteSettings();
@@ -158,11 +159,25 @@ const Orders: React.FC = () => {
         showToast('Failed to cancel order', 'error');
       } else {
         showToast('Order cancelled successfully', 'success');
-        fetchOrders();
+        await fetchOrders();
       }
     } catch (error) {
       showToast('Failed to cancel order', 'error');
     }
+  };
+
+  const filteredOrders = orders.filter(order => {
+    if (statusFilter === 'all') return true;
+    return order.status === statusFilter;
+  });
+
+  const statusCounts = {
+    all: orders.length,
+    pending: orders.filter(o => o.status === 'pending').length,
+    confirmed: orders.filter(o => o.status === 'confirmed').length,
+    shipped: orders.filter(o => o.status === 'shipped').length,
+    delivered: orders.filter(o => o.status === 'delivered').length,
+    cancelled: orders.filter(o => o.status === 'cancelled').length,
   };
 
   const handleDownloadInvoice = async (order: Order) => {
@@ -294,10 +309,33 @@ const Orders: React.FC = () => {
         >
           <h1 className="text-3xl font-bold text-gray-900 mb-2">My Orders</h1>
           <p className="text-gray-600">Track and manage your orders</p>
+
+          <div className="flex flex-wrap gap-2 mt-6">
+            {[
+              { value: 'all', label: 'All Orders' },
+              { value: 'pending', label: 'Pending' },
+              { value: 'confirmed', label: 'Confirmed' },
+              { value: 'shipped', label: 'Shipped' },
+              { value: 'delivered', label: 'Delivered' },
+              { value: 'cancelled', label: 'Cancelled' },
+            ].map((filter) => (
+              <button
+                key={filter.value}
+                onClick={() => setStatusFilter(filter.value)}
+                className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  statusFilter === filter.value
+                    ? 'bg-[#815536] text-white shadow-md'
+                    : 'bg-white text-gray-700 border border-gray-300 hover:border-[#815536] hover:text-[#815536]'
+                }`}
+              >
+                {filter.label} ({statusCounts[filter.value as keyof typeof statusCounts]})
+              </button>
+            ))}
+          </div>
         </motion.div>
 
         <div className="space-y-6">
-          {orders.map((order, index) => (
+          {filteredOrders.map((order, index) => (
             <motion.div
               key={order.id}
               initial={{ opacity: 0, y: 20 }}

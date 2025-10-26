@@ -10,6 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { useToast } from '../../context/ToastContext';
 import { camelToSnake, mapDbToForm } from '../../utils/settingsMapper';
+import { INDIAN_STATES } from '../../data/indianStates';
 
 interface SiteSettingsForm {
   siteName: string;
@@ -459,12 +460,17 @@ const AdminSettings: React.FC = () => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-admin-text-dark mb-2">State *</label>
-                      <input
+                      <select
                         {...register('businessState')}
-                        type="text"
-                        placeholder="State"
                         className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
+                      >
+                        <option value="">Select State</option>
+                        {INDIAN_STATES.map((state) => (
+                          <option key={state} value={state}>
+                            {state}
+                          </option>
+                        ))}
+                      </select>
                       <p className="text-xs text-admin-text-light mt-1">Used to determine intrastate/interstate GST</p>
                     </div>
                     <div>

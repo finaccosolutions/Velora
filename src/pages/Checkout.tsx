@@ -19,7 +19,7 @@ declare global {
 }
 
 const Checkout: React.FC = () => {
-  const { cartItems, getCartTotal, clearCart, loading: cartLoading } = useSupabaseCart();
+  const { cartItems, getCartTotal, clearCart, updateQuantity, removeFromCart, loading: cartLoading } = useSupabaseCart();
   const { user, userProfile } = useAuth();
   const { products } = useSupabaseProducts();
   const { addresses, addAddress, updateAddress, deleteAddress, loading: addressLoading } = useAddresses();
@@ -723,19 +723,49 @@ const Checkout: React.FC = () => {
 
               <div className="space-y-4 mb-6 max-h-60 overflow-y-auto">
                 {displayItems.map((item) => (
-                  <div key={item.product.id} className="flex items-center space-x-3">
+                  <div key={item.product.id} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg transition-colors">
                     <img
                       src={item.product.image_url}
                       alt={item.product.name}
-                      className="w-16 h-16 object-cover rounded-lg"
+                      className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
                     />
-                    <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-900">{item.product.name}</h4>
-                      <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-gray-900 truncate">{item.product.name}</h4>
+                      {!buyNowProduct && (
+                        <div className="flex items-center space-x-2 mt-2">
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className="p-1 hover:bg-gray-200 rounded transition-colors"
+                            disabled={item.quantity <= 1}
+                          >
+                            <Minus className="h-3 w-3 text-gray-600" />
+                          </button>
+                          <span className="text-sm font-medium text-gray-600 w-6 text-center">{item.quantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="p-1 hover:bg-gray-200 rounded transition-colors"
+                          >
+                            <Plus className="h-3 w-3 text-gray-600" />
+                          </button>
+                        </div>
+                      )}
+                      {buyNowProduct && (
+                        <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                      )}
                     </div>
-                    <p className="text-sm font-medium text-gray-900">
-                      ₹{(item.product.price * item.quantity).toLocaleString()}
-                    </p>
+                    <div className="flex items-center space-x-2 flex-shrink-0">
+                      <p className="text-sm font-medium text-gray-900">
+                        ₹{(item.product.price * item.quantity).toLocaleString()}
+                      </p>
+                      {!buyNowProduct && (
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -824,7 +854,7 @@ const Checkout: React.FC = () => {
               className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-900">Tax Breakdown</h3>
+                <h3 className="text-xl font-bold text-gray-900">Order Breakup</h3>
                 <button
                   onClick={() => setShowTaxBreakdown(false)}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -835,16 +865,48 @@ const Checkout: React.FC = () => {
 
               <div className="space-y-4">
                 <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="font-semibold text-gray-700 mb-3">Order Details</h4>
-                  <div className="space-y-2 text-sm">
+                  <h4 className="font-semibold text-gray-700 mb-3">Items Breakdown</h4>
+                  <div className="space-y-3 mb-4">
+                    {displayItems.map((item) => {
+                      const itemMRP = item.product.original_price || item.product.price;
+                      const itemPrice = item.product.price;
+                      const itemDiscount = itemMRP - itemPrice;
+                      const discountPercent = itemMRP > 0 ? Math.round((itemDiscount / itemMRP) * 100) : 0;
+
+                      return (
+                        <div key={item.product.id} className="border-b pb-2 last:border-b-0">
+                          <p className="text-sm font-medium text-gray-900">{item.product.name}</p>
+                          <div className="text-xs text-gray-600 mt-1 space-y-1">
+                            <div className="flex justify-between">
+                              <span>MRP (₹{itemMRP} × {item.quantity})</span>
+                              <span>₹{(itemMRP * item.quantity).toLocaleString()}</span>
+                            </div>
+                            {itemDiscount > 0 && (
+                              <div className="flex justify-between text-green-600">
+                                <span>Discount ({discountPercent}%)</span>
+                                <span>-₹{(itemDiscount * item.quantity).toLocaleString()}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between font-medium">
+                              <span>Price</span>
+                              <span>₹{(itemPrice * item.quantity).toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="space-y-2 text-sm border-t pt-3">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Items Total (MRP)</span>
-                      <span className="font-medium">₹{gstBreakdown.subtotal.toLocaleString()}</span>
+                      <span className="font-medium">₹{displayItems.reduce((sum, item) => sum + ((item.product.original_price || item.product.price) * item.quantity), 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Discount</span>
                       <span className="font-medium text-green-600">
-                        {gstBreakdown.discount > 0 ? `-₹${gstBreakdown.discount.toLocaleString()}` : '₹0'}
+                        {displayItems.reduce((sum, item) => sum + (((item.product.original_price || item.product.price) - item.product.price) * item.quantity), 0) > 0
+                          ? `-₹${displayItems.reduce((sum, item) => sum + (((item.product.original_price || item.product.price) - item.product.price) * item.quantity), 0).toLocaleString()}`
+                          : '₹0'}
                       </span>
                     </div>
                   </div>

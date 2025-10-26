@@ -25,7 +25,7 @@ interface EmailRequest {
   };
 }
 
-function generateOrderEmailHTML(data: EmailRequest['orderData'], siteName: string, currencySymbol: string): string {
+function generateCustomerEmailHTML(data: EmailRequest['orderData'], siteName: string, currencySymbol: string): string {
   const itemsHTML = data.orderItems.map(item => `
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #eee;">${item.name}</td>
@@ -91,6 +91,83 @@ function generateOrderEmailHTML(data: EmailRequest['orderData'], siteName: strin
 
         <div style="margin-top: 30px; padding: 20px; background: #f0f0f0; border-radius: 5px; text-align: center;">
           <p style="margin: 0;">Need help? Contact us or check your order status anytime.</p>
+        </div>
+      </div>
+
+      <div style="background: #815536; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;">
+        <p style="color: white; margin: 0; font-size: 14px;">© 2025 ${siteName}. All rights reserved.</p>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+function generateAdminEmailHTML(data: EmailRequest['orderData'], siteName: string, currencySymbol: string): string {
+  const itemsHTML = data.orderItems.map(item => `
+    <tr>
+      <td style="padding: 12px; border-bottom: 1px solid #eee;">${item.name}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">${currencySymbol}${item.price.toLocaleString()}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">${currencySymbol}${(item.price * item.quantity).toLocaleString()}</td>
+    </tr>
+  `).join('');
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(to right, #815536, #c9baa8); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">${siteName}</h1>
+        <p style="color: #f5f5f5; margin: 10px 0 0 0;">New Order Received</p>
+      </div>
+
+      <div style="background: white; padding: 30px; border: 1px solid #ddd; border-top: none;">
+        <h2 style="color: #815536; margin-top: 0;">New Order Notification</h2>
+        <p style="color: #ff6b00; font-weight: bold;">Action Required: Process this order</p>
+
+        <div style="background: #f8f8f8; padding: 15px; border-radius: 5px; margin: 20px 0;">
+          <h3 style="margin: 0 0 10px 0; color: #815536;">Order Details</h3>
+          <p style="margin: 5px 0;"><strong>Order ID:</strong> #${data.orderId.slice(-8)}</p>
+          <p style="margin: 5px 0;"><strong>Customer:</strong> ${data.customerName}</p>
+          <p style="margin: 5px 0;"><strong>Order Date:</strong> ${new Date(data.orderDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+          <p style="margin: 5px 0;"><strong>Payment Method:</strong> ${data.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Online Payment'}</p>
+        </div>
+
+        <h3 style="color: #815536; margin-top: 30px;">Order Items</h3>
+        <table style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+          <thead>
+            <tr style="background: #f8f8f8;">
+              <th style="padding: 12px; text-align: left; border-bottom: 2px solid #815536;">Product</th>
+              <th style="padding: 12px; text-align: center; border-bottom: 2px solid #815536;">Qty</th>
+              <th style="padding: 12px; text-align: right; border-bottom: 2px solid #815536;">Price</th>
+              <th style="padding: 12px; text-align: right; border-bottom: 2px solid #815536;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHTML}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="3" style="padding: 15px; text-align: right; font-weight: bold; font-size: 16px;">Total Amount:</td>
+              <td style="padding: 15px; text-align: right; font-weight: bold; font-size: 16px; color: #815536;">${currencySymbol}${data.totalAmount.toLocaleString()}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <h3 style="color: #815536; margin-top: 30px;">Shipping Address</h3>
+        <div style="background: #f8f8f8; padding: 15px; border-radius: 5px;">
+          <p style="margin: 5px 0;">${data.shippingAddress.full_name}</p>
+          <p style="margin: 5px 0;">${data.shippingAddress.address_line_1}${data.shippingAddress.address_line_2 ? ', ' + data.shippingAddress.address_line_2 : ''}</p>
+          <p style="margin: 5px 0;">${data.shippingAddress.city}, ${data.shippingAddress.state} ${data.shippingAddress.postal_code}</p>
+          <p style="margin: 5px 0;">Phone: ${data.shippingAddress.phone}</p>
+        </div>
+
+        <div style="margin-top: 30px; padding: 20px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 5px; text-align: center;">
+          <p style="margin: 0; color: #856404;"><strong>Action Required:</strong> Log in to the admin panel to process this order</p>
         </div>
       </div>
 
@@ -204,7 +281,9 @@ Deno.serve(async (req: Request) => {
 
     const siteName = settings.site_name || 'Velora Tradings';
     const currencySymbol = settings.currency_symbol || '₹';
-    const html = generateOrderEmailHTML(orderData, siteName, currencySymbol);
+    const html = sendToAdmin
+      ? generateAdminEmailHTML(orderData, siteName, currencySymbol)
+      : generateCustomerEmailHTML(orderData, siteName, currencySymbol);
     const result = await sendEmail(recipientEmail, subject, html, settings);
 
     if (result.success) {

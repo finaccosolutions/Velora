@@ -217,12 +217,13 @@ const Addresses: React.FC = () => {
               </div>
               <div className="p-6">
                 <AddressForm
-                  initialData={editingAddress}
+                  address={editingAddress}
                   onSubmit={handleFormSubmit}
                   onCancel={() => {
                     setIsFormOpen(false);
                     setEditingAddress(null);
                   }}
+                  isSubmitting={false}
                 />
               </div>
             </motion.div>
