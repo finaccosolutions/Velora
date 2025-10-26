@@ -1,71 +1,83 @@
-import { useState, useEffect } from 'react';
-import { CartItem, Product } from '../types';
+import { useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useSupabaseCart } from './useSupabaseCart';
+import { useGuestCart } from './useGuestCart';
+import { useSupabaseProducts } from './useSupabaseProducts';
+import { supabase } from '../lib/supabase';
 
 export const useCart = () => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const { user } = useAuth();
+  const supabaseCart = useSupabaseCart();
+  const guestCartHook = useGuestCart();
+  const { products } = useSupabaseProducts();
 
   useEffect(() => {
-    const savedCart = localStorage.getItem('veloraCart');
-    if (savedCart) {
-      setCartItems(JSON.parse(savedCart));
+    if (user && guestCartHook.guestCart.length > 0) {
+      guestCartHook.migrateToUserCart(user.id, supabase);
     }
-  }, []);
+  }, [user]);
 
-  useEffect(() => {
-    localStorage.setItem('veloraCart', JSON.stringify(cartItems));
-  }, [cartItems]);
+  if (user) {
+    return {
+      cartItems: supabaseCart.cartItems,
+      loading: supabaseCart.loading,
+      addToCart: supabaseCart.addToCart,
+      removeFromCart: supabaseCart.removeFromCart,
+      updateQuantity: supabaseCart.updateQuantity,
+      clearCart: supabaseCart.clearCart,
+      getCartTotal: supabaseCart.getCartTotal,
+      getCartItemsCount: supabaseCart.getCartItemsCount,
+      fetchCartItems: supabaseCart.fetchCartItems,
+    };
+  }
 
-  const addToCart = (product: Product, quantity: number = 1) => {
-    setCartItems(prev => {
-      const existingItem = prev.find(item => item.product.id === product.id);
-      if (existingItem) {
-        return prev.map(item =>
-          item.product.id === product.id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
-      }
-      return [...prev, { product, quantity }];
-    });
-  };
-
-  const removeFromCart = (productId: string) => {
-    setCartItems(prev => prev.filter(item => item.product.id !== productId));
-  };
-
-  const updateQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
-      return;
-    }
-    setCartItems(prev =>
-      prev.map(item =>
-        item.product.id === productId
-          ? { ...item, quantity }
-          : item
-      )
-    );
-  };
-
-  const clearCart = () => {
-    setCartItems([]);
-  };
-
-  const getCartTotal = () => {
-    return cartItems.reduce((total, item) => total + (item.product.price * item.quantity), 0);
-  };
-
-  const getCartItemsCount = () => {
-    return cartItems.reduce((total, item) => total + item.quantity, 0);
-  };
+  const guestCartItems = guestCartHook.guestCart
+    .map(item => {
+      const product = products.find(p => p.id === item.product_id);
+      if (!product) return null;
+      return {
+        id: item.product_id,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        product: {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          original_price: product.original_price,
+          image_url: product.image_url,
+          category: product.category,
+          category_name: product.category_name,
+          in_stock: product.in_stock,
+        },
+      };
+    })
+    .filter(item => item !== null);
 
   return {
-    cartItems,
-    addToCart,
-    removeFromCart,
-    updateQuantity,
-    clearCart,
-    getCartTotal,
-    getCartItemsCount
+    cartItems: guestCartItems,
+    loading: false,
+    addToCart: async (productId: string, quantity: number = 1) => {
+      guestCartHook.addToGuestCart(productId, quantity);
+      return { error: null };
+    },
+    removeFromCart: async (cartItemId: string) => {
+      guestCartHook.removeFromGuestCart(cartItemId);
+      return { error: null };
+    },
+    updateQuantity: async (cartItemId: string, quantity: number) => {
+      guestCartHook.updateGuestCartQuantity(cartItemId, quantity);
+      return { error: null };
+    },
+    clearCart: async () => {
+      guestCartHook.clearGuestCart();
+      return { error: null };
+    },
+    getCartTotal: () => {
+      return guestCartItems.reduce((total, item) => total + (item.product.price * item.quantity), 0);
+    },
+    getCartItemsCount: () => {
+      return guestCartHook.getGuestCartCount();
+    },
+    fetchCartItems: async () => {},
   };
 };

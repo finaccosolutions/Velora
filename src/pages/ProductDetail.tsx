@@ -75,10 +75,9 @@ const ProductDetail: React.FC = () => {
     }
   };
 
-  const handleBuyNow = async () => {
+  const handleBuyNow = () => {
     if (product) {
-      await addToCart(product.id, quantity);
-      navigate('/checkout');
+      navigate('/checkout', { state: { buyNowProductId: product.id } });
     }
   };
 
