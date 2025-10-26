@@ -30,6 +30,8 @@ interface Order {
   payment_method: string;
   payment_status: string;
   shipping_address: any;
+  billing_address?: any;
+  billing_same_as_delivery?: boolean;
   tracking_number: string | null;
   estimated_delivery: string | null;
   cancellation_reason: string | null;
@@ -93,6 +95,8 @@ const Orders: React.FC = () => {
           payment_method,
           payment_status,
           shipping_address,
+          billing_address,
+          billing_same_as_delivery,
           tracking_number,
           estimated_delivery,
           cancellation_reason,
@@ -161,14 +165,28 @@ const Orders: React.FC = () => {
     }
   };
 
-  const handleDownloadInvoice = (order: Order) => {
+  const handleDownloadInvoice = async (order: Order) => {
     const totalTax = (order.cgst_amount || 0) + (order.sgst_amount || 0) + (order.igst_amount || 0);
+
+    // Fetch product details with HSN codes
+    const productIds = order.order_items.map(item => item.product.id);
+    const { data: products } = await supabase
+      .from('products')
+      .select('id, hsn_code')
+      .in('id', productIds);
+
+    const productHSNMap = new Map(products?.map(p => [p.id, p.hsn_code]) || []);
+
+    // Get customer GSTIN from billing or shipping address
+    const billingAddress = order.billing_address || order.shipping_address;
+    const customerGSTIN = billingAddress?.gstin || billingAddress?.gstin || undefined;
 
     const invoiceData: InvoiceData = {
       invoiceNumber: order.invoice_number || `INV-${order.id.slice(-8).toUpperCase()}`,
       orderDate: order.created_at,
       customerName: userProfile?.full_name || 'Customer',
-      customerAddress: order.shipping_address,
+      customerAddress: billingAddress || order.shipping_address,
+      customerGSTIN: customerGSTIN,
       items: order.order_items.map(item => ({
         name: item.product.name,
         quantity: item.quantity,
@@ -176,6 +194,7 @@ const Orders: React.FC = () => {
         gst_percentage: item.gst_percentage || 18,
         gst_amount: item.gst_amount || 0,
         subtotal: item.subtotal || (item.price * item.quantity),
+        hsn_code: productHSNMap.get(item.product.id)
       })),
       subtotal: order.subtotal || 0,
       cgst: order.cgst_amount,

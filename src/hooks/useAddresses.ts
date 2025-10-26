@@ -15,6 +15,9 @@ export interface Address {
   postal_code: string;
   country: string;
   is_default: boolean;
+  is_gst_registered?: boolean;
+  gstin?: string;
+  address_type?: 'delivery' | 'billing' | 'both';
   created_at: string;
   updated_at: string;
 }

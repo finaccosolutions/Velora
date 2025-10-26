@@ -3,6 +3,7 @@ export interface InvoiceData {
   orderDate: string;
   customerName: string;
   customerAddress: any;
+  customerGSTIN?: string;
   items: Array<{
     name: string;
     quantity: number;
@@ -10,6 +11,7 @@ export interface InvoiceData {
     gst_percentage: number;
     gst_amount: number;
     subtotal: number;
+    hsn_code?: string;
   }>;
   subtotal: number;
   cgst?: number;
@@ -70,10 +72,10 @@ export function generateInvoiceHTML(data: InvoiceData): string {
 <body>
   <div class="invoice">
     <div class="header">
-      <h1>${data.businessDetails.business_name || 'Business Name'}</h1>
-      <p>${data.businessDetails.business_address || ''}, ${data.businessDetails.business_city || ''}, ${data.businessDetails.business_state || ''} - ${data.businessDetails.business_pincode || ''}</p>
-      <p>Phone: ${data.businessDetails.business_phone || ''} | Email: ${data.businessDetails.business_email || ''}</p>
-      ${data.businessDetails.gst_number ? `<p><strong>GSTIN:</strong> ${data.businessDetails.gst_number}</p>` : ''}
+      <h1>${data.businessDetails.businessName || data.businessDetails.business_name || 'Business Name'}</h1>
+      <p>${data.businessDetails.businessAddress || data.businessDetails.business_address || ''}, ${data.businessDetails.businessCity || data.businessDetails.business_city || ''}, ${data.businessDetails.businessState || data.businessDetails.business_state || ''} - ${data.businessDetails.businessPincode || data.businessDetails.business_pincode || ''}</p>
+      <p>Phone: ${data.businessDetails.businessPhone || data.businessDetails.business_phone || ''} | Email: ${data.businessDetails.businessEmail || data.businessDetails.business_email || ''}</p>
+      ${(data.businessDetails.gstNumber || data.businessDetails.gst_number) ? `<p><strong>GSTIN:</strong> ${data.businessDetails.gstNumber || data.businessDetails.gst_number}</p>` : ''}
     </div>
 
     <div class="invoice-details">
@@ -96,6 +98,7 @@ export function generateInvoiceHTML(data: InvoiceData): string {
         ${data.customerAddress.address_line_2 ? `<p>${data.customerAddress.address_line_2}</p>` : ''}
         <p>${data.customerAddress.city}, ${data.customerAddress.state} - ${data.customerAddress.postal_code}</p>
         <p>Phone: ${data.customerAddress.phone}</p>
+        ${data.customerGSTIN ? `<p><strong>GSTIN:</strong> ${data.customerGSTIN}</p>` : ''}
       </div>
     </div>
 
@@ -104,6 +107,7 @@ export function generateInvoiceHTML(data: InvoiceData): string {
         <tr>
           <th>S.No</th>
           <th>Product Description</th>
+          <th class="text-center">HSN Code</th>
           <th class="text-center">Qty</th>
           <th class="text-right">Rate</th>
           <th class="text-right">Taxable Value</th>
@@ -117,6 +121,7 @@ export function generateInvoiceHTML(data: InvoiceData): string {
         <tr>
           <td>${index + 1}</td>
           <td>${item.name}</td>
+          <td class="text-center">${item.hsn_code || '-'}</td>
           <td class="text-center">${item.quantity}</td>
           <td class="text-right">₹${item.price.toLocaleString()}</td>
           <td class="text-right">₹${item.subtotal.toLocaleString()}</td>
@@ -176,15 +181,15 @@ export function generateInvoiceHTML(data: InvoiceData): string {
       </div>
     </div>
 
-    ${data.businessDetails.invoice_terms ? `
+    ${(data.businessDetails.invoiceTerms || data.businessDetails.invoice_terms) ? `
     <div class="notes">
       <h4>Terms & Conditions</h4>
-      <p style="font-size: 14px; color: #666;">${data.businessDetails.invoice_terms}</p>
+      <p style="font-size: 14px; color: #666;">${data.businessDetails.invoiceTerms || data.businessDetails.invoice_terms}</p>
     </div>
     ` : ''}
 
     <div class="footer">
-      <p>${data.businessDetails.invoice_footer || 'This is a computer generated invoice.'}</p>
+      <p>${data.businessDetails.invoiceFooter || data.businessDetails.invoice_footer || 'This is a computer generated invoice.'}</p>
       <p style="margin-top: 10px;">Thank you for your business!</p>
     </div>
   </div>

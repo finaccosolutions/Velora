@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
@@ -13,8 +13,8 @@ interface AddressFormProps {
 }
 
 const AddressForm: React.FC<AddressFormProps> = ({ address, onSubmit, onCancel, isSubmitting }) => {
-  const { register, handleSubmit, formState: { errors } } = useForm({
-    defaultValues: address || {
+  const { register, handleSubmit, watch, reset, formState: { errors } } = useForm({
+    defaultValues: {
       title: '',
       full_name: '',
       phone: '',
@@ -24,9 +24,34 @@ const AddressForm: React.FC<AddressFormProps> = ({ address, onSubmit, onCancel, 
       state: '',
       postal_code: '',
       country: 'India',
-      is_default: false
+      is_default: false,
+      is_gst_registered: false,
+      gstin: '',
+      address_type: 'delivery'
     }
   });
+
+  const isGstRegistered = watch('is_gst_registered');
+
+  useEffect(() => {
+    if (address) {
+      reset({
+        title: address.title || '',
+        full_name: address.full_name || '',
+        phone: address.phone || '',
+        address_line_1: address.address_line_1 || '',
+        address_line_2: address.address_line_2 || '',
+        city: address.city || '',
+        state: address.state || '',
+        postal_code: address.postal_code || '',
+        country: address.country || 'India',
+        is_default: address.is_default || false,
+        is_gst_registered: address.is_gst_registered || false,
+        gstin: address.gstin || '',
+        address_type: address.address_type || 'delivery'
+      });
+    }
+  }, [address, reset]);
 
   return (
     <motion.div
@@ -192,6 +217,46 @@ const AddressForm: React.FC<AddressFormProps> = ({ address, onSubmit, onCancel, 
             <label className="ml-2 text-sm text-gray-700">
               Set as default address
             </label>
+          </div>
+
+          <div className="border-t pt-4">
+            <div className="flex items-center mb-4">
+              <input
+                type="checkbox"
+                {...register('is_gst_registered')}
+                className="w-4 h-4 text-[#815536] border-gray-300 rounded focus:ring-[#815536]"
+              />
+              <label className="ml-2 text-sm font-medium text-gray-700">
+                GST Registered Customer
+              </label>
+            </div>
+
+            {isGstRegistered && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  GSTIN (GST Identification Number)
+                </label>
+                <input
+                  {...register('gstin', {
+                    pattern: {
+                      value: /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
+                      message: 'Please enter a valid 15-character GSTIN'
+                    }
+                  })}
+                  placeholder="e.g., 27AAPFU0939F1ZV"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent uppercase"
+                  maxLength={15}
+                />
+                {errors.gstin && (
+                  <p className="text-red-500 text-sm mt-1">{errors.gstin.message as string}</p>
+                )}
+                <p className="text-xs text-gray-500 mt-1">15-character GST Identification Number</p>
+              </motion.div>
+            )}
           </div>
 
           <div className="flex space-x-3 pt-4">

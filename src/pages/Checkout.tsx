@@ -30,6 +30,8 @@ const Checkout: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [billingAddressId, setSelectedBillingAddressId] = useState<string | null>(null);
+  const [billingSameAsDelivery, setBillingSameAsDelivery] = useState(true);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const [isSubmittingAddress, setIsSubmittingAddress] = useState(false);
@@ -83,9 +85,19 @@ const Checkout: React.FC = () => {
   useEffect(() => {
     if (addresses.length > 0 && !selectedAddressId) {
       const defaultAddr = addresses.find(a => a.is_default);
-      setSelectedAddressId(defaultAddr?.id || addresses[0].id);
+      const addrId = defaultAddr?.id || addresses[0].id;
+      setSelectedAddressId(addrId);
+      if (billingSameAsDelivery) {
+        setSelectedBillingAddressId(addrId);
+      }
     }
   }, [addresses, selectedAddressId]);
+
+  useEffect(() => {
+    if (billingSameAsDelivery) {
+      setSelectedBillingAddressId(selectedAddressId);
+    }
+  }, [billingSameAsDelivery, selectedAddressId]);
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -220,6 +232,15 @@ const Checkout: React.FC = () => {
         return;
       }
 
+      const billingAddress = billingSameAsDelivery
+        ? selectedAddress
+        : addresses.find(a => a.id === billingAddressId);
+
+      if (!billingSameAsDelivery && !billingAddress) {
+        showToast('Please select a billing address', 'error');
+        return;
+      }
+
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -235,7 +256,9 @@ const Checkout: React.FC = () => {
           status: 'pending',
           payment_method: paymentMethod,
           payment_status: paymentMethod === 'cod' ? 'pending' : 'pending',
-          shipping_address: selectedAddress
+          shipping_address: selectedAddress,
+          billing_address: billingAddress,
+          billing_same_as_delivery: billingSameAsDelivery
         })
         .select()
         .single();
@@ -540,6 +563,87 @@ const Checkout: React.FC = () => {
                     </motion.div>
                   ))}
                 </div>
+              )}
+            </motion.div>
+
+            {/* Billing Address */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.05 }}
+              className="bg-white rounded-2xl shadow-lg p-6"
+            >
+              <div className="flex items-center space-x-3 mb-6">
+                <MapPin className="h-6 w-6 text-[#815536]" />
+                <h2 className="text-xl font-bold text-gray-900">Billing Address</h2>
+              </div>
+
+              <div className="mb-4">
+                <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all border-[#815536] bg-[#815536]/5">
+                  <input
+                    type="checkbox"
+                    checked={billingSameAsDelivery}
+                    onChange={(e) => setBillingSameAsDelivery(e.target.checked)}
+                    className="mr-3 text-[#815536] w-4 h-4"
+                  />
+                  <span className="font-medium text-gray-900">Billing address same as delivery address</span>
+                </label>
+              </div>
+
+              {!billingSameAsDelivery && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="space-y-3 mt-4"
+                >
+                  {addresses.length === 0 ? (
+                    <div className="text-center py-4">
+                      <p className="text-gray-600 text-sm">No billing addresses available</p>
+                    </div>
+                  ) : (
+                    addresses.map((address) => (
+                      <motion.div
+                        key={address.id}
+                        whileHover={{ scale: 1.01 }}
+                        onClick={() => setSelectedBillingAddressId(address.id)}
+                        className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                          billingAddressId === address.id
+                            ? 'border-[#815536] bg-[#815536]/5'
+                            : 'border-gray-200 hover:border-[#815536]/50'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <span className="font-semibold text-gray-900">{address.title}</span>
+                              {address.is_default && (
+                                <span className="px-2 py-1 bg-[#815536] text-white text-xs rounded-full">
+                                  Default
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-gray-700 font-medium">{address.full_name}</p>
+                            <p className="text-gray-600 text-sm mt-1">
+                              {address.address_line_1}
+                              {address.address_line_2 && `, ${address.address_line_2}`}
+                            </p>
+                            <p className="text-gray-600 text-sm">
+                              {address.city}, {address.state} - {address.postal_code}
+                            </p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {billingAddressId === address.id && (
+                              <div className="w-6 h-6 bg-[#815536] rounded-full flex items-center justify-center">
+                                <Check className="h-4 w-4 text-white" />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
+                </motion.div>
               )}
             </motion.div>
 

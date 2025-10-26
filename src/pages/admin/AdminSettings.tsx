@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Settings, Palette, Type, Image as ImageIcon, Info, Phone, MessageCircle, Home, LayoutDashboard, Mail, Server, Globe, DollarSign, ShieldCheck,
-} from 'lucide-react'; // NEW: Import Home and LayoutDashboard for tab icons
+  Settings, Palette, Type, Image as ImageIcon, Info, Phone, MessageCircle, Home, LayoutDashboard, Mail, Server, Globe, DollarSign, ShieldCheck, Building2, FileText,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '../../context/AuthContext';
@@ -104,6 +104,17 @@ interface SiteSettingsForm {
   footerSocialInstagram: string;
   footerSocialTwitter: string;
   footerCopyrightText: string;
+  // Supplier/Business Details for GST and Invoicing
+  businessName: string;
+  businessAddress: string;
+  businessCity: string;
+  businessState: string;
+  businessPincode: string;
+  businessPhone: string;
+  businessEmail: string;
+  gstNumber: string;
+  invoiceTerms: string;
+  invoiceFooter: string;
 }
 
 const AdminSettings: React.FC = () => {
@@ -218,6 +229,16 @@ const AdminSettings: React.FC = () => {
         footerSocialInstagram: formData.footerSocialInstagram || '#',
         footerSocialTwitter: formData.footerSocialTwitter || '#',
         footerCopyrightText: formData.footerCopyrightText || '© 2025 Velora Tradings. All rights reserved.',
+        businessName: formData.businessName || 'Velora Tradings',
+        businessAddress: formData.businessAddress || '',
+        businessCity: formData.businessCity || '',
+        businessState: formData.businessState || '',
+        businessPincode: formData.businessPincode || '',
+        businessPhone: formData.businessPhone || '',
+        businessEmail: formData.businessEmail || '',
+        gstNumber: formData.gstNumber || '',
+        invoiceTerms: formData.invoiceTerms || 'All sales are final. Returns accepted within 7 days.',
+        invoiceFooter: formData.invoiceFooter || 'This is a computer generated invoice.',
       });
     }
   }, [settingsLoading, settingsError, settings, reset]);
@@ -272,6 +293,7 @@ const AdminSettings: React.FC = () => {
 
   const tabs = [
     { id: 'general', label: 'General', icon: Settings, color: 'text-admin-primary' },
+    { id: 'business', label: 'Business/GST', icon: Building2, color: 'text-indigo-500' },
     { id: 'email', label: 'Email & SMTP', icon: Mail, color: 'text-red-500' },
     { id: 'payment', label: 'Payment & Currency', icon: DollarSign, color: 'text-green-500' },
     { id: 'seo', label: 'SEO & Analytics', icon: Globe, color: 'text-blue-500' },
@@ -384,6 +406,144 @@ const AdminSettings: React.FC = () => {
                       />
                     </div>
                   </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'business' && (
+              <motion.div
+                key="business"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                {/* Business Details Section */}
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
+                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'business')?.color}`}>
+                    <Building2 className="h-6 w-6" />
+                    <span>Business/Supplier Details</span>
+                  </h2>
+                  <p className="text-sm text-admin-text-light mb-6">
+                    These details will appear on invoices and are used for GST calculations.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Business Name *</label>
+                      <input
+                        {...register('businessName')}
+                        type="text"
+                        placeholder="Your Business Name"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">This will appear on invoices</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Business Address *</label>
+                      <input
+                        {...register('businessAddress')}
+                        type="text"
+                        placeholder="Street Address, Building Name"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">City *</label>
+                      <input
+                        {...register('businessCity')}
+                        type="text"
+                        placeholder="City"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">State *</label>
+                      <input
+                        {...register('businessState')}
+                        type="text"
+                        placeholder="State"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Used to determine intrastate/interstate GST</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">PIN Code *</label>
+                      <input
+                        {...register('businessPincode')}
+                        type="text"
+                        placeholder="6-digit PIN"
+                        maxLength={6}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Phone Number *</label>
+                      <input
+                        {...register('businessPhone')}
+                        type="text"
+                        placeholder="+91 12345 67890"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Business Email *</label>
+                      <input
+                        {...register('businessEmail')}
+                        type="email"
+                        placeholder="business@example.com"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">GST Number (GSTIN) *</label>
+                      <input
+                        {...register('gstNumber')}
+                        type="text"
+                        placeholder="e.g., 27AAPFU0939F1ZV"
+                        maxLength={15}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent uppercase"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">15-character GST Identification Number</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Invoice Settings Section */}
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
+                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'business')?.color}`}>
+                    <FileText className="h-6 w-6" />
+                    <span>Invoice Settings</span>
+                  </h2>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Invoice Terms & Conditions</label>
+                      <textarea
+                        {...register('invoiceTerms')}
+                        rows={4}
+                        placeholder="Enter terms and conditions that will appear on invoices..."
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">e.g., return policy, warranty information, payment terms</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Invoice Footer Text</label>
+                      <input
+                        {...register('invoiceFooter')}
+                        type="text"
+                        placeholder="This is a computer generated invoice."
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Text that appears at the bottom of invoices</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <h3 className="font-semibold text-admin-text mb-2">Important Note</h3>
+                  <p className="text-admin-text text-sm">
+                    All fields marked with * are required for proper GST invoicing. Your business state is used to determine whether GST should be split into CGST+SGST (intrastate) or IGST (interstate).
+                  </p>
                 </div>
               </motion.div>
             )}
