@@ -40,6 +40,8 @@ const Checkout: React.FC = () => {
   const [expandedAddressId, setExpandedAddressId] = useState<string | null>(null);
   const { settings } = useSiteSettings();
 
+  const [fieldErrors, setFieldErrors] = useState<{[key: string]: boolean}>({});
+
   const isRazorpayConfigured = import.meta.env.VITE_RAZORPAY_KEY_ID &&
     import.meta.env.VITE_RAZORPAY_KEY_ID.startsWith('rzp_');
 
@@ -96,7 +98,7 @@ const Checkout: React.FC = () => {
     }
 
     if (!cartLoading && cartItems.length === 0) {
-      console.log('Cart is empty, redirecting to cart page');
+      console.log('Cart is empty after loading, redirecting to cart page');
       navigate('/cart', { replace: true });
     }
   }, [buyNowProductId, cartLoading, cartItems.length, navigate]);
@@ -266,35 +268,87 @@ const Checkout: React.FC = () => {
   };
 
   const validateGuestCheckout = () => {
-    if (!guestFullName || !guestEmail || !guestPhone) {
-      showToast('Please fill in your contact details', 'error');
-      return false;
+    const errors: {[key: string]: boolean} = {};
+    let isValid = true;
+
+    if (!guestFullName.trim()) {
+      errors.guestFullName = true;
+      isValid = false;
     }
 
-    if (!guestAddress?.address_line_1 || !guestAddress?.city || !guestAddress?.state || !guestAddress?.postal_code) {
-      showToast('Please fill in complete delivery address', 'error');
-      return false;
+    if (!guestEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
+      errors.guestEmail = true;
+      isValid = false;
     }
 
-    if (guestAddress.is_gst_registered && !guestAddress.gstin) {
-      showToast('Please provide GSTIN for GST registered dealer', 'error');
-      return false;
+    if (!guestPhone.trim() || !/^[0-9]{10}$/.test(guestPhone)) {
+      errors.guestPhone = true;
+      isValid = false;
+    }
+
+    if (!guestAddress?.address_line_1?.trim()) {
+      errors.guestAddressLine1 = true;
+      isValid = false;
+    }
+
+    if (!guestAddress?.city?.trim()) {
+      errors.guestCity = true;
+      isValid = false;
+    }
+
+    if (!guestAddress?.state) {
+      errors.guestState = true;
+      isValid = false;
+    }
+
+    if (!guestAddress?.postal_code?.trim() || !/^[0-9]{6}$/.test(guestAddress.postal_code)) {
+      errors.guestPostalCode = true;
+      isValid = false;
+    }
+
+    if (guestAddress?.is_gst_registered && !guestAddress?.gstin?.trim()) {
+      errors.guestGstin = true;
+      isValid = false;
     }
 
     if (!billingSameAsDelivery) {
-      if (!guestBillingAddress?.address_line_1 || !guestBillingAddress?.city ||
-          !guestBillingAddress?.state || !guestBillingAddress?.postal_code) {
-        showToast('Please fill in complete billing address', 'error');
-        return false;
+      if (!guestBillingAddress?.address_line_1?.trim()) {
+        errors.guestBillingAddressLine1 = true;
+        isValid = false;
       }
 
-      if (guestBillingAddress.is_gst_registered && !guestBillingAddress.gstin) {
-        showToast('Please provide GSTIN for billing address', 'error');
-        return false;
+      if (!guestBillingAddress?.city?.trim()) {
+        errors.guestBillingCity = true;
+        isValid = false;
+      }
+
+      if (!guestBillingAddress?.state) {
+        errors.guestBillingState = true;
+        isValid = false;
+      }
+
+      if (!guestBillingAddress?.postal_code?.trim() || !/^[0-9]{6}$/.test(guestBillingAddress.postal_code)) {
+        errors.guestBillingPostalCode = true;
+        isValid = false;
+      }
+
+      if (guestBillingAddress?.is_gst_registered && !guestBillingAddress?.gstin?.trim()) {
+        errors.guestBillingGstin = true;
+        isValid = false;
       }
     }
 
-    return true;
+    setFieldErrors(errors);
+
+    if (!isValid) {
+      showToast('Please fill in all required fields correctly', 'error');
+      const firstErrorField = document.querySelector('.border-red-500');
+      if (firstErrorField) {
+        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    return isValid;
   };
 
   const createOrder = async () => {
@@ -522,6 +576,28 @@ const Checkout: React.FC = () => {
     }
   };
 
+  const canPlaceOrder = () => {
+    if (user) {
+      return !!selectedAddressId;
+    } else {
+      return guestFullName.trim() !== '' &&
+             guestEmail.trim() !== '' &&
+             guestPhone.trim() !== '' &&
+             guestAddress?.address_line_1?.trim() !== '' &&
+             guestAddress?.city?.trim() !== '' &&
+             guestAddress?.state !== '' &&
+             guestAddress?.postal_code?.trim() !== '' &&
+             (!guestAddress?.is_gst_registered || guestAddress?.gstin?.trim() !== '') &&
+             (billingSameAsDelivery || (
+               guestBillingAddress?.address_line_1?.trim() !== '' &&
+               guestBillingAddress?.city?.trim() !== '' &&
+               guestBillingAddress?.state !== '' &&
+               guestBillingAddress?.postal_code?.trim() !== '' &&
+               (!guestBillingAddress?.is_gst_registered || guestBillingAddress?.gstin?.trim() !== '')
+             ));
+    }
+  };
+
   if (!buyNowProductId && cartLoading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
@@ -535,7 +611,7 @@ const Checkout: React.FC = () => {
     );
   }
 
-  if (!buyNowProductId && cartItems.length === 0) {
+  if (!buyNowProductId && !cartLoading && cartItems.length === 0) {
     return null;
   }
 
@@ -684,22 +760,38 @@ const Checkout: React.FC = () => {
                       <input
                         type="text"
                         value={guestFullName}
-                        onChange={(e) => setGuestFullName(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                        onChange={(e) => {
+                          setGuestFullName(e.target.value);
+                          setFieldErrors(prev => ({...prev, guestFullName: false}));
+                        }}
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent ${
+                          fieldErrors.guestFullName ? 'border-red-500' : 'border-gray-300'
+                        }`}
                         placeholder="Enter your full name"
                         required
                       />
+                      {fieldErrors.guestFullName && (
+                        <p className="text-red-500 text-xs mt-1">Full name is required</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
                       <input
                         type="email"
                         value={guestEmail}
-                        onChange={(e) => setGuestEmail(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                        onChange={(e) => {
+                          setGuestEmail(e.target.value);
+                          setFieldErrors(prev => ({...prev, guestEmail: false}));
+                        }}
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent ${
+                          fieldErrors.guestEmail ? 'border-red-500' : 'border-gray-300'
+                        }`}
                         placeholder="Enter your email"
                         required
                       />
+                      {fieldErrors.guestEmail && (
+                        <p className="text-red-500 text-xs mt-1">Valid email is required</p>
+                      )}
                     </div>
                   </div>
 
@@ -708,23 +800,39 @@ const Checkout: React.FC = () => {
                     <input
                       type="tel"
                       value={guestPhone}
-                      onChange={(e) => setGuestPhone(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
-                      placeholder="Enter your phone number"
+                      onChange={(e) => {
+                        setGuestPhone(e.target.value);
+                        setFieldErrors(prev => ({...prev, guestPhone: false}));
+                      }}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent ${
+                        fieldErrors.guestPhone ? 'border-red-500' : 'border-gray-300'
+                      }`}
+                      placeholder="Enter your 10-digit phone number"
                       required
                     />
+                    {fieldErrors.guestPhone && (
+                      <p className="text-red-500 text-xs mt-1">Valid 10-digit phone number is required</p>
+                    )}
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Full Address *</label>
                     <textarea
                       value={guestAddress?.address_line_1 || ''}
-                      onChange={(e) => setGuestAddress({...guestAddress, address_line_1: e.target.value})}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                      onChange={(e) => {
+                        setGuestAddress({...guestAddress, address_line_1: e.target.value});
+                        setFieldErrors(prev => ({...prev, guestAddressLine1: false}));
+                      }}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent ${
+                        fieldErrors.guestAddressLine1 ? 'border-red-500' : 'border-gray-300'
+                      }`}
                       placeholder="House No., Building, Street, Area"
                       rows={2}
                       required
                     />
+                    {fieldErrors.guestAddressLine1 && (
+                      <p className="text-red-500 text-xs mt-1">Address is required</p>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -733,36 +841,60 @@ const Checkout: React.FC = () => {
                       <input
                         type="text"
                         value={guestAddress?.city || ''}
-                        onChange={(e) => setGuestAddress({...guestAddress, city: e.target.value})}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                        onChange={(e) => {
+                          setGuestAddress({...guestAddress, city: e.target.value});
+                          setFieldErrors(prev => ({...prev, guestCity: false}));
+                        }}
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent ${
+                          fieldErrors.guestCity ? 'border-red-500' : 'border-gray-300'
+                        }`}
                         placeholder="City"
                         required
                       />
+                      {fieldErrors.guestCity && (
+                        <p className="text-red-500 text-xs mt-1">City is required</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
                       <select
                         value={guestAddress?.state || 'Kerala'}
-                        onChange={(e) => setGuestAddress({...guestAddress, state: e.target.value})}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                        onChange={(e) => {
+                          setGuestAddress({...guestAddress, state: e.target.value});
+                          setFieldErrors(prev => ({...prev, guestState: false}));
+                        }}
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent ${
+                          fieldErrors.guestState ? 'border-red-500' : 'border-gray-300'
+                        }`}
                         required
                       >
                         {INDIAN_STATES.map(state => (
                           <option key={state} value={state}>{state}</option>
                         ))}
                       </select>
+                      {fieldErrors.guestState && (
+                        <p className="text-red-500 text-xs mt-1">State is required</p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">PIN Code *</label>
                       <input
                         type="text"
                         value={guestAddress?.postal_code || ''}
-                        onChange={(e) => setGuestAddress({...guestAddress, postal_code: e.target.value})}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
-                        placeholder="PIN Code"
+                        onChange={(e) => {
+                          setGuestAddress({...guestAddress, postal_code: e.target.value});
+                          setFieldErrors(prev => ({...prev, guestPostalCode: false}));
+                        }}
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent ${
+                          fieldErrors.guestPostalCode ? 'border-red-500' : 'border-gray-300'
+                        }`}
+                        placeholder="6-digit PIN"
                         maxLength={6}
                         required
                       />
+                      {fieldErrors.guestPostalCode && (
+                        <p className="text-red-500 text-xs mt-1">Valid 6-digit PIN code is required</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -845,12 +977,20 @@ const Checkout: React.FC = () => {
                         <label className="block text-sm font-medium text-gray-700 mb-2">Full Address *</label>
                         <textarea
                           value={guestBillingAddress?.address_line_1 || ''}
-                          onChange={(e) => setGuestBillingAddress({...guestBillingAddress, address_line_1: e.target.value})}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                          onChange={(e) => {
+                            setGuestBillingAddress({...guestBillingAddress, address_line_1: e.target.value});
+                            setFieldErrors(prev => ({...prev, guestBillingAddressLine1: false}));
+                          }}
+                          className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent ${
+                            fieldErrors.guestBillingAddressLine1 ? 'border-red-500' : 'border-gray-300'
+                          }`}
                           placeholder="Billing Address"
                           rows={2}
                           required={!billingSameAsDelivery}
                         />
+                        {fieldErrors.guestBillingAddressLine1 && (
+                          <p className="text-red-500 text-xs mt-1">Billing address is required</p>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -859,36 +999,60 @@ const Checkout: React.FC = () => {
                           <input
                             type="text"
                             value={guestBillingAddress?.city || ''}
-                            onChange={(e) => setGuestBillingAddress({...guestBillingAddress, city: e.target.value})}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                            onChange={(e) => {
+                              setGuestBillingAddress({...guestBillingAddress, city: e.target.value});
+                              setFieldErrors(prev => ({...prev, guestBillingCity: false}));
+                            }}
+                            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent ${
+                              fieldErrors.guestBillingCity ? 'border-red-500' : 'border-gray-300'
+                            }`}
                             placeholder="City"
                             required={!billingSameAsDelivery}
                           />
+                          {fieldErrors.guestBillingCity && (
+                            <p className="text-red-500 text-xs mt-1">City is required</p>
+                          )}
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
                           <select
                             value={guestBillingAddress?.state || 'Kerala'}
-                            onChange={(e) => setGuestBillingAddress({...guestBillingAddress, state: e.target.value})}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                            onChange={(e) => {
+                              setGuestBillingAddress({...guestBillingAddress, state: e.target.value});
+                              setFieldErrors(prev => ({...prev, guestBillingState: false}));
+                            }}
+                            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent ${
+                              fieldErrors.guestBillingState ? 'border-red-500' : 'border-gray-300'
+                            }`}
                             required={!billingSameAsDelivery}
                           >
                             {INDIAN_STATES.map(state => (
                               <option key={state} value={state}>{state}</option>
                             ))}
                           </select>
+                          {fieldErrors.guestBillingState && (
+                            <p className="text-red-500 text-xs mt-1">State is required</p>
+                          )}
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">PIN Code *</label>
                           <input
                             type="text"
                             value={guestBillingAddress?.postal_code || ''}
-                            onChange={(e) => setGuestBillingAddress({...guestBillingAddress, postal_code: e.target.value})}
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
-                            placeholder="PIN Code"
+                            onChange={(e) => {
+                              setGuestBillingAddress({...guestBillingAddress, postal_code: e.target.value});
+                              setFieldErrors(prev => ({...prev, guestBillingPostalCode: false}));
+                            }}
+                            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent ${
+                              fieldErrors.guestBillingPostalCode ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                            placeholder="6-digit PIN"
                             maxLength={6}
                             required={!billingSameAsDelivery}
                           />
+                          {fieldErrors.guestBillingPostalCode && (
+                            <p className="text-red-500 text-xs mt-1">Valid 6-digit PIN code is required</p>
+                          )}
                         </div>
                       </div>
 
@@ -913,12 +1077,20 @@ const Checkout: React.FC = () => {
                             <input
                               type="text"
                               value={guestBillingAddress?.gstin || ''}
-                              onChange={(e) => setGuestBillingAddress({...guestBillingAddress, gstin: e.target.value.toUpperCase()})}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent uppercase"
+                              onChange={(e) => {
+                                setGuestBillingAddress({...guestBillingAddress, gstin: e.target.value.toUpperCase()});
+                                setFieldErrors(prev => ({...prev, guestBillingGstin: false}));
+                              }}
+                              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent uppercase ${
+                                fieldErrors.guestBillingGstin ? 'border-red-500' : 'border-gray-300'
+                              }`}
                               placeholder="e.g., 27AAPFU0939F1ZV"
                               maxLength={15}
                               required={guestBillingAddress?.is_gst_registered}
                             />
+                            {fieldErrors.guestBillingGstin && (
+                              <p className="text-red-500 text-xs mt-1">GSTIN is required for GST registered dealer</p>
+                            )}
                             <p className="text-xs text-gray-500 mt-1">15-character GST Identification Number</p>
                           </div>
                         )}
@@ -1061,9 +1233,9 @@ const Checkout: React.FC = () => {
 
               <motion.button
                 onClick={handlePlaceOrder}
-                disabled={isProcessing || (user && !selectedAddressId)}
-                whileHover={{ scale: !isProcessing ? 1.02 : 1 }}
-                whileTap={{ scale: !isProcessing ? 0.98 : 1 }}
+                disabled={isProcessing || !canPlaceOrder()}
+                whileHover={{ scale: !isProcessing && canPlaceOrder() ? 1.02 : 1 }}
+                whileTap={{ scale: !isProcessing && canPlaceOrder() ? 0.98 : 1 }}
                 className="w-full bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white py-4 px-6 rounded-lg font-semibold hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing
@@ -1073,9 +1245,9 @@ const Checkout: React.FC = () => {
                   : `Place Order - ₹${Math.round(total).toLocaleString()}`}
               </motion.button>
 
-              {user && !selectedAddressId && addresses.length > 0 && (
+              {!canPlaceOrder() && !isProcessing && (
                 <p className="text-red-500 text-sm text-center mt-3">
-                  Please select a delivery address
+                  {user ? 'Please select a delivery address' : 'Please fill in all required fields'}
                 </p>
               )}
             </motion.div>
