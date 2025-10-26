@@ -126,46 +126,36 @@ const FeaturedProducts: React.FC = () => {
               }`}
             >
               <div className={`relative ${index % 2 === 1 ? 'lg:col-start-2' : ''}`}>
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ duration: 0.3 }}
-                  className="relative overflow-hidden rounded-2xl shadow-2xl group"
-                >
-                  <img
+                <div className="relative overflow-hidden rounded-2xl shadow-2xl group">
+                  <motion.img
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ duration: 0.5 }}
                     src={product.image_url}
                     alt={product.name}
-                    className="w-full h-96 object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full h-96 object-cover"
                   />
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    whileHover={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                    className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent pointer-events-none z-10"
-                  ></motion.div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
 
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
+                  <button
                     onClick={(e) => handleWishlistToggle(e, product.id, product.name)}
-                    className="absolute top-4 right-4 p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-50 cursor-pointer"
+                    className="absolute top-4 right-4 p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-20"
                     aria-label={isInWishlist(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
-                    style={{ pointerEvents: 'auto' }}
                   >
                     <Heart
-                      className={`h-5 w-5 ${
+                      className={`h-5 w-5 transition-colors duration-200 ${
                         isInWishlist(product.id)
                           ? 'text-red-500 fill-red-500'
                           : 'text-gray-600'
                       }`}
                     />
-                  </motion.button>
+                  </button>
 
                   {product.original_price && (
-                    <div className="absolute top-6 left-6 bg-[#815536] text-white px-3 py-1 rounded-lg text-sm font-semibold pointer-events-none">
+                    <div className="absolute top-6 left-6 bg-[#815536] text-white px-3 py-1 rounded-lg text-sm font-semibold z-10">
                       {Math.round(((product.original_price - product.price) / product.original_price) * 100)}% OFF
                     </div>
                   )}
-                </motion.div>
+                </div>
 
                 <motion.div
                   animate={{

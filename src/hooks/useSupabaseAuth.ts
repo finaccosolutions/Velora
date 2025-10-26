@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, supabaseUrl, supabaseAnonKey } from '../lib/supabase';
-import { useDocumentVisibility } from './useDocumentVisibility';
 
 interface UserProfile {
   id: string;
@@ -17,11 +16,7 @@ export const useSupabaseAuth = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false); // ADD new state for isAdmin
-  const isVisible = useDocumentVisibility();
-
-  const lastRefreshAttempt = useRef(0);
-  const REFRESH_COOLDOWN_MS = 60 * 1000; // 1 minute cooldown
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     console.log('useSupabaseAuth: User state changed:', user);
@@ -208,30 +203,6 @@ export const useSupabaseAuth = () => {
     };
   }, []);
 
-  useEffect(() => {
-    console.log('Visibility useEffect: isVisible:', isVisible, 'session:', session);
-    const now = Date.now();
-    if (isVisible && session && (now - lastRefreshAttempt.current > REFRESH_COOLDOWN_MS)) {
-      console.log('Visibility useEffect: Tab became visible and session exists, attempting to refresh session...');
-      lastRefreshAttempt.current = now;
-      supabase.auth.refreshSession().then(async ({ data, error }) => {
-        if (error) {
-          console.error('Visibility useEffect: Error refreshing session:', error);
-          await handleAuth(null, 'REFRESH_SESSION_ERROR');
-        } else if (data.session) {
-          console.log('Visibility useEffect: Session refreshed successfully:', data.session);
-          await handleAuth(data.session, 'REFRESH_SESSION_SUCCESS');
-        } else {
-          console.log('Visibility useEffect: Session refresh returned no session, user might be logged out.');
-          await handleAuth(null, 'REFRESH_SESSION_NO_SESSION');
-        }
-      }).catch(err => {
-        console.error('Visibility useEffect: Caught error during session refresh:', err);
-      });
-    } else if (isVisible && session && (now - lastRefreshAttempt.current <= REFRESH_COOLDOWN_MS)) {
-      console.log('Visibility useEffect: Skipping session refresh due to cooldown.');
-    }
-  }, [isVisible, session]);
 
   const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
     try {
@@ -339,7 +310,6 @@ export const useSupabaseAuth = () => {
     signIn,
     signOut,
     updateProfile,
-    isVisible,
-    isAdmin, // RETURN isAdmin
+    isAdmin,
   };
 };

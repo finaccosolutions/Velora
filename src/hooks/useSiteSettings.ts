@@ -3,11 +3,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
-// Define a generic type for settings value, as it's jsonb
 interface SiteSetting {
   id: string;
   key: string;
-  value: any; // Can be any JSON-serializable object
+  value: any;
   created_at: string;
   updated_at: string;
 }
@@ -24,16 +23,18 @@ export const useSiteSettings = () => {
     try {
       const { data, error: fetchError } = await supabase
         .from('site_settings')
-        .select('*')
-        .limit(1)
-        .maybeSingle();
+        .select('*');
 
       if (fetchError) {
         throw fetchError;
       }
 
-      if (data) {
-        setSettings(data);
+      if (data && Array.isArray(data)) {
+        const settingsMap: Record<string, any> = {};
+        data.forEach((setting: SiteSetting) => {
+          settingsMap[setting.key] = setting.value;
+        });
+        setSettings(settingsMap);
       } else {
         setSettings({});
       }
@@ -55,26 +56,24 @@ export const useSiteSettings = () => {
   const updateSetting = async (key: string, value: any) => {
     if (!user || !isAdmin) return { data: null, error: new Error('Unauthorized') };
     try {
-      const { data: currentData } = await supabase
+      const { data: existingSetting } = await supabase
         .from('site_settings')
         .select('*')
-        .limit(1)
+        .eq('key', key)
         .maybeSingle();
 
-      const updatedSettings = { ...currentData, [key]: value };
-
       let result;
-      if (currentData && currentData.id) {
+      if (existingSetting) {
         result = await supabase
           .from('site_settings')
-          .update(updatedSettings)
-          .eq('id', currentData.id)
+          .update({ value, updated_at: new Date().toISOString() })
+          .eq('key', key)
           .select()
           .single();
       } else {
         result = await supabase
           .from('site_settings')
-          .insert(updatedSettings)
+          .insert({ key, value })
           .select()
           .single();
       }
@@ -89,11 +88,27 @@ export const useSiteSettings = () => {
     }
   };
 
+  const updateMultipleSettings = async (updates: Record<string, any>) => {
+    if (!user || !isAdmin) return { data: null, error: new Error('Unauthorized') };
+
+    const results = await Promise.all(
+      Object.entries(updates).map(([key, value]) => updateSetting(key, value))
+    );
+
+    const errors = results.filter(r => r.error);
+    if (errors.length > 0) {
+      return { data: null, error: errors[0].error };
+    }
+
+    return { data: results.map(r => r.data), error: null };
+  };
+
   return {
     settings,
     loading,
     error,
     fetchSettings,
     updateSetting,
+    updateMultipleSettings,
   };
 };
