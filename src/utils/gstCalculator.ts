@@ -25,25 +25,27 @@ export function calculateGSTBreakdown(
   let subtotal = 0;
   let totalGST = 0;
 
-  items.forEach(item => {
-    const gstPercentage = item.product.gst_percentage || 18;
-    const priceInclusiveOfTax = item.product.price_inclusive_of_tax || false;
+items.forEach(item => {
+  const gstPercentage = item.product.gst_percentage || 18;
+  const priceInclusiveOfTax = item.product.price_inclusive_of_tax !== false; // Default to true
 
-    if (priceInclusiveOfTax) {
-      const priceWithTax = item.product.price * item.quantity;
-      const taxableValue = (priceWithTax * 100) / (100 + gstPercentage);
-      const itemGST = priceWithTax - taxableValue;
+  if (priceInclusiveOfTax) {
+    // Price already includes tax - extract the base price
+    const priceWithTax = item.product.price * item.quantity;
+    const taxableValue = (priceWithTax * 100) / (100 + gstPercentage);
+    const itemGST = priceWithTax - taxableValue;
 
-      subtotal += taxableValue;
-      totalGST += itemGST;
-    } else {
-      const itemSubtotal = item.product.price * item.quantity;
-      const itemGST = (itemSubtotal * gstPercentage) / 100;
+    subtotal += taxableValue;
+    totalGST += itemGST;
+  } else {
+    // Price excludes tax - add tax on top
+    const itemSubtotal = item.product.price * item.quantity;
+    const itemGST = (itemSubtotal * gstPercentage) / 100;
 
-      subtotal += itemSubtotal;
-      totalGST += itemGST;
-    }
-  });
+    subtotal += itemSubtotal;
+    totalGST += itemGST;
+  }
+});
 
   const isSameState = customerState.toLowerCase() === businessState.toLowerCase();
 

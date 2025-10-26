@@ -193,14 +193,20 @@ export const useSupabaseAuth = () => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('Auth State Change Listener: Event:', event, 'Session:', session);
-
+    
+        // Only handle specific events, ignore TOKEN_REFRESHED
         if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
           (async () => {
             await handleAuth(session, event);
           })();
+        } else if (event === 'TOKEN_REFRESHED') {
+          // Just update session silently without triggering full re-render
+          console.log('Auth State Change: Token refreshed silently');
+          setSession(session);
         }
       }
     );
+
 
     return () => {
       console.log('Auth useEffect: Cleaning up auth subscription.');

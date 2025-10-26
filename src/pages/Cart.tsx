@@ -355,6 +355,7 @@ const Cart: React.FC = () => {
                         <span className="font-medium">₹{Math.round(gstBreakdown.igst || 0).toLocaleString()}</span>
                       </div>
                     )}
+
                     <div className="border-t pt-2 mt-2">
                       <div className="flex justify-between">
                         <span className="font-semibold text-gray-700">Total Tax</span>

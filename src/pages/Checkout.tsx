@@ -11,6 +11,8 @@ import { useSiteSettings } from '../hooks/useSiteSettings';
 import AddressForm from '../components/AddressForm';
 import { supabase } from '../lib/supabase';
 import { calculateGSTBreakdown, getGSTLabel } from '../utils/gstCalculator';
+import { INDIAN_STATES } from '../data/indianStates';
+
 
 declare global {
   interface Window {
@@ -55,6 +57,7 @@ const Checkout: React.FC = () => {
   const [guestEmail, setGuestEmail] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
   const [guestFullName, setGuestFullName] = useState('');
+  const [guestBillingAddress, setGuestBillingAddress] = useState<any>(null);
 
   const selectedAddress = user ? addresses.find(a => a.id === selectedAddressId) : guestAddress;
   const customerState = selectedAddress?.state || 'Maharashtra';
@@ -260,12 +263,13 @@ const Checkout: React.FC = () => {
     }
   };
 
-  const createOrder = async () => {
-    try {
-      if (!user && (!guestAddress || !guestEmail || !guestFullName || !guestPhone)) {
-        showToast('Please fill in all delivery details', 'error');
-        return;
-      }
+      const createOrder = async () => {
+        try {
+    if (!user && (!guestAddress?.address_line_1 || !guestAddress?.city || !guestAddress?.state || !guestAddress?.postal_code || !guestEmail || !guestFullName || !guestPhone)) {
+      showToast('Please fill in all delivery details', 'error');
+      return;
+    }
+
 
       if (user && !selectedAddress) {
         showToast('Please select a delivery address', 'error');
@@ -535,62 +539,171 @@ const Checkout: React.FC = () => {
                 )}
               </div>
 
-              {!user ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                    <input
-                      type="text"
-                      value={guestFullName}
-                      onChange={(e) => setGuestFullName(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
-                      placeholder="Enter your full name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                    <input
-                      type="email"
-                      value={guestEmail}
-                      onChange={(e) => setGuestEmail(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
-                      placeholder="Enter your email"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-                    <input
-                      type="tel"
-                      value={guestPhone}
-                      onChange={(e) => setGuestPhone(e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
-                      placeholder="Enter your phone number"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Delivery Address *</label>
-                    <button
-                      onClick={() => setShowAddressForm(true)}
-                      className="w-full px-4 py-3 border-2 border-dashed border-[#815536] rounded-lg text-[#815536] font-semibold hover:bg-[#815536]/5 transition-colors"
-                    >
-                      {guestAddress ? 'Edit Address' : 'Add Delivery Address'}
-                    </button>
-                    {guestAddress && (
-                      <div className="mt-3 p-4 bg-gray-50 rounded-lg">
-                        <p className="font-medium text-gray-900">{guestAddress.full_name}</p>
-                        <p className="text-gray-600 text-sm mt-1">
-                          {guestAddress.address_line_1}
-                          {guestAddress.address_line_2 && `, ${guestAddress.address_line_2}`}
-                        </p>
-                        <p className="text-gray-600 text-sm">
-                          {guestAddress.city}, {guestAddress.state} - {guestAddress.postal_code}
-                        </p>
-                        <p className="text-gray-600 text-sm">Phone: {guestAddress.phone}</p>
+                {!user ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
+                        <input
+                          type="text"
+                          value={guestFullName}
+                          onChange={(e) => setGuestFullName(e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                          placeholder="Enter your full name"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                        <input
+                          type="email"
+                          value={guestEmail}
+                          onChange={(e) => setGuestEmail(e.target.value)}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                          placeholder="Enter your email"
+                          required
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                      <input
+                        type="tel"
+                        value={guestPhone}
+                        onChange={(e) => setGuestPhone(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                        placeholder="Enter your phone number"
+                        required
+                      />
+                    </div>
+                
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Full Address *</label>
+                      <textarea
+                        value={guestAddress?.address_line_1 || ''}
+                        onChange={(e) => setGuestAddress({...guestAddress, address_line_1: e.target.value})}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                        placeholder="House No., Building, Street, Area"
+                        rows={2}
+                        required
+                      />
+                    </div>
+                
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
+                        <input
+                          type="text"
+                          value={guestAddress?.city || ''}
+                          onChange={(e) => setGuestAddress({...guestAddress, city: e.target.value})}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                          placeholder="City"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
+                        <select
+                          value={guestAddress?.state || ''}
+                          onChange={(e) => setGuestAddress({...guestAddress, state: e.target.value})}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                          required
+                        >
+                          {INDIAN_STATES.map(state => (
+                            <option key={state} value={state}>{state}</option>
+                          ))}
+
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">PIN Code *</label>
+                        <input
+                          type="text"
+                          value={guestAddress?.postal_code || ''}
+                          onChange={(e) => setGuestAddress({...guestAddress, postal_code: e.target.value})}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                          placeholder="PIN Code"
+                          maxLength={6}
+                          required
+                        />
+                      </div>
+                    </div>
+                
+                    {/* Billing Address Checkbox */}
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <label className="flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all border-[#815536] bg-[#815536]/5">
+                        <input
+                          type="checkbox"
+                          checked={billingSameAsDelivery}
+                          onChange={(e) => setBillingSameAsDelivery(e.target.checked)}
+                          className="mr-3 text-[#815536] w-4 h-4"
+                        />
+                        <span className="font-medium text-gray-900">Billing address same as delivery address</span>
+                      </label>
+                    </div>
+                
+                    {/* Separate Billing Address Fields (show only if unchecked) */}
+                    {!billingSameAsDelivery && (
+                      <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                        <h3 className="font-semibold text-gray-900 mb-3">Billing Address</h3>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">Full Address *</label>
+                          <textarea
+                            value={guestBillingAddress?.address_line_1 || ''}
+                            onChange={(e) => setGuestBillingAddress({...guestBillingAddress, address_line_1: e.target.value})}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                            placeholder="Billing Address"
+                            rows={2}
+                            required={!billingSameAsDelivery}
+                          />
+                        </div>
+                
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
+                            <input
+                              type="text"
+                              value={guestBillingAddress?.city || ''}
+                              onChange={(e) => setGuestBillingAddress({...guestBillingAddress, city: e.target.value})}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                              placeholder="City"
+                              required={!billingSameAsDelivery}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
+                            <select
+                              value={guestBillingAddress?.state || ''}
+                              onChange={(e) => setGuestBillingAddress({...guestBillingAddress, state: e.target.value})}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                              required={!billingSameAsDelivery}
+                            >
+                              <option value="">Select State</option>
+                                {INDIAN_STATES.map(state => (
+                                  <option key={state} value={state}>{state}</option>
+                                ))}
+
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">PIN Code *</label>
+                            <input
+                              type="text"
+                              value={guestBillingAddress?.postal_code || ''}
+                              onChange={(e) => setGuestBillingAddress({...guestBillingAddress, postal_code: e.target.value})}
+                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                              placeholder="PIN Code"
+                              maxLength={6}
+                              required={!billingSameAsDelivery}
+                            />
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
-                </div>
-              ) : addressLoading ? (
+                ) : addressLoading ? (
+
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#815536] mx-auto"></div>
                 </div>
