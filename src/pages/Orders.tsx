@@ -149,11 +149,21 @@ const Orders: React.FC = () => {
   };
 
   const handleCancelOrder = async (reasonType: string, reasonText: string) => {
-    if (!orderToCancel) return;
+    if (!orderToCancel || !user) {
+      console.error('Cannot cancel order: missing order or user');
+      showToast('Unable to cancel order. Please try again.', 'error');
+      return;
+    }
+
+    console.log('Cancelling order:', {
+      orderId: orderToCancel.id,
+      userId: user.id,
+      reasonType,
+      reasonText
+    });
 
     try {
-      // Update order status
-      const { error: orderError } = await supabase
+      const { data: updateData, error: orderError } = await supabase
         .from('orders')
         .update({
           status: 'cancelled',
@@ -161,21 +171,33 @@ const Orders: React.FC = () => {
           cancellation_reason_type: reasonType
         })
         .eq('id', orderToCancel.id)
-        .eq('user_id', user?.id);
+        .eq('user_id', user.id)
+        .select();
+
+      console.log('Order update result:', { updateData, orderError });
 
       if (orderError) {
-        showToast('Failed to cancel order', 'error');
-        throw orderError;
+        console.error('Error updating order:', orderError);
+        showToast(`Failed to cancel order: ${orderError.message}`, 'error');
+        return;
       }
 
-      // Insert cancellation reason into order_cancellation_reasons table
-      const { error: reasonError } = await supabase
+      if (!updateData || updateData.length === 0) {
+        console.error('No order was updated - order not found or permission denied');
+        showToast('Order not found or you do not have permission to cancel it', 'error');
+        return;
+      }
+
+      const { data: reasonData, error: reasonError } = await supabase
         .from('order_cancellation_reasons')
         .insert({
           order_id: orderToCancel.id,
           reason_type: reasonType.toLowerCase().replace(/ /g, '_'),
           custom_reason: reasonType === 'Other' ? reasonText : null
-        });
+        })
+        .select();
+
+      console.log('Cancellation reason insert result:', { reasonData, reasonError });
 
       if (reasonError) {
         console.error('Failed to insert cancellation reason:', reasonError);
@@ -187,7 +209,7 @@ const Orders: React.FC = () => {
       await fetchOrders();
     } catch (error) {
       console.error('Error cancelling order:', error);
-      throw error;
+      showToast('An unexpected error occurred while cancelling the order', 'error');
     }
   };
 
