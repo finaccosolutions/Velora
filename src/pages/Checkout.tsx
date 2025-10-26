@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreditCard, Truck, MapPin, Plus, CreditCard as Edit2, Trash2, Check, Info, X, Minus } from 'lucide-react';
+import { CreditCard, Truck, MapPin, Plus, CreditCard as Edit2, Trash2, Check, Info, X } from 'lucide-react';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
 import { useAuth } from '../context/AuthContext';
 import { useSupabaseProducts } from '../hooks/useSupabaseProducts';
@@ -19,7 +19,7 @@ declare global {
 }
 
 const Checkout: React.FC = () => {
-  const { cartItems, getCartTotal, clearCart, updateQuantity, removeFromCart, loading: cartLoading } = useSupabaseCart();
+  const { cartItems, getCartTotal, clearCart, loading: cartLoading } = useSupabaseCart();
   const { user, userProfile } = useAuth();
   const { products } = useSupabaseProducts();
   const { addresses, addAddress, updateAddress, deleteAddress, loading: addressLoading } = useAddresses();
@@ -750,40 +750,12 @@ const Checkout: React.FC = () => {
                     />
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-medium text-gray-900 truncate">{item.product.name}</h4>
-                      {!buyNowProduct && (
-                        <div className="flex items-center space-x-2 mt-2">
-                          <button
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            className="p-1 hover:bg-gray-200 rounded transition-colors"
-                            disabled={item.quantity <= 1}
-                          >
-                            <Minus className="h-3 w-3 text-gray-600" />
-                          </button>
-                          <span className="text-sm font-medium text-gray-600 w-6 text-center">{item.quantity}</span>
-                          <button
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            className="p-1 hover:bg-gray-200 rounded transition-colors"
-                          >
-                            <Plus className="h-3 w-3 text-gray-600" />
-                          </button>
-                        </div>
-                      )}
-                      {buyNowProduct && (
-                        <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
-                      )}
+                      <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
                     </div>
-                    <div className="flex items-center space-x-2 flex-shrink-0">
+                    <div className="flex-shrink-0">
                       <p className="text-sm font-medium text-gray-900">
                         ₹{(item.product.price * item.quantity).toLocaleString()}
                       </p>
-                      {!buyNowProduct && (
-                        <button
-                          onClick={() => removeFromCart(item.id)}
-                          className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
                     </div>
                   </div>
                 ))}

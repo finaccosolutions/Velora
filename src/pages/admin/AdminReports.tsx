@@ -1,7 +1,7 @@
 // src/pages/admin/AdminReports.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, FileText, Users, ShoppingCart, Package, DollarSign, TrendingUp, Activity, BarChart } from 'lucide-react';
+import { Download, FileText, Users, ShoppingCart, Package, DollarSign, TrendingUp, Activity, BarChart, Receipt } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -296,6 +296,287 @@ const AdminReports: React.FC = () => {
         return { data: data || [], columns, error: null };
       },
     },
+    {
+      id: 'gst_bill_wise',
+      name: 'GST Report - Bill-wise',
+      icon: Receipt,
+      fetchData: async () => {
+        const { data: orders, error: orderError } = await supabase
+          .from('orders')
+          .select(`
+            id,
+            invoice_number,
+            created_at,
+            subtotal,
+            cgst_amount,
+            sgst_amount,
+            igst_amount,
+            total_amount,
+            customer_state,
+            billing_address,
+            users (full_name, email),
+            order_items (
+              id,
+              quantity,
+              price,
+              gst_percentage,
+              gst_amount,
+              subtotal,
+              product:products (name, hsn_code, price_inclusive_of_tax)
+            )
+          `)
+          .order('created_at', { ascending: false });
+
+        if (orderError) return { data: [], columns: [], error: orderError.message };
+
+        const billWiseData: any[] = [];
+        orders?.forEach(order => {
+          order.order_items?.forEach((item: any) => {
+            const priceInclusive = item.product?.price_inclusive_of_tax || false;
+            const gstPercentage = item.gst_percentage || 18;
+            let itemTaxableValue, itemGST, itemTotal;
+
+            if (priceInclusive) {
+              // Price includes tax, so calculate taxable value
+              const totalAmount = item.price * item.quantity;
+              itemTaxableValue = totalAmount / (1 + gstPercentage / 100);
+              itemGST = totalAmount - itemTaxableValue;
+              itemTotal = totalAmount;
+            } else {
+              // Price excludes tax
+              itemTaxableValue = item.subtotal || (item.price * item.quantity);
+              itemGST = item.gst_amount || 0;
+              itemTotal = itemTaxableValue + itemGST;
+            }
+
+            const customerGSTIN = order.billing_address?.gstin || 'N/A';
+
+            billWiseData.push({
+              invoiceNumber: order.invoice_number || `INV-${order.id.slice(-8).toUpperCase()}`,
+              invoiceDate: format(new Date(order.created_at), 'dd-MM-yyyy'),
+              customerName: order.users?.full_name || 'N/A',
+              customerGSTIN: customerGSTIN,
+              itemName: item.product?.name || 'N/A',
+              hsnCode: item.product?.hsn_code || 'N/A',
+              quantity: item.quantity,
+              rate: item.price,
+              taxableValue: itemTaxableValue,
+              cgst: order.cgst_amount ? (order.cgst_amount * (itemTaxableValue / order.subtotal)) : 0,
+              sgst: order.sgst_amount ? (order.sgst_amount * (itemTaxableValue / order.subtotal)) : 0,
+              igst: order.igst_amount ? (order.igst_amount * (itemTaxableValue / order.subtotal)) : 0,
+              totalGST: itemGST,
+              invoiceValue: itemTotal,
+              customerState: order.customer_state
+            });
+          });
+        });
+
+        const columns: ReportColumn[] = [
+          { key: 'invoiceNumber', label: 'Invoice #' },
+          { key: 'invoiceDate', label: 'Date' },
+          { key: 'customerName', label: 'Customer' },
+          { key: 'customerGSTIN', label: 'GSTIN' },
+          { key: 'itemName', label: 'Item Name' },
+          { key: 'hsnCode', label: 'HSN Code' },
+          { key: 'quantity', label: 'Qty' },
+          { key: 'rate', label: 'Rate', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'taxableValue', label: 'Taxable Value', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'cgst', label: 'CGST', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'sgst', label: 'SGST', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'igst', label: 'IGST', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'totalGST', label: 'Total Tax', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'invoiceValue', label: 'Invoice Value', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+        ];
+        return { data: billWiseData, columns, error: null };
+      },
+    },
+    {
+      id: 'gst_customer_wise',
+      name: 'GST Report - Customer-wise',
+      icon: Users,
+      fetchData: async () => {
+        const { data: orders, error: orderError } = await supabase
+          .from('orders')
+          .select(`
+            id,
+            subtotal,
+            cgst_amount,
+            sgst_amount,
+            igst_amount,
+            total_amount,
+            billing_address,
+            users (id, full_name, email)
+          `)
+          .order('created_at', { ascending: false });
+
+        if (orderError) return { data: [], columns: [], error: orderError.message };
+
+        const customerMap = new Map();
+
+        orders?.forEach(order => {
+          const customerId = order.users?.id || 'unknown';
+          const customerName = order.users?.full_name || 'N/A';
+          const customerEmail = order.users?.email || 'N/A';
+          const customerGSTIN = order.billing_address?.gstin || 'N/A';
+          const totalGST = (order.cgst_amount || 0) + (order.sgst_amount || 0) + (order.igst_amount || 0);
+
+          if (!customerMap.has(customerId)) {
+            customerMap.set(customerId, {
+              customerName,
+              customerEmail,
+              customerGSTIN,
+              totalOrders: 0,
+              totalTaxableValue: 0,
+              totalCGST: 0,
+              totalSGST: 0,
+              totalIGST: 0,
+              totalGST: 0,
+              totalInvoiceValue: 0
+            });
+          }
+
+          const customer = customerMap.get(customerId);
+          customer.totalOrders++;
+          customer.totalTaxableValue += order.subtotal || 0;
+          customer.totalCGST += order.cgst_amount || 0;
+          customer.totalSGST += order.sgst_amount || 0;
+          customer.totalIGST += order.igst_amount || 0;
+          customer.totalGST += totalGST;
+          customer.totalInvoiceValue += order.total_amount || 0;
+        });
+
+        const customerData = Array.from(customerMap.values());
+
+        const columns: ReportColumn[] = [
+          { key: 'customerName', label: 'Customer Name' },
+          { key: 'customerEmail', label: 'Email' },
+          { key: 'customerGSTIN', label: 'GSTIN' },
+          { key: 'totalOrders', label: 'Total Orders' },
+          { key: 'totalTaxableValue', label: 'Taxable Value', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'totalCGST', label: 'Total CGST', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'totalSGST', label: 'Total SGST', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'totalIGST', label: 'Total IGST', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'totalGST', label: 'Total Tax', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'totalInvoiceValue', label: 'Total Invoice Value', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+        ];
+        return { data: customerData, columns, error: null };
+      },
+    },
+    {
+      id: 'gst_hsn_wise',
+      name: 'GST Report - HSN-wise',
+      icon: Package,
+      fetchData: async () => {
+        const { data: orderItems, error: itemError } = await supabase
+          .from('order_items')
+          .select(`
+            id,
+            quantity,
+            price,
+            gst_percentage,
+            gst_amount,
+            subtotal,
+            product:products (name, hsn_code, price_inclusive_of_tax)
+          `);
+
+        if (itemError) return { data: [], columns: [], error: itemError.message };
+
+        const hsnMap = new Map();
+
+        orderItems?.forEach((item: any) => {
+          const hsnCode = item.product?.hsn_code || 'N/A';
+          const productName = item.product?.name || 'N/A';
+          const priceInclusive = item.product?.price_inclusive_of_tax || false;
+          const gstPercentage = item.gst_percentage || 18;
+
+          let itemTaxableValue, itemGST, itemTotal;
+
+          if (priceInclusive) {
+            const totalAmount = item.price * item.quantity;
+            itemTaxableValue = totalAmount / (1 + gstPercentage / 100);
+            itemGST = totalAmount - itemTaxableValue;
+            itemTotal = totalAmount;
+          } else {
+            itemTaxableValue = item.subtotal || (item.price * item.quantity);
+            itemGST = item.gst_amount || 0;
+            itemTotal = itemTaxableValue + itemGST;
+          }
+
+          if (!hsnMap.has(hsnCode)) {
+            hsnMap.set(hsnCode, {
+              hsnCode,
+              productName,
+              totalQuantity: 0,
+              totalTaxableValue: 0,
+              gstRate: gstPercentage,
+              totalGST: 0,
+              totalValue: 0
+            });
+          }
+
+          const hsn = hsnMap.get(hsnCode);
+          hsn.totalQuantity += item.quantity;
+          hsn.totalTaxableValue += itemTaxableValue;
+          hsn.totalGST += itemGST;
+          hsn.totalValue += itemTotal;
+        });
+
+        const hsnData = Array.from(hsnMap.values());
+
+        const columns: ReportColumn[] = [
+          { key: 'hsnCode', label: 'HSN Code' },
+          { key: 'productName', label: 'Product Name' },
+          { key: 'totalQuantity', label: 'Total Quantity' },
+          { key: 'gstRate', label: 'GST Rate (%)', render: (value) => `${value}%` },
+          { key: 'totalTaxableValue', label: 'Taxable Value', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'totalGST', label: 'Total Tax', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'totalValue', label: 'Total Value', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+        ];
+        return { data: hsnData, columns, error: null };
+      },
+    },
+    {
+      id: 'gst_summary',
+      name: 'GST Report - Summary',
+      icon: TrendingUp,
+      fetchData: async () => {
+        const { data: orders, error: orderError } = await supabase
+          .from('orders')
+          .select('id, subtotal, cgst_amount, sgst_amount, igst_amount, total_amount, created_at');
+
+        if (orderError) return { data: [], columns: [], error: orderError.message };
+
+        const summary = {
+          totalOrders: orders?.length || 0,
+          totalTaxableValue: 0,
+          totalCGST: 0,
+          totalSGST: 0,
+          totalIGST: 0,
+          totalGST: 0,
+          totalInvoiceValue: 0
+        };
+
+        orders?.forEach(order => {
+          summary.totalTaxableValue += order.subtotal || 0;
+          summary.totalCGST += order.cgst_amount || 0;
+          summary.totalSGST += order.sgst_amount || 0;
+          summary.totalIGST += order.igst_amount || 0;
+          summary.totalGST += (order.cgst_amount || 0) + (order.sgst_amount || 0) + (order.igst_amount || 0);
+          summary.totalInvoiceValue += order.total_amount || 0;
+        });
+
+        const columns: ReportColumn[] = [
+          { key: 'totalOrders', label: 'Total Orders' },
+          { key: 'totalTaxableValue', label: 'Total Taxable Value', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'totalCGST', label: 'Total CGST', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'totalSGST', label: 'Total SGST', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'totalIGST', label: 'Total IGST', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'totalGST', label: 'Total Tax', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+          { key: 'totalInvoiceValue', label: 'Total Invoice Value', render: (value) => `₹${Math.round(value).toLocaleString()}` },
+        ];
+        return { data: [summary], columns, error: null };
+      },
+    },
   ];
 
   const fetchAndSetReportData = useCallback(async (reportId: string) => {
@@ -488,7 +769,7 @@ const AdminReports: React.FC = () => {
                   <p>No data available for this report.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto max-w-full">
                   <table className="min-w-full divide-y divide-admin-border">
                     <thead className="bg-admin-background">
                       <tr>

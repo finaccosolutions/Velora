@@ -31,9 +31,10 @@ interface SiteSettingsForm {
   siteFaviconUrl: string;
   currencySymbol: string;
   currencyCode: string;
-  taxRate: number;
   shippingEnabled: boolean;
   freeShippingThreshold: number;
+  bulkDiscountThreshold: number;
+  bulkDiscountPercentage: number;
   contactPhone: string;
   contactAddress: string;
   socialFacebook: string;
@@ -160,9 +161,10 @@ const AdminSettings: React.FC = () => {
         siteFaviconUrl: formData.siteFaviconUrl || '',
         currencySymbol: formData.currencySymbol || '₹',
         currencyCode: formData.currencyCode || 'INR',
-        taxRate: formData.taxRate || 0,
         shippingEnabled: formData.shippingEnabled !== undefined ? formData.shippingEnabled : true,
         freeShippingThreshold: formData.freeShippingThreshold || 0,
+        bulkDiscountThreshold: formData.bulkDiscountThreshold || 0,
+        bulkDiscountPercentage: formData.bulkDiscountPercentage || 0,
         contactPhone: formData.contactPhone || '',
         contactAddress: formData.contactAddress || '',
         socialFacebook: formData.socialFacebook || '',
@@ -720,16 +722,6 @@ const AdminSettings: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Tax Rate (%)</label>
-                      <input
-                        {...register('taxRate', { valueAsNumber: true })}
-                        type="number"
-                        step="0.01"
-                        placeholder="0"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                    </div>
-                    <div>
                       <label className="block text-sm font-medium text-admin-text-dark mb-2">Free Shipping Threshold</label>
                       <input
                         {...register('freeShippingThreshold', { valueAsNumber: true })}
@@ -749,6 +741,27 @@ const AdminSettings: React.FC = () => {
                         className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
                       />
                       <p className="text-xs text-admin-text-light mt-1">Flat delivery charge for all orders (0 = free delivery, overridden by free shipping threshold)</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Bulk Discount Threshold (₹)</label>
+                      <input
+                        {...register('bulkDiscountThreshold', { valueAsNumber: true })}
+                        type="number"
+                        placeholder="0"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Minimum order value for bulk discount (0 = no bulk discount)</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Bulk Discount Percentage (%)</label>
+                      <input
+                        {...register('bulkDiscountPercentage', { valueAsNumber: true })}
+                        type="number"
+                        step="0.1"
+                        placeholder="0"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Discount percentage to apply when order value exceeds threshold</p>
                     </div>
                     <div className="md:col-span-2">
                       <label className="flex items-center space-x-2">

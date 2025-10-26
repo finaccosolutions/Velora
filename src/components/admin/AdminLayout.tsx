@@ -14,7 +14,6 @@ const adminNavigation = [
   { name: 'Users', href: '/admin/users', icon: Users },
   { name: 'Categories', href: '/admin/categories', icon: Tag },
   { name: 'Reports', href: '/admin/reports', icon: BarChart },
-  { name: 'GST Reports', href: '/admin/gst-reports', icon: FileText },
   { name: 'Site Settings', href: '/admin/settings', icon: Settings },
 ];
 
@@ -174,7 +173,7 @@ const AdminLayout: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        <main className="flex-1 p-4 md:p-6 overflow-y-auto"> {/* Adjusted padding to p-4 md:p-6 */}
+        <main className="flex-1 p-2 md:p-4 overflow-y-auto">
           <Outlet />
         </main>
       </div>
