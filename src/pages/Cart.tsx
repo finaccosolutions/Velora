@@ -5,16 +5,16 @@ import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Info, X } from 'lucide-rea
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../context/AuthContext';
 import { useSiteSettings } from '../hooks/useSiteSettings';
-import { calculateGSTBreakdown, getGSTLabel } from '../utils/gstCalculator';
+import { calculateGSTBreakdown } from '../utils/gstCalculator';
 
 const Cart: React.FC = () => {
   const { cartItems, removeFromCart, updateQuantity, getCartTotal, clearCart, loading } = useCart();
-  const { userProfile } = useAuth();
+  const { user } = useAuth();
   const { settings } = useSiteSettings();
   const navigate = useNavigate();
   const [showBreakdown, setShowBreakdown] = useState(false);
 
-  const customerState = userProfile?.state || 'Maharashtra';
+  const customerState = 'Maharashtra';
   const businessState = settings.business_state || 'Maharashtra';
   const subtotal = getCartTotal();
 
@@ -78,7 +78,6 @@ const Cart: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Back Button */}
         <motion.button
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -90,7 +89,6 @@ const Cart: React.FC = () => {
         </motion.button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Cart Items */}
           <div className="lg:col-span-2">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -124,7 +122,7 @@ const Cart: React.FC = () => {
                     
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900">{item.product.name}</h3>
-                      <p className="text-gray-600 text-sm">{item.product.category_name}</p> {/* MODIFIED: Use category_name */}
+                      <p className="text-gray-600 text-sm">{item.product.category_name}</p>
                       <p className="font-bold text-[#815536] mt-1">₹{item.product.price}</p>
                     </div>
 
@@ -162,7 +160,6 @@ const Cart: React.FC = () => {
             </motion.div>
           </div>
 
-          {/* Order Summary */}
           <div className="lg:col-span-1">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -187,8 +184,8 @@ const Cart: React.FC = () => {
                   <span>Shipping</span>
                   <span>{gstBreakdown.shipping === 0 ? 'Free' : `₹${gstBreakdown.shipping}`}</span>
                 </div>
-                <div className="flex justify-between items-center text-gray-600">
-                  <span>Tax ({getGSTLabel(customerState, businessState)})</span>
+                <div className="flex justify-between text-gray-600">
+                  <span>Tax</span>
                   <div className="flex items-center space-x-2">
                     <span>₹{Math.round(gstBreakdown.totalTax).toLocaleString()}</span>
                     <button
@@ -327,41 +324,15 @@ const Cart: React.FC = () => {
                 </div>
 
                 <div className="bg-blue-50 rounded-lg p-4">
-                  <h4 className="font-semibold text-gray-700 mb-3">GST Breakdown</h4>
+                  <h4 className="font-semibold text-gray-700 mb-3">Tax Breakdown</h4>
                   <div className="space-y-2 text-sm">
-                    {gstBreakdown.cgst !== undefined && gstBreakdown.sgst !== undefined ? (
-                      <>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">
-                            CGST (Central GST)
-                            <span className="block text-xs text-gray-500">Same State</span>
-                          </span>
-                          <span className="font-medium">₹{Math.round(gstBreakdown.cgst).toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-gray-600">
-                            SGST (State GST)
-                            <span className="block text-xs text-gray-500">Same State</span>
-                          </span>
-                          <span className="font-medium">₹{Math.round(gstBreakdown.sgst).toLocaleString()}</span>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-600">
-                          IGST (Integrated GST)
-                          <span className="block text-xs text-gray-500">Interstate</span>
-                        </span>
-                        <span className="font-medium">₹{Math.round(gstBreakdown.igst || 0).toLocaleString()}</span>
-                      </div>
-                    )}
-
-                    <div className="border-t pt-2 mt-2">
-                      <div className="flex justify-between">
-                        <span className="font-semibold text-gray-700">Total Tax</span>
-                        <span className="font-semibold">₹{Math.round(gstBreakdown.totalTax).toLocaleString()}</span>
-                      </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Tax</span>
+                      <span className="font-medium">₹{Math.round(gstBreakdown.totalTax).toLocaleString()}</span>
                     </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Tax will be calculated based on delivery address selected at checkout
+                    </p>
                   </div>
                 </div>
 
@@ -383,11 +354,6 @@ const Cart: React.FC = () => {
                       ₹{Math.round(gstBreakdown.total).toLocaleString()}
                     </span>
                   </div>
-                </div>
-
-                <div className="text-xs text-gray-500 text-center pt-2">
-                  <p>Customer State: {customerState}</p>
-                  <p>Business State: {businessState}</p>
                 </div>
               </div>
             </motion.div>
