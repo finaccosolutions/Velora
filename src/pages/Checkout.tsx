@@ -901,6 +901,46 @@ const Checkout: React.FC = () => {
                         <p className="text-red-500 text-xs mt-1">Valid 6-digit PIN code is required</p>
                       )}
                     </div>
+                    <div className="border-t pt-4 mt-4">
+                      <div className="flex items-center mb-4">
+                        <input
+                          type="checkbox"
+                          checked={guestAddress?.is_gst_registered || false}
+                          onChange={(e) => setGuestAddress({...guestAddress, is_gst_registered: e.target.checked})}
+                          className="w-4 h-4 text-[#815536] border-gray-300 rounded focus:ring-[#815536]"
+                        />
+                        <label className="ml-2 text-sm font-medium text-gray-700">
+                          GST Registered Dealer
+                        </label>
+                      </div>
+                    
+                      {guestAddress?.is_gst_registered && (
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            GSTIN (GST Identification Number) *
+                          </label>
+                          <input
+                            type="text"
+                            value={guestAddress?.gstin || ''}
+                            onChange={(e) => {
+                              setGuestAddress({...guestAddress, gstin: e.target.value.toUpperCase()});
+                              setFieldErrors(prev => ({...prev, guestGstin: false}));
+                            }}
+                            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#815536] focus:border-transparent uppercase ${
+                              fieldErrors.guestGstin ? 'border-red-500' : 'border-gray-300'
+                            }`}
+                            placeholder="e.g., 27AAPFU0939F1ZV"
+                            maxLength={15}
+                            required={guestAddress?.is_gst_registered}
+                          />
+                          {fieldErrors.guestGstin && (
+                            <p className="text-red-500 text-xs mt-1">GSTIN is required for GST registered dealer</p>
+                          )}
+                          <p className="text-xs text-gray-500 mt-1">15-character GST Identification Number</p>
+                        </div>
+                      )}
+                    </div>
+
                   </div>
                 </div>
               ) : addressLoading ? (

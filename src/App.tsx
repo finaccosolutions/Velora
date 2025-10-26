@@ -31,6 +31,7 @@ import AdminOrders from './pages/admin/AdminOrders';
 import AdminUsers from './pages/admin/AdminUsers';
 import { ToastProvider } from './context/ToastContext';
 import ScrollToTop from './components/ScrollToTop';
+import EmailVerified from './pages/EmailVerified';
 
 
 function App() {
@@ -73,6 +74,7 @@ function App() {
                 <Route path="/wishlist" element={<Wishlist />} />
                 <Route path="/addresses" element={<Addresses />} />
                 <Route path="/order-confirmation" element={<OrderConfirmation />} />
+                <Route path="/email-verified" element={<EmailVerified />} />
                 <Route path="/order-success" element={
                   <div className="min-h-screen flex items-center justify-center bg-gray-50">
                     <motion.div
