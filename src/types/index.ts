@@ -4,15 +4,17 @@ export interface Product {
   description: string;
   price: number;
   originalPrice?: number;
-  image_url: string; // Changed from 'image' to 'image_url' to match DB
-  category: string; // This will now be the category ID (UUID)
-  category_name?: string; // NEW: For displaying the category name
+  image_url: string;
+  category: string;
+  category_name?: string;
   inStock: boolean;
   rating: number;
-  reviews: number; // Changed from 'reviews_count' to 'reviews' to match DB
+  reviews: number;
   features: string[];
   ingredients?: string[];
-  stockQuantity?: number; // NEW: Add stockQuantity
+  stockQuantity?: number;
+  gst_percentage?: number;
+  hsn_code?: string;
 }
 
 export interface CartItem {
@@ -41,11 +43,30 @@ export interface Order {
   userId: string;
   items: CartItem[];
   total: number;
+  subtotal?: number;
+  cgst_amount?: number;
+  sgst_amount?: number;
+  igst_amount?: number;
+  shipping_charges?: number;
+  discount_amount?: number;
+  customer_state?: string;
+  invoice_number?: string;
   status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
   paymentMethod: 'cod' | 'online';
   paymentStatus: 'pending' | 'paid' | 'failed';
   shippingAddress: Address;
   createdAt: Date;
+}
+
+export interface TaxBreakdown {
+  subtotal: number;
+  cgst?: number;
+  sgst?: number;
+  igst?: number;
+  totalTax: number;
+  shipping: number;
+  discount: number;
+  total: number;
 }
 
 export interface Review {

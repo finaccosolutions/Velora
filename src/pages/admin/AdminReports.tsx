@@ -46,7 +46,12 @@ const AdminReports: React.FC = () => {
           .from('orders')
           .select(`
             id,
+            invoice_number,
+            subtotal,
             total_amount,
+            cgst_amount,
+            sgst_amount,
+            igst_amount,
             status,
             payment_method,
             payment_status,
@@ -58,14 +63,17 @@ const AdminReports: React.FC = () => {
         if (fetchError) return { data: [], columns: [], error: fetchError.message };
 
         const columns: ReportColumn[] = [
-          { key: 'id', label: 'Order ID', render: (value) => value.substring(0, 8) + '...' },
-          { key: 'user_name', label: 'Customer Name', render: (value, row) => row.users?.full_name || 'N/A' },
-          { key: 'user_email', label: 'Customer Email', render: (value, row) => row.users?.email || 'N/A' },
-          { key: 'total_amount', label: 'Total Amount', render: (value) => `₹${value.toLocaleString()}` },
+          { key: 'invoice_number', label: 'Invoice #', render: (value) => value || 'N/A' },
+          { key: 'user_name', label: 'Customer', render: (value, row) => row.users?.full_name || 'N/A' },
+          { key: 'subtotal', label: 'Subtotal (excl. tax)', render: (value) => `₹${Math.round(value || 0).toLocaleString()}` },
+          { key: 'tax_amount', label: 'Total Tax', render: (value, row) => {
+            const totalTax = (row.cgst_amount || 0) + (row.sgst_amount || 0) + (row.igst_amount || 0);
+            return `₹${Math.round(totalTax).toLocaleString()}`;
+          }},
+          { key: 'total_amount', label: 'Total (incl. tax)', render: (value) => `₹${Math.round(value).toLocaleString()}` },
           { key: 'status', label: 'Status', render: (value) => value.charAt(0).toUpperCase() + value.slice(1) },
-          { key: 'payment_method', label: 'Payment Method' },
-          { key: 'payment_status', label: 'Payment Status', render: (value) => value.charAt(0).toUpperCase() + value.slice(1) },
-          { key: 'created_at', label: 'Order Date', render: (value) => format(new Date(value), 'MMM dd, yyyy HH:mm') },
+          { key: 'payment_method', label: 'Payment', render: (value) => value.toUpperCase() },
+          { key: 'created_at', label: 'Date', render: (value) => format(new Date(value), 'MMM dd, yyyy') },
         ];
         return { data: data || [], columns, error: null };
       },

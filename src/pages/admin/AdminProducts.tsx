@@ -23,9 +23,11 @@ interface ProductForm {
   in_stock: boolean;
   features: string;
   ingredients: string;
-  stock_quantity: number; // NEW: Add stock_quantity
-  rating: number; // NEW: Add rating
-  reviews_count: number; // NEW: Add reviews_count
+  stock_quantity: number;
+  rating: number;
+  reviews_count: number;
+  gst_percentage: number;
+  hsn_code: string;
 }
 
 const AdminProducts: React.FC = () => {
@@ -74,9 +76,11 @@ const AdminProducts: React.FC = () => {
         in_stock: product.in_stock,
         features: product.features?.join(', ') || '',
         ingredients: product.ingredients ? product.ingredients.join(', ') : '',
-        stock_quantity: product.stock_quantity || 0, // NEW: Set default for stock_quantity
-        rating: product.rating || 0, // NEW: Set default for rating
-        reviews_count: product.reviews_count || 0, // NEW: Set default for reviews_count
+        stock_quantity: product.stock_quantity || 0,
+        rating: product.rating || 0,
+        reviews_count: product.reviews_count || 0,
+        gst_percentage: product.gst_percentage || 18,
+        hsn_code: product.hsn_code || '',
       });
     } else {
       reset({
@@ -89,9 +93,11 @@ const AdminProducts: React.FC = () => {
         in_stock: true,
         features: '',
         ingredients: '',
-        stock_quantity: 0, // NEW: Set default for stock_quantity
-        rating: 0, // NEW: Set default for rating
-        reviews_count: 0, // NEW: Set default for reviews_count
+        stock_quantity: 0,
+        rating: 0,
+        reviews_count: 0,
+        gst_percentage: 18,
+        hsn_code: '',
       });
     }
     setIsModalOpen(true);
@@ -111,9 +117,11 @@ const AdminProducts: React.FC = () => {
       features: data.features.split(',').map(f => f.trim()).filter(f => f),
       ingredients: data.ingredients ? data.ingredients.split(',').map(i => i.trim()).filter(i => i) : null,
       original_price: data.original_price || null,
-      stock_quantity: data.stock_quantity, // NEW: Include in payload
-      rating: data.rating, // NEW: Include in payload
-      reviews_count: data.reviews_count, // NEW: Include in payload
+      stock_quantity: data.stock_quantity,
+      rating: data.rating,
+      reviews_count: data.reviews_count,
+      gst_percentage: data.gst_percentage || 18,
+      hsn_code: data.hsn_code || '',
     };
 
     try {
@@ -478,6 +486,40 @@ const AdminProducts: React.FC = () => {
                       {errors.reviews_count && (
                         <p className="text-red-500 text-sm mt-1">{errors.reviews_count.message}</p>
                       )}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">
+                        GST Percentage (%) *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        {...register('gst_percentage', {
+                          required: 'GST percentage is required',
+                          min: { value: 0, message: 'GST cannot be negative' },
+                          max: { value: 100, message: 'GST cannot exceed 100%' }
+                        })}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                        placeholder="18"
+                      />
+                      {errors.gst_percentage && (
+                        <p className="text-red-500 text-sm mt-1">{errors.gst_percentage.message}</p>
+                      )}
+                      <p className="text-xs text-admin-text-light mt-1">Common rates: 0%, 5%, 12%, 18%, 28%</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">
+                        HSN/SAC Code
+                      </label>
+                      <input
+                        {...register('hsn_code')}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-sidebar text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                        placeholder="3303 (for perfumes)"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Harmonized System of Nomenclature code</p>
                     </div>
                   </div>
 

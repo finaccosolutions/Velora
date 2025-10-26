@@ -114,28 +114,27 @@ async function sendEmail(
       return { success: false, error: 'SMTP configuration missing. Please configure SMTP settings in admin panel.' };
     }
 
-    const response = await fetch('https://api.smtp2go.com/v3/email/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Smtp2go-Api-Key': smtpConfig.smtp_password,
+    const nodemailer = await import('npm:nodemailer@6.9.7');
+
+    const transporter = nodemailer.default.createTransport({
+      host: smtpConfig.smtp_host,
+      port: parseInt(smtpConfig.smtp_port),
+      secure: smtpConfig.smtp_secure === true || smtpConfig.smtp_port == 465,
+      auth: {
+        user: smtpConfig.smtp_user,
+        pass: smtpConfig.smtp_password,
       },
-      body: JSON.stringify({
-        sender: `${smtpConfig.smtp_from_name} <${smtpConfig.smtp_from_email}>`,
-        to: [to],
-        subject: subject,
-        html_body: html,
-      }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('SMTP2GO API error:', errorText);
-      return { success: false, error: `SMTP error: ${errorText}` };
-    }
+    const mailOptions = {
+      from: `${smtpConfig.smtp_from_name || 'Velora Tradings'} <${smtpConfig.smtp_from_email}>`,
+      to: to,
+      subject: subject,
+      html: html,
+    };
 
-    const result = await response.json();
-    console.log('Email sent successfully:', result);
+    await transporter.sendMail(mailOptions);
+    console.log('Email sent successfully to:', to);
     return { success: true };
   } catch (error) {
     console.error('Error sending email:', error);
@@ -168,13 +167,11 @@ Deno.serve(async (req: Request) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { data: settings, error: settingsError } = await supabase
+    const { data: settingsArray, error: settingsError } = await supabase
       .from('site_settings')
-      .select('*')
-      .limit(1)
-      .maybeSingle();
+      .select('key, value');
 
-    if (settingsError || !settings) {
+    if (settingsError || !settingsArray) {
       console.error('Failed to fetch site settings:', settingsError);
       return new Response(
         JSON.stringify({ error: 'Failed to fetch site settings. Please configure SMTP in admin panel.' }),
@@ -184,6 +181,11 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
+
+    const settings: Record<string, any> = {};
+    settingsArray.forEach((setting: any) => {
+      settings[setting.key] = setting.value;
+    });
 
     let recipientEmail = to;
     if (sendToAdmin) {

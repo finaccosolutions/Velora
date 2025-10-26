@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, Calendar, DollarSign, MapPin, Eye, XCircle, Truck, CheckCircle, Clock, Phone, Mail, ChevronDown, ChevronUp } from 'lucide-react';
+import { Package, Calendar, DollarSign, MapPin, Eye, XCircle, Truck, CheckCircle, Clock, Phone, Mail, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
 import { useToast } from '../context/ToastContext';
+import { useSiteSettings } from '../hooks/useSiteSettings';
 import { Link } from 'react-router-dom';
+import { downloadInvoice, InvoiceData } from '../utils/invoiceGenerator';
 
 interface OrderTracking {
   id: string;
@@ -16,7 +18,14 @@ interface OrderTracking {
 
 interface Order {
   id: string;
+  invoice_number: string;
   total_amount: number;
+  subtotal: number;
+  cgst_amount: number;
+  sgst_amount: number;
+  igst_amount: number;
+  shipping_charges: number;
+  discount_amount: number;
   status: string;
   payment_method: string;
   payment_status: string;
@@ -29,6 +38,9 @@ interface Order {
     id: string;
     quantity: number;
     price: number;
+    gst_percentage: number;
+    gst_amount: number;
+    subtotal: number;
     product: {
       id: string;
       name: string;
@@ -43,8 +55,9 @@ const Orders: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
   const [trackingExpanded, setTrackingExpanded] = useState<string | null>(null);
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, userProfile } = useAuth();
   const { showToast } = useToast();
+  const { settings } = useSiteSettings();
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -68,7 +81,14 @@ const Orders: React.FC = () => {
         .from('orders')
         .select(`
           id,
+          invoice_number,
           total_amount,
+          subtotal,
+          cgst_amount,
+          sgst_amount,
+          igst_amount,
+          shipping_charges,
+          discount_amount,
           status,
           payment_method,
           payment_status,
@@ -81,6 +101,9 @@ const Orders: React.FC = () => {
             id,
             quantity,
             price,
+            gst_percentage,
+            gst_amount,
+            subtotal,
             product:products (
               id,
               name,
@@ -136,6 +159,37 @@ const Orders: React.FC = () => {
     } catch (error) {
       showToast('Failed to cancel order', 'error');
     }
+  };
+
+  const handleDownloadInvoice = (order: Order) => {
+    const totalTax = (order.cgst_amount || 0) + (order.sgst_amount || 0) + (order.igst_amount || 0);
+
+    const invoiceData: InvoiceData = {
+      invoiceNumber: order.invoice_number || `INV-${order.id.slice(-8).toUpperCase()}`,
+      orderDate: order.created_at,
+      customerName: userProfile?.full_name || 'Customer',
+      customerAddress: order.shipping_address,
+      items: order.order_items.map(item => ({
+        name: item.product.name,
+        quantity: item.quantity,
+        price: item.price,
+        gst_percentage: item.gst_percentage || 18,
+        gst_amount: item.gst_amount || 0,
+        subtotal: item.subtotal || (item.price * item.quantity),
+      })),
+      subtotal: order.subtotal || 0,
+      cgst: order.cgst_amount,
+      sgst: order.sgst_amount,
+      igst: order.igst_amount,
+      totalTax: totalTax,
+      shippingCharges: order.shipping_charges || 0,
+      discount: order.discount_amount || 0,
+      total: order.total_amount,
+      businessDetails: settings,
+    };
+
+    downloadInvoice(invoiceData);
+    showToast('Generating invoice...', 'success');
   };
 
   const getStatusColor = (status: string) => {
@@ -356,6 +410,14 @@ const Orders: React.FC = () => {
                   >
                     <Eye className="h-4 w-4" />
                     <span>{selectedOrder === order.id ? 'Hide' : 'View'} Details</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleDownloadInvoice(order)}
+                    className="flex items-center space-x-2 px-4 py-2 border border-[#815536] text-[#815536] rounded-lg hover:bg-[#815536]/10 transition-colors"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>Download Invoice</span>
                   </button>
 
                   {canCancelOrder(order) && (

@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreditCard, Truck, MapPin, Plus, Edit2, Trash2, Check } from 'lucide-react';
+import { CreditCard, Truck, MapPin, Plus, Edit2, Trash2, Check, Info, X } from 'lucide-react';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
 import { useAuth } from '../context/AuthContext';
 import { useSupabaseProducts } from '../hooks/useSupabaseProducts';
 import { useAddresses } from '../hooks/useAddresses';
 import { useToast } from '../context/ToastContext';
+import { useSiteSettings } from '../hooks/useSiteSettings';
 import AddressForm from '../components/AddressForm';
 import { supabase } from '../lib/supabase';
+import { calculateGSTBreakdown, getGSTLabel } from '../utils/gstCalculator';
 
 declare global {
   interface Window {
@@ -31,6 +33,8 @@ const Checkout: React.FC = () => {
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
   const [isSubmittingAddress, setIsSubmittingAddress] = useState(false);
+  const [showTaxBreakdown, setShowTaxBreakdown] = useState(false);
+  const { settings } = useSiteSettings();
 
   const isRazorpayConfigured = import.meta.env.VITE_RAZORPAY_KEY_ID &&
     import.meta.env.VITE_RAZORPAY_KEY_ID.startsWith('rzp_');
@@ -45,10 +49,22 @@ const Checkout: React.FC = () => {
     product: buyNowProduct
   }] : cartItems;
 
+  const selectedAddress = addresses.find(a => a.id === selectedAddressId);
+  const customerState = selectedAddress?.state || 'Maharashtra';
+  const businessState = settings.business_state || 'Maharashtra';
+
   const subtotal = buyNowProduct ? buyNowProduct.price : getCartTotal();
   const shipping = subtotal > 2000 ? 0 : 100;
-  const tax = Math.round(subtotal * 0.18);
-  const total = subtotal + shipping + tax;
+
+  const gstBreakdown = calculateGSTBreakdown(
+    displayItems,
+    customerState,
+    shipping,
+    0,
+    businessState
+  );
+
+  const total = gstBreakdown.total;
 
   // Only redirect if we're NOT in buy now mode and cart is empty after loading
   useEffect(() => {
@@ -199,7 +215,6 @@ const Checkout: React.FC = () => {
 
   const createOrder = async () => {
     try {
-      const selectedAddress = addresses.find(a => a.id === selectedAddressId);
       if (!selectedAddress) {
         showToast('Please select a delivery address', 'error');
         return;
@@ -210,6 +225,13 @@ const Checkout: React.FC = () => {
         .insert({
           user_id: user?.id,
           total_amount: total,
+          subtotal: gstBreakdown.subtotal,
+          cgst_amount: gstBreakdown.cgst || 0,
+          sgst_amount: gstBreakdown.sgst || 0,
+          igst_amount: gstBreakdown.igst || 0,
+          shipping_charges: gstBreakdown.shipping,
+          discount_amount: gstBreakdown.discount,
+          customer_state: customerState,
           status: 'pending',
           payment_method: paymentMethod,
           payment_status: paymentMethod === 'cod' ? 'pending' : 'pending',
@@ -220,12 +242,21 @@ const Checkout: React.FC = () => {
 
       if (orderError) throw orderError;
 
-      const orderItems = displayItems.map(item => ({
-        order_id: orderData.id,
-        product_id: item.product.id,
-        quantity: item.quantity,
-        price: item.product.price
-      }));
+      const orderItems = displayItems.map(item => {
+        const itemSubtotal = item.product.price * item.quantity;
+        const gstPercentage = item.product.gst_percentage || 18;
+        const gstAmount = (itemSubtotal * gstPercentage) / 100;
+
+        return {
+          order_id: orderData.id,
+          product_id: item.product.id,
+          quantity: item.quantity,
+          price: item.product.price,
+          gst_percentage: gstPercentage,
+          gst_amount: gstAmount,
+          subtotal: itemSubtotal
+        };
+      });
 
       const { error: itemsError } = await supabase
         .from('order_items')
@@ -344,7 +375,6 @@ const Checkout: React.FC = () => {
 
         setIsProcessing(false);
 
-        console.log('Navigating to order confirmation with order ID:', order.id);
         navigate('/order-confirmation', {
           state: { orderId: order.id },
           replace: true
@@ -393,8 +423,6 @@ const Checkout: React.FC = () => {
   if (!buyNowProduct && cartItems.length === 0) {
     return null; // Will redirect via useEffect
   }
-
-  const selectedAddress = addresses.find(a => a.id === selectedAddressId);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -611,20 +639,29 @@ const Checkout: React.FC = () => {
               <div className="space-y-3 mb-6 border-t pt-4">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
-                  <span>₹{subtotal.toLocaleString()}</span>
+                  <span>₹{gstBreakdown.subtotal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-gray-600">
                   <span>Shipping</span>
-                  <span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span>
+                  <span>{gstBreakdown.shipping === 0 ? 'Free' : `₹${gstBreakdown.shipping}`}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Tax (18%)</span>
-                  <span>₹{tax.toLocaleString()}</span>
+                <div className="flex justify-between items-center text-gray-600">
+                  <span>Tax ({getGSTLabel(customerState, businessState)})</span>
+                  <div className="flex items-center space-x-2">
+                    <span>₹{Math.round(gstBreakdown.totalTax).toLocaleString()}</span>
+                    <button
+                      onClick={() => setShowTaxBreakdown(true)}
+                      className="text-[#815536] hover:text-[#6d4429] transition-colors"
+                      title="View tax breakdown"
+                    >
+                      <Info className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
                 <hr />
                 <div className="flex justify-between text-xl font-bold text-gray-900">
                   <span>Total</span>
-                  <span>₹{total.toLocaleString()}</span>
+                  <span>₹{Math.round(total).toLocaleString()}</span>
                 </div>
               </div>
 
@@ -663,6 +700,117 @@ const Checkout: React.FC = () => {
             }}
             isSubmitting={isSubmittingAddress}
           />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showTaxBreakdown && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowTaxBreakdown(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900">Tax Breakdown</h3>
+                <button
+                  onClick={() => setShowTaxBreakdown(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-700 mb-3">Order Details</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Items Total (MRP)</span>
+                      <span className="font-medium">₹{gstBreakdown.subtotal.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Discount</span>
+                      <span className="font-medium text-green-600">
+                        {gstBreakdown.discount > 0 ? `-₹${gstBreakdown.discount.toLocaleString()}` : '₹0'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-blue-50 rounded-lg p-4">
+                  <h4 className="font-semibold text-gray-700 mb-3">GST Breakdown</h4>
+                  <div className="space-y-2 text-sm">
+                    {gstBreakdown.cgst !== undefined && gstBreakdown.sgst !== undefined ? (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">
+                            CGST (Central GST)
+                            <span className="block text-xs text-gray-500">Same State Transaction</span>
+                          </span>
+                          <span className="font-medium">₹{Math.round(gstBreakdown.cgst).toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">
+                            SGST (State GST)
+                            <span className="block text-xs text-gray-500">Same State Transaction</span>
+                          </span>
+                          <span className="font-medium">₹{Math.round(gstBreakdown.sgst).toLocaleString()}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-600">
+                          IGST (Integrated GST)
+                          <span className="block text-xs text-gray-500">Interstate Transaction</span>
+                        </span>
+                        <span className="font-medium">₹{Math.round(gstBreakdown.igst || 0).toLocaleString()}</span>
+                      </div>
+                    )}
+                    <div className="border-t pt-2 mt-2">
+                      <div className="flex justify-between">
+                        <span className="font-semibold text-gray-700">Total Tax</span>
+                        <span className="font-semibold">₹{Math.round(gstBreakdown.totalTax).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Shipping Charges</span>
+                      <span className="font-medium">
+                        {gstBreakdown.shipping === 0 ? 'FREE' : `₹${gstBreakdown.shipping.toLocaleString()}`}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-[#815536]/10 to-[#c9baa8]/10 rounded-lg p-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-lg font-bold text-gray-900">Grand Total</span>
+                    <span className="text-2xl font-bold text-[#815536]">
+                      ₹{Math.round(gstBreakdown.total).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-xs text-gray-500 text-center pt-2">
+                  <p>Customer State: {customerState}</p>
+                  <p>Business State: {businessState}</p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
