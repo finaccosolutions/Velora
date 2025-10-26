@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CreditCard, Truck, MapPin, Plus, Edit2, Trash2, Check, Info, X } from 'lucide-react';
+import { CreditCard, Truck, MapPin, Plus, CreditCard as Edit2, Trash2, Check, Info, X, Minus } from 'lucide-react';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
 import { useAuth } from '../context/AuthContext';
 import { useSupabaseProducts } from '../hooks/useSupabaseProducts';
