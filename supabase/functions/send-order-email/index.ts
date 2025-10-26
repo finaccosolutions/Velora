@@ -111,9 +111,16 @@ async function sendEmail(to: string, subject: string, html: string): Promise<{ s
     const smtpFromEmail = Deno.env.get('SMTP_FROM_EMAIL');
     const smtpFromName = Deno.env.get('SMTP_FROM_NAME') || 'Velora Tradings';
 
+    console.log('SMTP Configuration check:');
+    console.log('SMTP_HOST:', smtpHost ? 'Set' : 'Missing');
+    console.log('SMTP_PORT:', smtpPort ? 'Set' : 'Missing');
+    console.log('SMTP_USER:', smtpUser ? 'Set' : 'Missing');
+    console.log('SMTP_PASSWORD:', smtpPassword ? 'Set' : 'Missing');
+    console.log('SMTP_FROM_EMAIL:', smtpFromEmail ? 'Set' : 'Missing');
+
     if (!smtpHost || !smtpPort || !smtpUser || !smtpPassword || !smtpFromEmail) {
-      console.error('Missing SMTP configuration. Please set environment variables.');
-      return { success: false, error: 'SMTP configuration missing' };
+      console.error('Missing SMTP configuration. Please set environment variables in Supabase Edge Function secrets.');
+      return { success: false, error: 'SMTP configuration missing. Please configure SMTP secrets in your Supabase dashboard.' };
     }
 
     const response = await fetch('https://api.smtp2go.com/v3/email/send', {
@@ -209,7 +216,7 @@ Deno.serve(async (req: Request) => {
       );
     } else {
       return new Response(
-        JSON.stringify({ error: result.error || 'Failed to send email' }),
+        JSON.stringify({ error: result.error || 'Failed to send email', warning: 'Order was placed successfully but email notification failed. Please check SMTP configuration.' }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -219,7 +226,7 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     console.error('Error in send-order-email function:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error', details: String(error) }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -150,46 +150,50 @@ const Checkout: React.FC = () => {
 
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-order-email`;
 
-      const customerEmailPromise = fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(emailData)
-      });
+      const sendEmailRequest = async (data: any) => {
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data)
+          });
 
-      const ownerEmailPromise = fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+          if (response.ok) {
+            return { success: true };
+          } else {
+            const errorData = await response.json();
+            return { success: false, error: errorData };
+          }
+        } catch (error) {
+          return { success: false, error };
+        }
+      };
+
+      const [customerResult, ownerResult] = await Promise.all([
+        sendEmailRequest(emailData),
+        sendEmailRequest({
           ...emailData,
           sendToAdmin: true,
           subject: `New Order Received - #${order.id.slice(-8)}`
         })
-      });
-
-      const [customerResult, ownerResult] = await Promise.allSettled([
-        customerEmailPromise,
-        ownerEmailPromise
       ]);
 
-      if (customerResult.status === 'fulfilled') {
+      if (customerResult.success) {
         console.log('Customer email sent successfully');
       } else {
-        console.error('Failed to send customer email:', customerResult.reason);
+        console.warn('Customer email failed (order still created):', customerResult.error);
       }
 
-      if (ownerResult.status === 'fulfilled') {
+      if (ownerResult.success) {
         console.log('Owner email sent successfully');
       } else {
-        console.error('Failed to send owner email:', ownerResult.reason);
+        console.warn('Owner email failed (order still created):', ownerResult.error);
       }
     } catch (error) {
-      console.error('Error sending order emails:', error);
+      console.warn('Email sending error (order still created):', error);
     }
   };
 
@@ -229,7 +233,9 @@ const Checkout: React.FC = () => {
 
       if (itemsError) throw itemsError;
 
-      await sendOrderEmails(orderData, selectedAddress);
+      sendOrderEmails(orderData, selectedAddress).catch(err => {
+        console.warn('Email sending failed but order was created:', err);
+      });
 
       return orderData;
     } catch (error: any) {
@@ -273,11 +279,12 @@ const Checkout: React.FC = () => {
             await clearCart();
           }
 
-          navigate('/order-success', {
+          navigate('/order-confirmation', {
             state: {
               orderId: order.id,
               razorpay_payment_id: response.razorpay_payment_id
-            }
+            },
+            replace: true
           });
         } catch (error) {
           showToast('Payment verification failed', 'error');
@@ -321,17 +328,24 @@ const Checkout: React.FC = () => {
       if (paymentMethod === 'online') {
         await handleRazorpayPayment(order);
       } else {
-        await supabase
+        const { error: updateError } = await supabase
           .from('orders')
           .update({ status: 'confirmed' })
           .eq('id', order.id);
+
+        if (updateError) {
+          console.error('Error updating order status:', updateError);
+          showToast('Order placed but status update failed', 'warning');
+        }
 
         if (!buyNowProduct) {
           await clearCart();
         }
 
         setIsProcessing(false);
-        navigate('/order-success', {
+
+        console.log('Navigating to order confirmation with order ID:', order.id);
+        navigate('/order-confirmation', {
           state: { orderId: order.id },
           replace: true
         });

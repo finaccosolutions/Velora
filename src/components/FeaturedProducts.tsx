@@ -147,11 +147,11 @@ const FeaturedProducts: React.FC = () => {
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={(e) => handleWishlistToggle(e, product.id, product.name)}
-                    className="absolute top-4 right-4 p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-30"
+                    className="absolute top-4 right-4 p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-30 cursor-pointer"
                     aria-label={isInWishlist(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
                   >
                     <Heart
-                      className={`h-5 w-5 ${
+                      className={`h-5 w-5 pointer-events-none ${
                         isInWishlist(product.id)
                           ? 'text-red-500 fill-red-500'
                           : 'text-gray-600'

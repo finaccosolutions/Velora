@@ -20,6 +20,7 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Wishlist from './pages/Wishlist';
 import Addresses from './pages/Addresses';
+import OrderConfirmation from './pages/OrderConfirmation';
 import { supabase } from './lib/supabase'; // Import supabase client
 import AdminLayout from './components/admin/AdminLayout';
 import AdminCategories from './pages/admin/AdminCategories';
@@ -28,11 +29,13 @@ import AdminReports from './pages/admin/AdminReports';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminUsers from './pages/admin/AdminUsers';
 import { ToastProvider } from './context/ToastContext';
+import ScrollToTop from './components/ScrollToTop';
 
 
 function App() {
   return (
     <Router>
+      <ScrollToTop />
       <ToastProvider> {/* NEW: Wrap with ToastProvider */}
         <div className="min-h-screen flex flex-col">
           <Routes>
@@ -67,6 +70,7 @@ function App() {
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/wishlist" element={<Wishlist />} />
                 <Route path="/addresses" element={<Addresses />} />
+                <Route path="/order-confirmation" element={<OrderConfirmation />} />
                 <Route path="/order-success" element={
                   <div className="min-h-screen flex items-center justify-center bg-gray-50">
                     <motion.div
