@@ -9,6 +9,7 @@ import { useForm } from 'react-hook-form';
 import { useAuth } from '../../context/AuthContext';
 import { useSiteSettings } from '../../hooks/useSiteSettings';
 import { useToast } from '../../context/ToastContext';
+import { camelToSnake, mapDbToForm } from '../../utils/settingsMapper';
 
 interface SiteSettingsForm {
   siteName: string;
@@ -124,100 +125,99 @@ const AdminSettings: React.FC = () => {
 
   useEffect(() => {
     if (!settingsLoading && !settingsError) {
-      // Set form default values from fetched settings
+      // Map database snake_case to form camelCase using the mapper
+      const formData = mapDbToForm(settings);
+      // Set form default values from mapped settings with fallbacks
       reset({
-        siteName: settings.siteName || 'Velora Tradings',
-        logoUrl: settings.logoUrl || '',
-        primaryColor: settings.primaryColor || '#815536',
-        secondaryColor: settings.secondaryColor || '#c9baa8',
-        heroTitle: settings.heroTitle || 'Discover Your Signature Scent',
-        heroSubtitle: settings.heroSubtitle || 'Experience luxury fragrances that define your personality.',
-        adminEmail: settings.adminEmail || 'shafeeqkpt@gmail.com',
-        smtpHost: settings.smtpHost || '',
-        smtpPort: settings.smtpPort || 587,
-        smtpSecure: settings.smtpSecure !== undefined ? settings.smtpSecure : true,
-        smtpUser: settings.smtpUser || '',
-        smtpPassword: settings.smtpPassword || '',
-        smtpFromEmail: settings.smtpFromEmail || '',
-        smtpFromName: settings.smtpFromName || '',
-        siteLogoUrl: settings.siteLogoUrl || '',
-        siteFaviconUrl: settings.siteFaviconUrl || '',
-        currencySymbol: settings.currencySymbol || '₹',
-        currencyCode: settings.currencyCode || 'INR',
-        taxRate: settings.taxRate || 0,
-        shippingEnabled: settings.shippingEnabled !== undefined ? settings.shippingEnabled : true,
-        freeShippingThreshold: settings.freeShippingThreshold || 0,
-        contactPhone: settings.contactPhone || '',
-        contactAddress: settings.contactAddress || '',
-        socialFacebook: settings.socialFacebook || '',
-        socialTwitter: settings.socialTwitter || '',
-        socialInstagram: settings.socialInstagram || '',
-        socialLinkedin: settings.socialLinkedin || '',
-        metaTitle: settings.metaTitle || '',
-        metaDescription: settings.metaDescription || '',
-        metaKeywords: settings.metaKeywords || '',
-        googleAnalyticsId: settings.googleAnalyticsId || '',
-        maintenanceMode: settings.maintenanceMode !== undefined ? settings.maintenanceMode : false,
-        maintenanceMessage: settings.maintenanceMessage || 'We are currently performing maintenance. Please check back soon.',
-        // NEW: About Page Content
-        aboutHeroTitle: settings.aboutHeroTitle || 'About Velora Tradings',
-        aboutHeroSubtitle: settings.aboutHeroSubtitle || 'Crafting memories through exquisite fragrances since 2020.',
-        aboutStoryParagraph1: settings.aboutStoryParagraph1 || 'Founded with a passion for luxury and elegance, Velora Tradings began as a dream to bring the world\'s finest fragrances to discerning customers. Our journey started with a simple belief: that fragrance is not just about smelling good, but about expressing your unique personality and creating lasting impressions.',
-        aboutStoryParagraph2: settings.aboutStoryParagraph2 || 'Today, we curate an exclusive collection of premium perfumes from renowned houses and emerging artisans alike. Each fragrance in our collection is carefully selected for its quality, uniqueness, and ability to evoke emotions and memories.',
-        aboutYearsExperience: settings.aboutYearsExperience || '5+',
-        aboutHappyCustomers: settings.aboutHappyCustomers || '10K+',
-        aboutPremiumFragrances: settings.aboutPremiumFragrances || '100+',
-        aboutValueQualityTitle: settings.aboutValueQualityTitle || 'Quality Excellence',
-        aboutValueQualityDescription: settings.aboutValueQualityDescription || 'We source only the finest fragrances from trusted suppliers and renowned perfume houses.',
-        aboutValueCustomerTitle: settings.aboutValueCustomerTitle || 'Customer First',
-        aboutValueCustomerDescription: settings.aboutValueCustomerDescription || 'Your satisfaction is our priority. We provide personalized service and expert guidance.',
-        aboutValueGlobalTitle: settings.aboutValueGlobalTitle || 'Global Reach',
-        aboutValueGlobalDescription: settings.aboutValueGlobalDescription || 'Bringing international luxury fragrances to customers across India with reliable delivery.',
-        aboutValuePassionTitle: settings.aboutValuePassionTitle || 'Passion Driven',
-        aboutValuePassionDescription: settings.aboutValuePassionDescription || 'Our love for fragrances drives us to continuously discover and share exceptional scents.',
-        aboutWhyChoose1: settings.aboutWhyChoose1 || 'Authentic products from verified suppliers',
-        aboutWhyChoose2: settings.aboutWhyChoose2 || '100% genuine fragrances with quality guarantee',
-        aboutWhyChoose3: settings.aboutWhyChoose3 || 'Expert curation and personalized recommendations',
-        aboutWhyChoose4: settings.aboutWhyChoose4 || 'Secure packaging and fast delivery',
-        aboutWhyChoose5: settings.aboutWhyChoose5 || 'Competitive pricing on luxury fragrances',
-        aboutWhyChoose6: settings.aboutWhyChoose6 || '24/7 customer support and after-sales service',
-        aboutCtaTitle: settings.aboutCtaTitle || 'Ready to Find Your Signature Scent?',
-        aboutCtaSubtitle: settings.aboutCtaSubtitle || 'Explore our curated collection of premium fragrances and discover the perfect scent that defines you.',
-        // NEW: Contact Page Content
-        contactHeroSubtitle: settings.contactHeroSubtitle || 'Have questions about our fragrances? Need personalized recommendations? We\'re here to help you find your perfect scent.',
-        contactAddressLine1: settings.contactAddressLine1 || 'Perinthalmanna',
-        contactAddressLine2: settings.contactAddressLine2 || 'Kerala',
-        contactCity: settings.contactCity || 'Perinthalmanna',
-        contactCountry: settings.contactCountry || 'India',
-        contactPhone1: settings.contactPhone1 || '+91 73560 62349',
-        contactPhone2: settings.contactPhone2 || '+91 98765 43211',
-        contactEmail1: settings.contactEmail1 || 'info@veloratradings.com',
-        contactEmail2: settings.contactEmail2 || 'support@veloratradings.com',
-        contactEmail3: settings.contactEmail3 || 'orders@veloratradings.com',
-        contactHoursMonFri: settings.contactHoursMonFri || 'Monday - Friday: 10AM - 8PM',
-        contactHoursSat: settings.contactHoursSat || 'Saturday: 10AM - 8PM',
-        contactHoursSun: settings.contactHoursSun || 'Sunday: 11AM - 6PM',
-        contactHoursHolidays: settings.contactHoursHolidays || 'Holidays: 12PM - 5PM',
-        contactFormTitle: settings.contactFormTitle || 'Send Us a Message',
-        contactFormSubtitle: settings.contactFormSubtitle || 'Fill out the form below and we\'ll get back to you as soon as possible.',
-        contactFaqTitle: settings.contactFaqTitle || 'Frequently Asked Questions',
-        contactFaqSubtitle: settings.contactFaqSubtitle || 'Quick answers to common questions about our products and services.',
-        contactFaq1Question: settings.contactFaq1Question || 'Are all your fragrances authentic?',
-        contactFaq1Answer: settings.contactFaq1Answer || 'Yes, we guarantee 100% authentic products. All our fragrances are sourced directly from authorized distributors and verified suppliers.',
-        contactFaq2Question: settings.contactFaq2Question || 'Do you offer fragrance samples?',
-        contactFaq2Answer: settings.contactFaq2Answer || 'Yes, we offer sample sizes for most of our fragrances. This allows you to try before committing to a full-size bottle.',
-        contactFaq3Question: settings.contactFaq3Question || 'What is your return policy?',
-        contactFaq3Answer: settings.contactFaq3Answer || 'We offer a 30-day return policy for unopened products. If you\'re not satisfied with your purchase, you can return it for a full refund.',
-        contactFaq4Question: settings.contactFaq4Question || 'How long does shipping take?',
-        contactFaq4Answer: settings.contactFaq4Answer || 'Standard shipping takes 3-5 business days within India. Express shipping is available for 1-2 day delivery in major cities.',
-        contactFaq5Question: settings.contactFaq5Question || 'Do you provide fragrance recommendations?',
-        contactFaq5Answer: settings.contactFaq5Answer || 'Absolutely! Our fragrance experts are happy to provide personalized recommendations based on your preferences and occasions.',
-        // NEW: Footer Content
-        footerCompanyDescription: settings.footerCompanyDescription || 'Discover the essence of luxury with Velora Tradings. We curate the finest fragrances to enhance your personal style and leave a lasting impression.',
-        footerSocialFacebook: settings.footerSocialFacebook || '#',
-        footerSocialInstagram: settings.footerSocialInstagram || '#',
-        footerSocialTwitter: settings.footerSocialTwitter || '#',
-        footerCopyrightText: settings.footerCopyrightText || '© 2025 Velora Tradings. All rights reserved.',
+        siteName: formData.siteName || 'Velora Tradings',
+        logoUrl: formData.logoUrl || '',
+        primaryColor: formData.primaryColor || '#815536',
+        secondaryColor: formData.secondaryColor || '#c9baa8',
+        heroTitle: formData.heroTitle || 'Discover Your Signature Scent',
+        heroSubtitle: formData.heroSubtitle || 'Experience luxury fragrances that define your personality.',
+        adminEmail: formData.adminEmail || 'shafeeqkpt@gmail.com',
+        smtpHost: formData.smtpHost || '',
+        smtpPort: formData.smtpPort || 587,
+        smtpSecure: formData.smtpSecure !== undefined ? formData.smtpSecure : true,
+        smtpUser: formData.smtpUser || '',
+        smtpPassword: formData.smtpPassword || '',
+        smtpFromEmail: formData.smtpFromEmail || '',
+        smtpFromName: formData.smtpFromName || '',
+        siteLogoUrl: formData.siteLogoUrl || '',
+        siteFaviconUrl: formData.siteFaviconUrl || '',
+        currencySymbol: formData.currencySymbol || '₹',
+        currencyCode: formData.currencyCode || 'INR',
+        taxRate: formData.taxRate || 0,
+        shippingEnabled: formData.shippingEnabled !== undefined ? formData.shippingEnabled : true,
+        freeShippingThreshold: formData.freeShippingThreshold || 0,
+        contactPhone: formData.contactPhone || '',
+        contactAddress: formData.contactAddress || '',
+        socialFacebook: formData.socialFacebook || '',
+        socialTwitter: formData.socialTwitter || '',
+        socialInstagram: formData.socialInstagram || '',
+        socialLinkedin: formData.socialLinkedin || '',
+        metaTitle: formData.metaTitle || '',
+        metaDescription: formData.metaDescription || '',
+        metaKeywords: formData.metaKeywords || '',
+        googleAnalyticsId: formData.googleAnalyticsId || '',
+        maintenanceMode: formData.maintenanceMode !== undefined ? formData.maintenanceMode : false,
+        maintenanceMessage: formData.maintenanceMessage || 'We are currently performing maintenance. Please check back soon.',
+        aboutHeroTitle: formData.aboutHeroTitle || 'About Velora Tradings',
+        aboutHeroSubtitle: formData.aboutHeroSubtitle || 'Crafting memories through exquisite fragrances since 2020.',
+        aboutStoryParagraph1: formData.aboutStoryParagraph1 || 'Founded with a passion for luxury and elegance...',
+        aboutStoryParagraph2: formData.aboutStoryParagraph2 || 'Today, we curate an exclusive collection...',
+        aboutYearsExperience: formData.aboutYearsExperience || '5+',
+        aboutHappyCustomers: formData.aboutHappyCustomers || '10K+',
+        aboutPremiumFragrances: formData.aboutPremiumFragrances || '100+',
+        aboutValueQualityTitle: formData.aboutValueQualityTitle || 'Quality Excellence',
+        aboutValueQualityDescription: formData.aboutValueQualityDescription || 'We source only the finest fragrances...',
+        aboutValueCustomerTitle: formData.aboutValueCustomerTitle || 'Customer First',
+        aboutValueCustomerDescription: formData.aboutValueCustomerDescription || 'Your satisfaction is our priority...',
+        aboutValueGlobalTitle: formData.aboutValueGlobalTitle || 'Global Reach',
+        aboutValueGlobalDescription: formData.aboutValueGlobalDescription || 'Bringing international luxury fragrances...',
+        aboutValuePassionTitle: formData.aboutValuePassionTitle || 'Passion Driven',
+        aboutValuePassionDescription: formData.aboutValuePassionDescription || 'Our love for fragrances drives us...',
+        aboutWhyChoose1: formData.aboutWhyChoose1 || 'Authentic products from verified suppliers',
+        aboutWhyChoose2: formData.aboutWhyChoose2 || '100% genuine fragrances with quality guarantee',
+        aboutWhyChoose3: formData.aboutWhyChoose3 || 'Expert curation and personalized recommendations',
+        aboutWhyChoose4: formData.aboutWhyChoose4 || 'Secure packaging and fast delivery',
+        aboutWhyChoose5: formData.aboutWhyChoose5 || 'Competitive pricing on luxury fragrances',
+        aboutWhyChoose6: formData.aboutWhyChoose6 || '24/7 customer support and after-sales service',
+        aboutCtaTitle: formData.aboutCtaTitle || 'Ready to Find Your Signature Scent?',
+        aboutCtaSubtitle: formData.aboutCtaSubtitle || 'Explore our curated collection of premium fragrances...',
+        contactHeroSubtitle: formData.contactHeroSubtitle || 'Have questions about our fragrances?...',
+        contactAddressLine1: formData.contactAddressLine1 || 'Perinthalmanna',
+        contactAddressLine2: formData.contactAddressLine2 || 'Kerala',
+        contactCity: formData.contactCity || 'Perinthalmanna',
+        contactCountry: formData.contactCountry || 'India',
+        contactPhone1: formData.contactPhone1 || '+91 73560 62349',
+        contactPhone2: formData.contactPhone2 || '+91 98765 43211',
+        contactEmail1: formData.contactEmail1 || 'info@veloratradings.com',
+        contactEmail2: formData.contactEmail2 || 'support@veloratradings.com',
+        contactEmail3: formData.contactEmail3 || 'orders@veloratradings.com',
+        contactHoursMonFri: formData.contactHoursMonFri || 'Monday - Friday: 10AM - 8PM',
+        contactHoursSat: formData.contactHoursSat || 'Saturday: 10AM - 8PM',
+        contactHoursSun: formData.contactHoursSun || 'Sunday: 11AM - 6PM',
+        contactHoursHolidays: formData.contactHoursHolidays || 'Holidays: 12PM - 5PM',
+        contactFormTitle: formData.contactFormTitle || 'Send Us a Message',
+        contactFormSubtitle: formData.contactFormSubtitle || 'Fill out the form below...',
+        contactFaqTitle: formData.contactFaqTitle || 'Frequently Asked Questions',
+        contactFaqSubtitle: formData.contactFaqSubtitle || 'Quick answers to common questions...',
+        contactFaq1Question: formData.contactFaq1Question || 'Are all your fragrances authentic?',
+        contactFaq1Answer: formData.contactFaq1Answer || 'Yes, we guarantee 100% authentic products...',
+        contactFaq2Question: formData.contactFaq2Question || 'Do you offer fragrance samples?',
+        contactFaq2Answer: formData.contactFaq2Answer || 'Yes, we offer sample sizes for most of our fragrances...',
+        contactFaq3Question: formData.contactFaq3Question || 'What is your return policy?',
+        contactFaq3Answer: formData.contactFaq3Answer || 'We offer a 30-day return policy...',
+        contactFaq4Question: formData.contactFaq4Question || 'How long does shipping take?',
+        contactFaq4Answer: formData.contactFaq4Answer || 'Standard shipping takes 3-5 business days...',
+        contactFaq5Question: formData.contactFaq5Question || 'Do you provide fragrance recommendations?',
+        contactFaq5Answer: formData.contactFaq5Answer || 'Absolutely! Our fragrance experts are happy to provide...',
+        footerCompanyDescription: formData.footerCompanyDescription || 'Discover the essence of luxury with Velora Tradings...',
+        footerSocialFacebook: formData.footerSocialFacebook || '#',
+        footerSocialInstagram: formData.footerSocialInstagram || '#',
+        footerSocialTwitter: formData.footerSocialTwitter || '#',
+        footerCopyrightText: formData.footerCopyrightText || '© 2025 Velora Tradings. All rights reserved.',
       });
     }
   }, [settingsLoading, settingsError, settings, reset]);
@@ -226,18 +226,19 @@ const AdminSettings: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Update each setting individually
-      const updates = Object.keys(data).map(key =>
-        updateSetting(key, (data as any)[key])
-      );
-      
+      // Convert camelCase form data to snake_case for database
+      const updates = Object.keys(data).map(key => {
+        const dbKey = camelToSnake(key);
+        return updateSetting(dbKey, (data as any)[key]);
+      });
+
       const results = await Promise.all(updates);
       const hasError = results.some(result => result.error);
 
       if (hasError) {
-        showToast('Failed to save some settings. Check console for details.', 'error');
+        showToast('Some settings failed to save. Please try again.', 'error');
       } else {
-        showToast('All settings saved successfully!', 'success');
+        showToast('Settings saved successfully!', 'success');
       }
     } catch (error: any) {
       console.error('Error saving site settings:', error);
@@ -282,12 +283,16 @@ const AdminSettings: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-admin-background text-admin-text p-8">
+    <div className="min-h-screen bg-admin-background text-admin-text p-4 md:p-8">
       {/* Header */}
-      <header className="bg-admin-card shadow-lg rounded-xl p-6 mb-8">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-3xl font-bold text-admin-text">Site Settings</h1>
+      <header className="bg-gradient-to-r from-admin-primary to-admin-primary-dark shadow-xl rounded-2xl p-6 mb-6">
+        <div className="flex items-center space-x-3">
+          <div className="bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+            <Settings className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-white">Site Settings</h1>
+            <p className="text-white/80 text-sm mt-1">Configure your store settings and preferences</p>
           </div>
         </div>
       </header>
@@ -295,30 +300,32 @@ const AdminSettings: React.FC = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-admin-card rounded-xl shadow-lg p-6"
+        className="bg-admin-card rounded-2xl shadow-xl overflow-hidden"
       >
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Tab Navigation */}
-          <div className="flex flex-wrap gap-2 mb-6 border-b border-admin-border pb-4">
+          <div className="bg-admin-sidebar px-4 py-3 border-b border-admin-border">
+            <div className="flex flex-wrap gap-2">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg font-medium transition-all duration-200
+                className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg font-medium transition-all duration-200 text-sm
                   ${activeTab === tab.id
-                    ? 'bg-admin-primary text-white shadow-md'
-                    : 'bg-admin-sidebar text-admin-text-light hover:bg-admin-border'
+                    ? 'bg-admin-primary text-white shadow-lg scale-105'
+                    : 'bg-admin-card text-admin-text-light hover:bg-admin-border hover:text-admin-text'
                   }`}
               >
-                <tab.icon className="h-5 w-5" />
-                <span>{tab.label}</span>
+                <tab.icon className="h-4 w-4" />
+                <span className="hidden sm:inline">{tab.label}</span>
               </button>
             ))}
+            </div>
           </div>
 
           {/* Tab Content */}
-          <div>
+          <div className="p-6">
             {activeTab === 'general' && (
               <motion.div
                 key="general"
@@ -329,7 +336,7 @@ const AdminSettings: React.FC = () => {
                 className="space-y-6" // Added space-y for spacing between sections
               >
                 {/* General Settings Section */}
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'general')?.color}`}>
                     <Settings className="h-6 w-6" />
                     <span>General Settings</span>
@@ -354,7 +361,7 @@ const AdminSettings: React.FC = () => {
                 </div>
 
                 {/* Theme Colors Section */}
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'general')?.color}`}>
                     <Palette className="h-6 w-6" />
                     <span>Theme Colors</span>
@@ -390,7 +397,7 @@ const AdminSettings: React.FC = () => {
                 transition={{ duration: 0.3 }}
                 className="space-y-6"
               >
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'email')?.color}`}>
                     <Mail className="h-6 w-6" />
                     <span>Admin Email</span>
@@ -409,7 +416,7 @@ const AdminSettings: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'email')?.color}`}>
                     <Server className="h-6 w-6" />
                     <span>SMTP Configuration</span>
@@ -520,7 +527,7 @@ const AdminSettings: React.FC = () => {
                 transition={{ duration: 0.3 }}
                 className="space-y-6"
               >
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'payment')?.color}`}>
                     <DollarSign className="h-6 w-6" />
                     <span>Currency Settings</span>
@@ -577,7 +584,7 @@ const AdminSettings: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h2 className="text-2xl font-bold mb-4 text-admin-text">Branding</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -601,7 +608,7 @@ const AdminSettings: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h2 className="text-2xl font-bold mb-4 text-admin-text">Contact Information</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -625,7 +632,7 @@ const AdminSettings: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h2 className="text-2xl font-bold mb-4 text-admin-text">Social Media</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -678,7 +685,7 @@ const AdminSettings: React.FC = () => {
                 transition={{ duration: 0.3 }}
                 className="space-y-6"
               >
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'seo')?.color}`}>
                     <Globe className="h-6 w-6" />
                     <span>SEO Settings</span>
@@ -734,7 +741,7 @@ const AdminSettings: React.FC = () => {
                 transition={{ duration: 0.3 }}
                 className="space-y-6"
               >
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'maintenance')?.color}`}>
                     <ShieldCheck className="h-6 w-6" />
                     <span>Maintenance Mode</span>
@@ -775,7 +782,7 @@ const AdminSettings: React.FC = () => {
                 className="space-y-6"
               >
                 {/* Home Page Hero Section Content */}
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'home')?.color}`}>
                     <Home className="h-6 w-6" />
                     <span>Home Page Hero Section Content</span>
@@ -811,7 +818,7 @@ const AdminSettings: React.FC = () => {
                 className="space-y-6"
               >
                 {/* About Hero Section */}
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'about')?.color}`}>
                     <Info className="h-6 w-6" />
                     <span>About Hero Section</span>
@@ -834,7 +841,7 @@ const AdminSettings: React.FC = () => {
                 </div>
 
                 {/* Our Story Section */}
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h3 className="text-xl font-bold text-admin-text mb-4">Our Story</h3>
                   <div>
                     <label className="block text-sm font-medium text-admin-text-dark mb-2">Story Paragraph 1</label>
@@ -878,7 +885,7 @@ const AdminSettings: React.FC = () => {
                 </div>
 
                 {/* Our Values Section */}
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h3 className="text-xl font-bold text-admin-text mb-4">Our Values</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -909,7 +916,7 @@ const AdminSettings: React.FC = () => {
                 </div>
 
                 {/* Why Choose Us Section */}
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h3 className="text-xl font-bold text-admin-text mb-4">Why Choose Us</h3>
                   <div className="space-y-4">
                     {[1, 2, 3, 4, 5, 6].map(i => (
@@ -922,7 +929,7 @@ const AdminSettings: React.FC = () => {
                 </div>
 
                 {/* Call to Action Section */}
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h3 className="text-xl font-bold text-admin-text mb-4">Call to Action</h3>
                   <div>
                     <label className="block text-sm font-medium text-admin-text-dark mb-2">CTA Title</label>
@@ -946,7 +953,7 @@ const AdminSettings: React.FC = () => {
                 className="space-y-6"
               >
                 {/* Contact Hero Section */}
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'contact')?.color}`}>
                     <Phone className="h-6 w-6" />
                     <span>Contact Hero Section</span>
@@ -962,7 +969,7 @@ const AdminSettings: React.FC = () => {
                 </div>
 
                 {/* Contact Details Section */}
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h3 className="text-xl font-bold text-admin-text mb-4">Contact Details</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -1005,7 +1012,7 @@ const AdminSettings: React.FC = () => {
                 </div>
 
                 {/* Business Hours Section */}
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h3 className="text-xl font-bold text-admin-text mb-4">Business Hours</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -1028,7 +1035,7 @@ const AdminSettings: React.FC = () => {
                 </div>
 
                 {/* Contact Form Section */}
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h3 className="text-xl font-bold text-admin-text mb-4">Contact Form Section</h3>
                   <div>
                     <label className="block text-sm font-medium text-admin-text-dark mb-2">Form Title</label>
@@ -1041,7 +1048,7 @@ const AdminSettings: React.FC = () => {
                 </div>
 
                 {/* FAQ Section */}
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h3 className="text-xl font-bold text-admin-text mb-4">FAQ Section</h3>
                   <div>
                     <label className="block text-sm font-medium text-admin-text-dark mb-2">FAQ Title</label>
@@ -1073,7 +1080,7 @@ const AdminSettings: React.FC = () => {
                 className="space-y-6"
               >
                 {/* Company Description Section */}
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'footer')?.color}`}>
                     <LayoutDashboard className="h-6 w-6" />
                     <span>Company Description</span>
@@ -1089,7 +1096,7 @@ const AdminSettings: React.FC = () => {
                 </div>
 
                 {/* Social Media Links Section */}
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h3 className="text-xl font-bold text-admin-text mb-4">Social Media Links</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
@@ -1108,7 +1115,7 @@ const AdminSettings: React.FC = () => {
                 </div>
 
                 {/* Copyright Text Section */}
-                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
                   <h3 className="text-xl font-bold text-admin-text mb-4">Copyright Text</h3>
                   <div>
                     <label className="block text-sm font-medium text-admin-text-dark mb-2">Copyright Text</label>
@@ -1119,15 +1126,17 @@ const AdminSettings: React.FC = () => {
             )}
           </div>
 
-          <div className="flex justify-end pt-6">
+          <div className="sticky bottom-0 bg-admin-card border-t border-admin-border px-6 py-4 flex justify-between items-center">
+            <p className="text-sm text-admin-text-light">Save your changes to update the site configuration</p>
             <motion.button
               type="submit"
               disabled={isLoading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="px-6 py-3 bg-admin-primary text-white rounded-lg hover:bg-admin-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              className="px-8 py-3 bg-gradient-to-r from-admin-primary to-admin-primary-dark text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
             >
-              {isLoading ? 'Saving...' : 'Save Settings'}
+              <Settings className="h-5 w-5" />
+              <span>{isLoading ? 'Saving Changes...' : 'Save All Settings'}</span>
             </motion.button>
           </div>
         </form>
