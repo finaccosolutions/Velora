@@ -85,7 +85,7 @@ const Checkout: React.FC = () => {
   // Only redirect if we're NOT in buy now mode and cart is empty after loading
   useEffect(() => {
     // Skip redirect logic if in buy now mode
-    if (buyNowProduct) {
+    if (buyNowProductId) {
       return;
     }
 
@@ -94,7 +94,7 @@ const Checkout: React.FC = () => {
       console.log('Cart is empty, redirecting to cart page');
       navigate('/cart', { replace: true });
     }
-  }, [buyNowProduct, cartLoading, cartItems.length, navigate]);
+  }, [buyNowProductId, cartLoading, cartItems.length, navigate]);
 
   useEffect(() => {
     if (addresses.length > 0 && !selectedAddressId) {
@@ -476,7 +476,7 @@ const Checkout: React.FC = () => {
 
 
   // Show loading state only when NOT in buy now mode and cart is still loading
-  if (!buyNowProduct && cartLoading) {
+  if (!buyNowProductId && cartLoading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -490,7 +490,7 @@ const Checkout: React.FC = () => {
   }
 
   // If NOT in buy now mode and cart is empty, show message (will redirect)
-  if (!buyNowProduct && cartItems.length === 0) {
+  if (!buyNowProductId && cartItems.length === 0) {
     return null; // Will redirect via useEffect
   }
 
