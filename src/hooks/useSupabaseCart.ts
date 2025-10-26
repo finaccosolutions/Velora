@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 
 interface CartItem {
-  id: string; product_id: string; quantity: number; product: { id: string; name: string; price: number; original_price?: number | null; image_url: string; category: string; category_name: string; in_stock: boolean; };
+  id: string; product_id: string; quantity: number; product: { id: string; name: string; price: number; image_url: string; category: string; category_name: string; in_stock: boolean; };
 }
 
 export const useSupabaseCart = () => {
@@ -42,7 +42,6 @@ export const useSupabaseCart = () => {
               id,
               name,
               price,
-              original_price,
               image_url,
               category,
               in_stock,

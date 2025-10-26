@@ -15,7 +15,7 @@ const FeaturedProducts: React.FC = () => {
   const { showToast } = useToast();
   const navigate = useNavigate();
 
-  const featuredProducts = products.slice(0, 4);
+  const featuredProducts = products;
 
   const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
     if (event) {
@@ -62,10 +62,11 @@ const FeaturedProducts: React.FC = () => {
     }
   };
 
-  const handleBuyNow = (e: React.MouseEvent, productId: string) => {
+  const handleBuyNow = async (e: React.MouseEvent, productId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    navigate('/checkout', { state: { buyNowProductId: productId } });
+    await addToCart(productId, 1);
+    navigate('/checkout');
   };
 
   if (loading) {
@@ -259,20 +260,6 @@ const FeaturedProducts: React.FC = () => {
           ))}
         </div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-          className="text-center mt-16"
-        >
-          <Link
-            to="/products"
-            className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white font-semibold rounded-lg hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200 space-x-2"
-          >
-            <span>View All Products</span>
-            <ArrowRight className="h-5 w-5" />
-          </Link>
-        </motion.div>
       </div>
     </section>
   );

@@ -66,8 +66,8 @@ const AdminProducts: React.FC = () => {
   });
 
   const openModal = (product?: any) => {
+    setEditingProduct(product);
     if (product) {
-      setEditingProduct(product);
       reset({
         name: product.name,
         description: product.description,
@@ -87,7 +87,6 @@ const AdminProducts: React.FC = () => {
         default_delivery_days: product.default_delivery_days || 7,
       });
     } else {
-      setEditingProduct(null);
       reset({
         name: '',
         description: '',
@@ -117,9 +116,6 @@ const AdminProducts: React.FC = () => {
   };
 
   const onSubmit = async (data: ProductForm) => {
-    const currentProductId = editingProduct?.id;
-    const isUpdate = !!currentProductId;
-
     setIsLoading(true);
 
     const productData = {
@@ -138,19 +134,16 @@ const AdminProducts: React.FC = () => {
 
     try {
       let result;
-      if (isUpdate && currentProductId) {
-        console.log('Updating product:', currentProductId, productData);
-        result = await updateProduct(currentProductId, productData);
+      if (editingProduct) {
+        result = await updateProduct(editingProduct.id, productData);
       } else {
-        console.log('Creating product:', productData);
         result = await createProduct(productData);
       }
 
       if (result.error) {
         throw result.error;
       }
-
-      showToast(`Product ${isUpdate ? 'updated' : 'added'} successfully!`, 'success');
+      showToast(`Product ${editingProduct ? 'updated' : 'added'} successfully!`, 'success');
       closeModal();
     } catch (error: any) {
       console.error('Error saving product:', error);
@@ -612,7 +605,7 @@ const AdminProducts: React.FC = () => {
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="flex-1 px-4 py-3 bg-admin-primary text-white rounded-lg hover:bg-admin-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                      className="flex-1 px-4 py-3 bg-admin-primary text-white rounded-lg hover:bg-admin-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Save className="h-4 w-4" />
                       <span>{isLoading ? 'Saving...' : 'Save Product'}</span>
