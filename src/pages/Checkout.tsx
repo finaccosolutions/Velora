@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CreditCard, Truck, MapPin, Plus, CreditCard as Edit2, Trash2, Check, Info, X } from 'lucide-react';
-import { useSupabaseCart } from '../hooks/useSupabaseCart';
+import { useCart } from '../hooks/useCart';
 import { useAuth } from '../context/AuthContext';
 import { useSupabaseProducts } from '../hooks/useSupabaseProducts';
 import { useAddresses } from '../hooks/useAddresses';
@@ -19,7 +19,7 @@ declare global {
 }
 
 const Checkout: React.FC = () => {
-  const { cartItems, getCartTotal, clearCart, loading: cartLoading } = useSupabaseCart();
+  const { cartItems, getCartTotal, clearCart, loading: cartLoading } = useCart();
   const { user, userProfile } = useAuth();
   const { products } = useSupabaseProducts();
   const { addresses, addAddress, updateAddress, deleteAddress, loading: addressLoading } = useAddresses();
@@ -51,7 +51,12 @@ const Checkout: React.FC = () => {
     product: buyNowProduct
   }] : cartItems;
 
-  const selectedAddress = addresses.find(a => a.id === selectedAddressId);
+  const [guestAddress, setGuestAddress] = useState<any>(null);
+  const [guestEmail, setGuestEmail] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
+  const [guestFullName, setGuestFullName] = useState('');
+
+  const selectedAddress = user ? addresses.find(a => a.id === selectedAddressId) : guestAddress;
   const customerState = selectedAddress?.state || 'Maharashtra';
   const businessState = settings.business_state || 'Maharashtra';
 

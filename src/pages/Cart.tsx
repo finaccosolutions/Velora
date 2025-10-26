@@ -2,13 +2,13 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Info, X } from 'lucide-react';
-import { useSupabaseCart } from '../hooks/useSupabaseCart';
+import { useCart } from '../hooks/useCart';
 import { useAuth } from '../context/AuthContext';
 import { useSiteSettings } from '../hooks/useSiteSettings';
 import { calculateGSTBreakdown, getGSTLabel } from '../utils/gstCalculator';
 
 const Cart: React.FC = () => {
-  const { cartItems, removeFromCart, updateQuantity, getCartTotal, clearCart, loading } = useSupabaseCart();
+  const { cartItems, removeFromCart, updateQuantity, getCartTotal, clearCart, loading } = useCart();
   const { userProfile } = useAuth();
   const { settings } = useSiteSettings();
   const navigate = useNavigate();

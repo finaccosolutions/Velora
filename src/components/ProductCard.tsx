@@ -2,8 +2,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Heart, Star } from 'lucide-react';
-import { useSupabaseCart } from '../hooks/useSupabaseCart';
-import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
+import { useCart } from '../hooks/useCart';
+import { useWishlist } from '../hooks/useWishlist';
 import { motion } from 'framer-motion';
 import { useToast } from '../context/ToastContext'; // NEW: Import useToast
 import { useNavigate } from 'react-router-dom'; // NEW: Import useNavigate
@@ -14,8 +14,8 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, index }) => {
-  const { addToCart } = useSupabaseCart();
-  const { addToWishlist, removeFromWishlistByProductId, isInWishlist } = useSupabaseWishlist();
+  const { addToCart } = useCart();
+  const { addToWishlist, removeFromWishlistByProductId, isInWishlist } = useWishlist();
   const { showToast } = useToast();
   const navigate = useNavigate();
 

@@ -4,16 +4,16 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Star, Minus, Plus, ArrowLeft, Shield, Truck, RotateCcw } from 'lucide-react';
 import { useSupabaseProducts } from '../hooks/useSupabaseProducts';
-import { useSupabaseCart } from '../hooks/useSupabaseCart';
-import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
+import { useCart } from '../hooks/useCart';
+import { useWishlist } from '../hooks/useWishlist';
 import { useToast } from '../context/ToastContext'; // NEW: Import useToast
 
 const ProductDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getProductById } = useSupabaseProducts();
-  const { addToCart } = useSupabaseCart();
-  const { addToWishlist, removeFromWishlistByProductId, isInWishlist } = useSupabaseWishlist();
+  const { addToCart } = useCart();
+  const { addToWishlist, removeFromWishlistByProductId, isInWishlist } = useWishlist();
   const [quantity, setQuantity] = useState(1);
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);

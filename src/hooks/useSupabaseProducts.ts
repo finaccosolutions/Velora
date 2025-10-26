@@ -45,6 +45,10 @@ export const useSupabaseProducts = () => {
           created_at,
           updated_at,
           stock_quantity,
+          gst_percentage,
+          hsn_code,
+          price_inclusive_of_tax,
+          default_delivery_days,
           categories!inner(name)
         `)
         .order('name', { ascending: true });
@@ -148,6 +152,10 @@ export const useSupabaseProducts = () => {
             created_at,
             updated_at,
             stock_quantity,
+            gst_percentage,
+            hsn_code,
+            price_inclusive_of_tax,
+            default_delivery_days,
             categories!inner(name)
           `)
           .eq('id', id)
@@ -194,7 +202,11 @@ export const useSupabaseProducts = () => {
     reviews_count?: number;
     features?: string[];
     ingredients?: string[] | null;
-    stock_quantity?: number; // NEW: Add stock_quantity
+    stock_quantity?: number;
+    gst_percentage?: number;
+    hsn_code?: string;
+    price_inclusive_of_tax?: boolean;
+    default_delivery_days?: number;
   }
 
   const createProduct = async (product: ProductInsertUpdate) => {
