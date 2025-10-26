@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Settings, Palette, Type, Image as ImageIcon, Info, Phone, MessageCircle, Home, LayoutDashboard,
+  Settings, Palette, Type, Image as ImageIcon, Info, Phone, MessageCircle, Home, LayoutDashboard, Mail, Server, Globe, DollarSign, ShieldCheck,
 } from 'lucide-react'; // NEW: Import Home and LayoutDashboard for tab icons
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -18,6 +18,32 @@ interface SiteSettingsForm {
   heroTitle: string;
   heroSubtitle: string;
   adminEmail: string;
+  smtpHost: string;
+  smtpPort: number;
+  smtpSecure: boolean;
+  smtpUser: string;
+  smtpPassword: string;
+  smtpFromEmail: string;
+  smtpFromName: string;
+  siteLogoUrl: string;
+  siteFaviconUrl: string;
+  currencySymbol: string;
+  currencyCode: string;
+  taxRate: number;
+  shippingEnabled: boolean;
+  freeShippingThreshold: number;
+  contactPhone: string;
+  contactAddress: string;
+  socialFacebook: string;
+  socialTwitter: string;
+  socialInstagram: string;
+  socialLinkedin: string;
+  metaTitle: string;
+  metaDescription: string;
+  metaKeywords: string;
+  googleAnalyticsId: string;
+  maintenanceMode: boolean;
+  maintenanceMessage: string;
   // NEW: About Page Content
   aboutHeroTitle: string;
   aboutHeroSubtitle: string;
@@ -107,6 +133,32 @@ const AdminSettings: React.FC = () => {
         heroTitle: settings.heroTitle || 'Discover Your Signature Scent',
         heroSubtitle: settings.heroSubtitle || 'Experience luxury fragrances that define your personality.',
         adminEmail: settings.adminEmail || 'shafeeqkpt@gmail.com',
+        smtpHost: settings.smtpHost || '',
+        smtpPort: settings.smtpPort || 587,
+        smtpSecure: settings.smtpSecure !== undefined ? settings.smtpSecure : true,
+        smtpUser: settings.smtpUser || '',
+        smtpPassword: settings.smtpPassword || '',
+        smtpFromEmail: settings.smtpFromEmail || '',
+        smtpFromName: settings.smtpFromName || '',
+        siteLogoUrl: settings.siteLogoUrl || '',
+        siteFaviconUrl: settings.siteFaviconUrl || '',
+        currencySymbol: settings.currencySymbol || '₹',
+        currencyCode: settings.currencyCode || 'INR',
+        taxRate: settings.taxRate || 0,
+        shippingEnabled: settings.shippingEnabled !== undefined ? settings.shippingEnabled : true,
+        freeShippingThreshold: settings.freeShippingThreshold || 0,
+        contactPhone: settings.contactPhone || '',
+        contactAddress: settings.contactAddress || '',
+        socialFacebook: settings.socialFacebook || '',
+        socialTwitter: settings.socialTwitter || '',
+        socialInstagram: settings.socialInstagram || '',
+        socialLinkedin: settings.socialLinkedin || '',
+        metaTitle: settings.metaTitle || '',
+        metaDescription: settings.metaDescription || '',
+        metaKeywords: settings.metaKeywords || '',
+        googleAnalyticsId: settings.googleAnalyticsId || '',
+        maintenanceMode: settings.maintenanceMode !== undefined ? settings.maintenanceMode : false,
+        maintenanceMessage: settings.maintenanceMessage || 'We are currently performing maintenance. Please check back soon.',
         // NEW: About Page Content
         aboutHeroTitle: settings.aboutHeroTitle || 'About Velora Tradings',
         aboutHeroSubtitle: settings.aboutHeroSubtitle || 'Crafting memories through exquisite fragrances since 2020.',
@@ -219,7 +271,10 @@ const AdminSettings: React.FC = () => {
 
   const tabs = [
     { id: 'general', label: 'General', icon: Settings, color: 'text-admin-primary' },
-    { id: 'email', label: 'Email Settings', icon: MessageCircle, color: 'text-admin-danger' },
+    { id: 'email', label: 'Email & SMTP', icon: Mail, color: 'text-red-500' },
+    { id: 'payment', label: 'Payment & Currency', icon: DollarSign, color: 'text-green-500' },
+    { id: 'seo', label: 'SEO & Analytics', icon: Globe, color: 'text-blue-500' },
+    { id: 'maintenance', label: 'Maintenance', icon: ShieldCheck, color: 'text-orange-500' },
     { id: 'home', label: 'Home Page', icon: Home, color: 'text-admin-success' },
     { id: 'about', label: 'About Page', icon: Info, color: 'text-admin-warning' },
     { id: 'contact', label: 'Contact Page', icon: Phone, color: 'text-admin-secondary' },
@@ -337,17 +392,9 @@ const AdminSettings: React.FC = () => {
               >
                 <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
                   <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'email')?.color}`}>
-                    <MessageCircle className="h-6 w-6" />
-                    <span>Email Configuration</span>
+                    <Mail className="h-6 w-6" />
+                    <span>Admin Email</span>
                   </h2>
-
-                  <div className="bg-admin-warning/10 border border-admin-warning/30 rounded-lg p-4 mb-6">
-                    <p className="text-admin-text text-sm">
-                      <strong>Note:</strong> SMTP configuration is managed through environment variables.
-                      The admin email below is used for receiving order notifications.
-                    </p>
-                  </div>
-
                   <div>
                     <label className="block text-sm font-medium text-admin-text-dark mb-2">Admin Email Address</label>
                     <input
@@ -360,23 +407,359 @@ const AdminSettings: React.FC = () => {
                       This email will receive all order notifications from customers.
                     </p>
                   </div>
+                </div>
 
-                  <div className="mt-6 bg-admin-info/10 border border-admin-info/30 rounded-lg p-4">
-                    <h3 className="font-semibold text-admin-text mb-2">SMTP Configuration Required</h3>
-                    <p className="text-admin-text text-sm mb-3">
-                      To enable email notifications, you need to set up SMTP environment variables:
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'email')?.color}`}>
+                    <Server className="h-6 w-6" />
+                    <span>SMTP Configuration</span>
+                  </h2>
+
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                    <p className="text-admin-text text-sm">
+                      <strong>Configure your SMTP settings below.</strong> These settings will be used to send order confirmation emails to customers and admins.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">SMTP Host *</label>
+                      <input
+                        {...register('smtpHost')}
+                        type="text"
+                        placeholder="smtp.example.com or smtp2go.com"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Your SMTP server hostname</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">SMTP Port *</label>
+                      <input
+                        {...register('smtpPort', { valueAsNumber: true })}
+                        type="number"
+                        placeholder="587"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Usually 587 (TLS) or 465 (SSL)</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">SMTP Username *</label>
+                      <input
+                        {...register('smtpUser')}
+                        type="text"
+                        placeholder="your-username"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Your SMTP username</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">SMTP Password / API Key *</label>
+                      <input
+                        {...register('smtpPassword')}
+                        type="password"
+                        placeholder="your-password-or-api-key"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Your SMTP password or API key</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">From Email Address *</label>
+                      <input
+                        {...register('smtpFromEmail')}
+                        type="email"
+                        placeholder="noreply@yourdomain.com"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Email address to send from</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">From Name</label>
+                      <input
+                        {...register('smtpFromName')}
+                        type="text"
+                        placeholder="Your Store Name"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Display name for outgoing emails</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="flex items-center space-x-2">
+                        <input
+                          {...register('smtpSecure')}
+                          type="checkbox"
+                          className="w-5 h-5 text-admin-primary focus:ring-2 focus:ring-admin-primary border-admin-border rounded"
+                        />
+                        <span className="text-sm font-medium text-admin-text-dark">Use TLS/SSL (Recommended)</span>
+                      </label>
+                      <p className="text-xs text-admin-text-light mt-1 ml-7">Enable secure connection to SMTP server</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                    <h3 className="font-semibold text-admin-text mb-2">Recommended SMTP Provider: SMTP2GO</h3>
+                    <p className="text-admin-text text-sm mb-2">
+                      For reliable email delivery, we recommend using SMTP2GO. It's easy to set up and offers a free tier.
                     </p>
                     <ul className="list-disc list-inside text-admin-text text-sm space-y-1 ml-2">
-                      <li>SMTP_HOST - Your SMTP server hostname</li>
-                      <li>SMTP_PORT - SMTP server port (usually 587 or 465)</li>
-                      <li>SMTP_USER - SMTP username</li>
-                      <li>SMTP_PASSWORD - SMTP password or API key</li>
-                      <li>SMTP_FROM_EMAIL - Sender email address</li>
-                      <li>SMTP_FROM_NAME - Sender name (optional)</li>
+                      <li>Sign up at smtp2go.com</li>
+                      <li>Get your API key from the dashboard</li>
+                      <li>Use your API key as the SMTP Password above</li>
+                      <li>SMTP Host: api.smtp2go.com (optional, for standard SMTP)</li>
                     </ul>
-                    <p className="text-admin-text text-sm mt-3">
-                      See the SMTP_SETUP.md file in your project root for detailed instructions.
-                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'payment' && (
+              <motion.div
+                key="payment"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'payment')?.color}`}>
+                    <DollarSign className="h-6 w-6" />
+                    <span>Currency Settings</span>
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Currency Symbol</label>
+                      <input
+                        {...register('currencySymbol')}
+                        type="text"
+                        placeholder="₹"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Currency Code</label>
+                      <input
+                        {...register('currencyCode')}
+                        type="text"
+                        placeholder="INR"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Tax Rate (%)</label>
+                      <input
+                        {...register('taxRate', { valueAsNumber: true })}
+                        type="number"
+                        step="0.01"
+                        placeholder="0"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Free Shipping Threshold</label>
+                      <input
+                        {...register('freeShippingThreshold', { valueAsNumber: true })}
+                        type="number"
+                        placeholder="0"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Minimum order value for free shipping (0 = no free shipping)</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="flex items-center space-x-2">
+                        <input
+                          {...register('shippingEnabled')}
+                          type="checkbox"
+                          className="w-5 h-5 text-admin-primary focus:ring-2 focus:ring-admin-primary border-admin-border rounded"
+                        />
+                        <span className="text-sm font-medium text-admin-text-dark">Enable Shipping</span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h2 className="text-2xl font-bold mb-4 text-admin-text">Branding</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Site Logo URL</label>
+                      <input
+                        {...register('siteLogoUrl')}
+                        type="text"
+                        placeholder="https://example.com/logo.png"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Site Favicon URL</label>
+                      <input
+                        {...register('siteFaviconUrl')}
+                        type="text"
+                        placeholder="https://example.com/favicon.ico"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h2 className="text-2xl font-bold mb-4 text-admin-text">Contact Information</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Contact Phone</label>
+                      <input
+                        {...register('contactPhone')}
+                        type="text"
+                        placeholder="+91 12345 67890"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Contact Address</label>
+                      <input
+                        {...register('contactAddress')}
+                        type="text"
+                        placeholder="123 Main St, City, Country"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h2 className="text-2xl font-bold mb-4 text-admin-text">Social Media</h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Facebook URL</label>
+                      <input
+                        {...register('socialFacebook')}
+                        type="text"
+                        placeholder="https://facebook.com/yourpage"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Twitter URL</label>
+                      <input
+                        {...register('socialTwitter')}
+                        type="text"
+                        placeholder="https://twitter.com/yourhandle"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Instagram URL</label>
+                      <input
+                        {...register('socialInstagram')}
+                        type="text"
+                        placeholder="https://instagram.com/yourhandle"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">LinkedIn URL</label>
+                      <input
+                        {...register('socialLinkedin')}
+                        type="text"
+                        placeholder="https://linkedin.com/company/yourcompany"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'seo' && (
+              <motion.div
+                key="seo"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'seo')?.color}`}>
+                    <Globe className="h-6 w-6" />
+                    <span>SEO Settings</span>
+                  </h2>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Meta Title</label>
+                      <input
+                        {...register('metaTitle')}
+                        type="text"
+                        placeholder="Your Site - Best Products Online"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Meta Description</label>
+                      <textarea
+                        {...register('metaDescription')}
+                        rows={3}
+                        placeholder="Description of your site for search engines"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Meta Keywords</label>
+                      <input
+                        {...register('metaKeywords')}
+                        type="text"
+                        placeholder="keyword1, keyword2, keyword3"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Google Analytics ID</label>
+                      <input
+                        {...register('googleAnalyticsId')}
+                        type="text"
+                        placeholder="G-XXXXXXXXXX or UA-XXXXXXXXX-X"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'maintenance' && (
+              <motion.div
+                key="maintenance"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                <div className="bg-admin-sidebar p-6 rounded-xl shadow-md">
+                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'maintenance')?.color}`}>
+                    <ShieldCheck className="h-6 w-6" />
+                    <span>Maintenance Mode</span>
+                  </h2>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="flex items-center space-x-2">
+                        <input
+                          {...register('maintenanceMode')}
+                          type="checkbox"
+                          className="w-5 h-5 text-admin-primary focus:ring-2 focus:ring-admin-primary border-admin-border rounded"
+                        />
+                        <span className="text-sm font-medium text-admin-text-dark">Enable Maintenance Mode</span>
+                      </label>
+                      <p className="text-xs text-admin-text-light mt-1 ml-7">When enabled, visitors will see a maintenance page</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Maintenance Message</label>
+                      <textarea
+                        {...register('maintenanceMessage')}
+                        rows={3}
+                        placeholder="We are currently performing maintenance. Please check back soon."
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                    </div>
                   </div>
                 </div>
               </motion.div>

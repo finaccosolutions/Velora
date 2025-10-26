@@ -25,13 +25,13 @@ interface EmailRequest {
   };
 }
 
-function generateOrderEmailHTML(data: EmailRequest['orderData']): string {
+function generateOrderEmailHTML(data: EmailRequest['orderData'], siteName: string, currencySymbol: string): string {
   const itemsHTML = data.orderItems.map(item => `
     <tr>
       <td style="padding: 12px; border-bottom: 1px solid #eee;">${item.name}</td>
       <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">₹${item.price.toLocaleString()}</td>
-      <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">₹${(item.price * item.quantity).toLocaleString()}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">${currencySymbol}${item.price.toLocaleString()}</td>
+      <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right;">${currencySymbol}${(item.price * item.quantity).toLocaleString()}</td>
     </tr>
   `).join('');
 
@@ -44,7 +44,7 @@ function generateOrderEmailHTML(data: EmailRequest['orderData']): string {
     </head>
     <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
       <div style="background: linear-gradient(to right, #815536, #c9baa8); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 28px;">Velora Tradings</h1>
+        <h1 style="color: white; margin: 0; font-size: 28px;">${siteName}</h1>
         <p style="color: #f5f5f5; margin: 10px 0 0 0;">Order Confirmation</p>
       </div>
 
@@ -76,7 +76,7 @@ function generateOrderEmailHTML(data: EmailRequest['orderData']): string {
           <tfoot>
             <tr>
               <td colspan="3" style="padding: 15px; text-align: right; font-weight: bold; font-size: 16px;">Total Amount:</td>
-              <td style="padding: 15px; text-align: right; font-weight: bold; font-size: 16px; color: #815536;">₹${data.totalAmount.toLocaleString()}</td>
+              <td style="padding: 15px; text-align: right; font-weight: bold; font-size: 16px; color: #815536;">${currencySymbol}${data.totalAmount.toLocaleString()}</td>
             </tr>
           </tfoot>
         </table>
@@ -90,47 +90,38 @@ function generateOrderEmailHTML(data: EmailRequest['orderData']): string {
         </div>
 
         <div style="margin-top: 30px; padding: 20px; background: #f0f0f0; border-radius: 5px; text-align: center;">
-          <p style="margin: 0;">Need help? Contact us at <a href="mailto:${Deno.env.get('SMTP_FROM_EMAIL') || 'orders@veloratradings.com'}" style="color: #815536;">${Deno.env.get('SMTP_FROM_EMAIL') || 'orders@veloratradings.com'}</a></p>
+          <p style="margin: 0;">Need help? Contact us or check your order status anytime.</p>
         </div>
       </div>
 
       <div style="background: #815536; padding: 20px; text-align: center; border-radius: 0 0 10px 10px;">
-        <p style="color: white; margin: 0; font-size: 14px;">© 2025 Velora Tradings. All rights reserved.</p>
+        <p style="color: white; margin: 0; font-size: 14px;">© 2025 ${siteName}. All rights reserved.</p>
       </div>
     </body>
     </html>
   `;
 }
 
-async function sendEmail(to: string, subject: string, html: string): Promise<{ success: boolean; error?: string }> {
+async function sendEmail(
+  to: string,
+  subject: string,
+  html: string,
+  smtpConfig: any
+): Promise<{ success: boolean; error?: string }> {
   try {
-    const smtpHost = Deno.env.get('SMTP_HOST');
-    const smtpPort = Deno.env.get('SMTP_PORT');
-    const smtpUser = Deno.env.get('SMTP_USER');
-    const smtpPassword = Deno.env.get('SMTP_PASSWORD');
-    const smtpFromEmail = Deno.env.get('SMTP_FROM_EMAIL');
-    const smtpFromName = Deno.env.get('SMTP_FROM_NAME') || 'Velora Tradings';
-
-    console.log('SMTP Configuration check:');
-    console.log('SMTP_HOST:', smtpHost ? 'Set' : 'Missing');
-    console.log('SMTP_PORT:', smtpPort ? 'Set' : 'Missing');
-    console.log('SMTP_USER:', smtpUser ? 'Set' : 'Missing');
-    console.log('SMTP_PASSWORD:', smtpPassword ? 'Set' : 'Missing');
-    console.log('SMTP_FROM_EMAIL:', smtpFromEmail ? 'Set' : 'Missing');
-
-    if (!smtpHost || !smtpPort || !smtpUser || !smtpPassword || !smtpFromEmail) {
-      console.error('Missing SMTP configuration. Please set environment variables in Supabase Edge Function secrets.');
-      return { success: false, error: 'SMTP configuration missing. Please configure SMTP secrets in your Supabase dashboard.' };
+    if (!smtpConfig.smtp_host || !smtpConfig.smtp_port || !smtpConfig.smtp_user || !smtpConfig.smtp_password || !smtpConfig.smtp_from_email) {
+      console.error('Missing SMTP configuration in database.');
+      return { success: false, error: 'SMTP configuration missing. Please configure SMTP settings in admin panel.' };
     }
 
     const response = await fetch('https://api.smtp2go.com/v3/email/send', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Smtp2go-Api-Key': smtpPassword,
+        'X-Smtp2go-Api-Key': smtpConfig.smtp_password,
       },
       body: JSON.stringify({
-        sender: `${smtpFromName} <${smtpFromEmail}>`,
+        sender: `${smtpConfig.smtp_from_name} <${smtpConfig.smtp_from_email}>`,
         to: [to],
         subject: subject,
         html_body: html,
@@ -173,24 +164,30 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const { data: settings, error: settingsError } = await supabase
+      .from('site_settings')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+
+    if (settingsError || !settings) {
+      console.error('Failed to fetch site settings:', settingsError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch site settings. Please configure SMTP in admin panel.' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     let recipientEmail = to;
-
     if (sendToAdmin) {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-      const supabase = createClient(supabaseUrl, supabaseKey);
-
-      const { data: settingsData, error: settingsError } = await supabase
-        .from('site_settings')
-        .select('value')
-        .eq('key', 'adminEmail')
-        .maybeSingle();
-
-      if (!settingsError && settingsData) {
-        recipientEmail = settingsData.value as string;
-      } else {
-        recipientEmail = 'orders@veloratradings.com';
-      }
+      recipientEmail = settings.admin_email || 'admin@example.com';
     }
 
     if (!recipientEmail) {
@@ -203,8 +200,10 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const html = generateOrderEmailHTML(orderData);
-    const result = await sendEmail(recipientEmail, subject, html);
+    const siteName = settings.site_name || 'Velora Tradings';
+    const currencySymbol = settings.currency_symbol || '₹';
+    const html = generateOrderEmailHTML(orderData, siteName, currencySymbol);
+    const result = await sendEmail(recipientEmail, subject, html, settings);
 
     if (result.success) {
       return new Response(
@@ -216,7 +215,7 @@ Deno.serve(async (req: Request) => {
       );
     } else {
       return new Response(
-        JSON.stringify({ error: result.error || 'Failed to send email', warning: 'Order was placed successfully but email notification failed. Please check SMTP configuration.' }),
+        JSON.stringify({ error: result.error || 'Failed to send email', warning: 'Order was placed successfully but email notification failed. Please check SMTP configuration in admin panel.' }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

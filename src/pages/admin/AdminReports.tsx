@@ -1,7 +1,7 @@
 // src/pages/admin/AdminReports.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Download, FileText, Users, ShoppingCart, Package, DollarSign } from 'lucide-react';
+import { Download, FileText, Users, ShoppingCart, Package, DollarSign, TrendingUp, Activity, BarChart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -127,6 +127,163 @@ const AdminReports: React.FC = () => {
           { key: 'email', label: 'Email' },
           { key: 'phone', label: 'Phone' },
           { key: 'created_at', label: 'Joined Date', render: (value) => format(new Date(value), 'MMM dd, yyyy HH:mm') },
+        ];
+        return { data: data || [], columns, error: null };
+      },
+    },
+    {
+      id: 'order_items_report',
+      name: 'Order Items Report',
+      icon: ShoppingCart,
+      fetchData: async () => {
+        const { data, error: fetchError } = await supabase
+          .from('order_items')
+          .select(`
+            id,
+            order_id,
+            product_id,
+            quantity,
+            price,
+            products (name),
+            orders (created_at, users (full_name))
+          `)
+          .order('orders(created_at)', { ascending: false });
+
+        if (fetchError) return { data: [], columns: [], error: fetchError.message };
+
+        const columns: ReportColumn[] = [
+          { key: 'order_id', label: 'Order ID', render: (value) => value.substring(0, 8) + '...' },
+          { key: 'product_name', label: 'Product Name', render: (value, row) => row.products?.name || 'N/A' },
+          { key: 'customer_name', label: 'Customer', render: (value, row) => row.orders?.users?.full_name || 'N/A' },
+          { key: 'quantity', label: 'Quantity' },
+          { key: 'price', label: 'Unit Price', render: (value) => `₹${value.toLocaleString()}` },
+          { key: 'total', label: 'Total', render: (value, row) => `₹${(row.quantity * row.price).toLocaleString()}` },
+          { key: 'order_date', label: 'Order Date', render: (value, row) => format(new Date(row.orders?.created_at), 'MMM dd, yyyy') },
+        ];
+        return { data: data || [], columns, error: null };
+      },
+    },
+    {
+      id: 'top_selling_products',
+      name: 'Top Selling Products',
+      icon: TrendingUp,
+      fetchData: async () => {
+        const { data, error: fetchError } = await supabase
+          .from('order_items')
+          .select(`
+            product_id,
+            quantity,
+            products (name, price)
+          `);
+
+        if (fetchError) return { data: [], columns: [], error: fetchError.message };
+
+        const productSales: Record<string, { name: string; totalQuantity: number; totalRevenue: number; price: number }> = {};
+
+        data.forEach((item: any) => {
+          const productId = item.product_id;
+          if (!productSales[productId]) {
+            productSales[productId] = {
+              name: item.products?.name || 'N/A',
+              totalQuantity: 0,
+              totalRevenue: 0,
+              price: item.products?.price || 0
+            };
+          }
+          productSales[productId].totalQuantity += item.quantity;
+          productSales[productId].totalRevenue += item.quantity * (item.products?.price || 0);
+        });
+
+        const aggregatedData = Object.entries(productSales)
+          .map(([productId, data]) => ({
+            product_id: productId,
+            product_name: data.name,
+            total_quantity: data.totalQuantity,
+            total_revenue: data.totalRevenue,
+            price: data.price
+          }))
+          .sort((a, b) => b.total_quantity - a.total_quantity);
+
+        const columns: ReportColumn[] = [
+          { key: 'product_id', label: 'Product ID', render: (value) => value.substring(0, 8) + '...' },
+          { key: 'product_name', label: 'Product Name' },
+          { key: 'price', label: 'Unit Price', render: (value) => `₹${value.toLocaleString()}` },
+          { key: 'total_quantity', label: 'Total Sold' },
+          { key: 'total_revenue', label: 'Total Revenue', render: (value) => `₹${value.toLocaleString()}` },
+        ];
+        return { data: aggregatedData, columns, error: null };
+      },
+    },
+    {
+      id: 'revenue_by_payment',
+      name: 'Revenue by Payment Method',
+      icon: BarChart,
+      fetchData: async () => {
+        const { data, error: fetchError } = await supabase
+          .from('orders')
+          .select('payment_method, total_amount, status');
+
+        if (fetchError) return { data: [], columns: [], error: fetchError.message };
+
+        const paymentStats: Record<string, { totalOrders: number; totalRevenue: number; completedOrders: number }> = {};
+
+        data.forEach((order: any) => {
+          const method = order.payment_method || 'unknown';
+          if (!paymentStats[method]) {
+            paymentStats[method] = { totalOrders: 0, totalRevenue: 0, completedOrders: 0 };
+          }
+          paymentStats[method].totalOrders++;
+          paymentStats[method].totalRevenue += order.total_amount;
+          if (order.status === 'delivered' || order.status === 'completed') {
+            paymentStats[method].completedOrders++;
+          }
+        });
+
+        const aggregatedData = Object.entries(paymentStats).map(([method, stats]) => ({
+          payment_method: method.toUpperCase(),
+          total_orders: stats.totalOrders,
+          completed_orders: stats.completedOrders,
+          total_revenue: stats.totalRevenue,
+          average_order_value: stats.totalOrders > 0 ? stats.totalRevenue / stats.totalOrders : 0
+        }));
+
+        const columns: ReportColumn[] = [
+          { key: 'payment_method', label: 'Payment Method' },
+          { key: 'total_orders', label: 'Total Orders' },
+          { key: 'completed_orders', label: 'Completed Orders' },
+          { key: 'total_revenue', label: 'Total Revenue', render: (value) => `₹${value.toLocaleString()}` },
+          { key: 'average_order_value', label: 'Avg Order Value', render: (value) => `₹${value.toFixed(2)}` },
+        ];
+        return { data: aggregatedData, columns, error: null };
+      },
+    },
+    {
+      id: 'admin_activity_logs',
+      name: 'Admin Activity Logs',
+      icon: Activity,
+      fetchData: async () => {
+        const { data, error: fetchError } = await supabase
+          .from('admin_activity_logs')
+          .select(`
+            id,
+            action,
+            resource_type,
+            resource_id,
+            details,
+            created_at,
+            users (full_name, email)
+          `)
+          .order('created_at', { ascending: false })
+          .limit(100);
+
+        if (fetchError) return { data: [], columns: [], error: fetchError.message };
+
+        const columns: ReportColumn[] = [
+          { key: 'admin_name', label: 'Admin', render: (value, row) => row.users?.full_name || row.users?.email || 'N/A' },
+          { key: 'action', label: 'Action' },
+          { key: 'resource_type', label: 'Resource Type' },
+          { key: 'resource_id', label: 'Resource ID', render: (value) => value ? value.substring(0, 8) + '...' : 'N/A' },
+          { key: 'created_at', label: 'Date & Time', render: (value) => format(new Date(value), 'MMM dd, yyyy HH:mm:ss') },
         ];
         return { data: data || [], columns, error: null };
       },

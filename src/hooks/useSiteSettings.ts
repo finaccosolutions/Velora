@@ -24,17 +24,19 @@ export const useSiteSettings = () => {
     try {
       const { data, error: fetchError } = await supabase
         .from('site_settings')
-        .select('*');
+        .select('*')
+        .limit(1)
+        .maybeSingle();
 
       if (fetchError) {
         throw fetchError;
       }
 
-      const fetchedSettings: Record<string, any> = {};
-      data.forEach((setting: SiteSetting) => {
-        fetchedSettings[setting.key] = setting.value;
-      });
-      setSettings(fetchedSettings);
+      if (data) {
+        setSettings(data);
+      } else {
+        setSettings({});
+      }
     } catch (err: any) {
       console.error('Error fetching site settings:', err.message);
       setError(err.message);
@@ -51,23 +53,36 @@ export const useSiteSettings = () => {
   }, [authLoading, fetchSettings]);
 
   const updateSetting = async (key: string, value: any) => {
-    // This check remains, as only admins should be able to UPDATE settings
     if (!user || !isAdmin) return { data: null, error: new Error('Unauthorized') };
     try {
-      const { data, error: upsertError } = await supabase
+      const { data: currentData } = await supabase
         .from('site_settings')
-        .upsert(
-          { key, value },
-          { onConflict: 'key' } // Update if key exists, insert if not
-        )
-        .select()
-        .single();
+        .select('*')
+        .limit(1)
+        .maybeSingle();
 
-      if (upsertError) throw upsertError;
-      
-      // Update local state immediately
+      const updatedSettings = { ...currentData, [key]: value };
+
+      let result;
+      if (currentData && currentData.id) {
+        result = await supabase
+          .from('site_settings')
+          .update(updatedSettings)
+          .eq('id', currentData.id)
+          .select()
+          .single();
+      } else {
+        result = await supabase
+          .from('site_settings')
+          .insert(updatedSettings)
+          .select()
+          .single();
+      }
+
+      if (result.error) throw result.error;
+
       setSettings(prev => ({ ...prev, [key]: value }));
-      return { data, error: null };
+      return { data: result.data, error: null };
     } catch (err: any) {
       console.error(`Error updating setting '${key}':`, err.message);
       return { data: null, error: err };
