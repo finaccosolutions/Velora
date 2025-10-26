@@ -3,13 +3,13 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Trash2, HeartCrack, ArrowLeft, ShoppingCart } from 'lucide-react';
-import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
-import { useSupabaseCart } from '../hooks/useSupabaseCart';
+import { useWishlist } from '../hooks/useWishlist';
+import { useCart } from '../hooks/useCart';
 import { useToast } from '../context/ToastContext';
 
 const Wishlist: React.FC = () => {
-  const { wishlistItems, removeFromWishlist, loading } = useSupabaseWishlist();
-  const { addToCart } = useSupabaseCart();
+  const { wishlistItems, removeFromWishlist, loading } = useWishlist();
+  const { addToCart } = useCart();
   const navigate = useNavigate();
   const { showToast } = useToast();
 

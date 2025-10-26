@@ -443,6 +443,18 @@ const AdminOrders: React.FC = () => {
                           </p>
                           <p className="text-admin-text">Phone: {order.shipping_address.phone}</p>
                         </div>
+
+                        {order.status === 'cancelled' && order.cancellation_reason && (
+                          <>
+                            <h4 className="font-semibold text-admin-text mb-3 mt-4 flex items-center space-x-2">
+                              <XCircle className="h-5 w-5 text-admin-danger" />
+                              <span>Cancellation Reason</span>
+                            </h4>
+                            <div className="bg-admin-danger/10 border border-admin-danger/30 p-4 rounded-lg">
+                              <p className="text-admin-text">{order.cancellation_reason}</p>
+                            </div>
+                          </>
+                        )}
                       </div>
 
                       <div>
