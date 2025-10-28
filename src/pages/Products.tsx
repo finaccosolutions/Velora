@@ -77,9 +77,9 @@ const Products: React.FC = () => {
         </motion.div>
 
         {/* Filters and Controls */}
-        <div className="flex flex-col lg:flex-row justify-between items-center mb-8 space-y-4 lg:space-y-0">
+        <div className="flex flex-col space-y-4 mb-8">
           {/* Category Filters */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
             {categories.map((category) => (
               <motion.button
                 key={category}
@@ -98,13 +98,13 @@ const Products: React.FC = () => {
           </div>
 
           {/* Sort and View Controls */}
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-gray-600" />
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 flex-1">
+              <Filter className="h-4 w-4 text-gray-600 flex-shrink-0" />
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#815536] focus:border-transparent"
+                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#815536] focus:border-transparent w-full sm:w-auto"
               >
                 <option value="name">Sort by Name</option>
                 <option value="price-low">Price: Low to High</option>
@@ -113,7 +113,7 @@ const Products: React.FC = () => {
               </select>
             </div>
 
-            <div className="flex border border-gray-300 rounded-lg">
+            <div className="flex border border-gray-300 rounded-lg flex-shrink-0">
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-2 ${viewMode === 'grid' ? 'bg-[#815536] text-white' : 'text-gray-600'}`}

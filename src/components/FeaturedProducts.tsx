@@ -15,7 +15,7 @@ const FeaturedProducts: React.FC = () => {
   const { showToast } = useToast();
   const navigate = useNavigate();
 
-  const featuredProducts = products.slice(0, 4);
+  const featuredProducts = products.slice(0, 6);
 
   const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
     if (event) {
@@ -78,16 +78,15 @@ const FeaturedProducts: React.FC = () => {
               <div className="h-4 bg-gray-300 rounded w-96 mx-auto"></div>
             </div>
           </div>
-          <div className="space-y-16">
-            {[1, 2, 3, 4].map((i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="animate-pulse">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                  <div className="h-96 bg-gray-300 rounded-2xl"></div>
-                  <div className="space-y-4">
-                    <div className="h-6 bg-gray-300 rounded w-3/4"></div>
+                <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                  <div className="h-64 bg-gray-300"></div>
+                  <div className="p-6 space-y-4">
+                    <div className="h-4 bg-gray-300 rounded w-3/4"></div>
                     <div className="h-4 bg-gray-300 rounded w-full"></div>
-                    <div className="h-4 bg-gray-300 rounded w-5/6"></div>
-                    <div className="h-8 bg-gray-300 rounded w-32"></div>
+                    <div className="h-6 bg-gray-300 rounded w-1/2"></div>
                   </div>
                 </div>
               </div>
@@ -114,35 +113,33 @@ const FeaturedProducts: React.FC = () => {
           </p>
         </motion.div>
 
-        <div className="space-y-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {featuredProducts.map((product, index) => (
             <motion.div
               key={product.id}
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: index * 0.2 }}
-              className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${
-                index % 2 === 1 ? 'lg:grid-flow-col-dense' : ''
-              }`}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              className="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-2xl transition-all duration-300"
             >
-              <div className={`relative ${index % 2 === 1 ? 'lg:col-start-2' : ''}`}>
-                <div className="relative overflow-hidden rounded-2xl shadow-2xl group">
+              <Link to={`/product/${product.id}`} className="block">
+                <div className="relative overflow-hidden">
                   <motion.img
-                    whileHover={{ scale: 1.05 }}
+                    whileHover={{ scale: 1.1 }}
                     transition={{ duration: 0.5 }}
                     src={product.image_url}
                     alt={product.name}
-                    className="w-full h-96 object-cover"
+                    className="w-full h-64 object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                   <button
                     onClick={(e) => handleWishlistToggle(e, product.id, product.name)}
-                    className="absolute top-4 right-4 p-3 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-20"
+                    className="absolute top-4 right-4 p-2 bg-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 z-20"
                     aria-label={isInWishlist(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
                   >
                     <Heart
-                      className={`h-5 w-5 transition-colors duration-200 ${
+                      className={`h-4 w-4 transition-colors duration-200 ${
                         isInWishlist(product.id)
                           ? 'text-red-500 fill-red-500'
                           : 'text-gray-600'
@@ -151,110 +148,71 @@ const FeaturedProducts: React.FC = () => {
                   </button>
 
                   {product.original_price && (
-                    <div className="absolute top-6 left-6 bg-[#815536] text-white px-3 py-1 rounded-lg text-sm font-semibold z-10">
+                    <div className="absolute top-4 left-4 bg-[#815536] text-white px-2 py-1 rounded-lg text-xs font-semibold">
                       {Math.round(((product.original_price - product.price) / product.original_price) * 100)}% OFF
                     </div>
                   )}
                 </div>
 
-                <motion.div
-                  animate={{
-                    scale: [1, 1.1, 1],
-                    opacity: [0.3, 0.6, 0.3]
-                  }}
-                  transition={{
-                    duration: 4,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="absolute -top-4 -right-4 w-24 h-24 bg-[#c9baa8]/20 rounded-full blur-2xl"
-                ></motion.div>
-                <motion.div
-                  animate={{
-                    scale: [1, 1.2, 1],
-                    opacity: [0.2, 0.4, 0.2]
-                  }}
-                  transition={{
-                    duration: 5,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                    delay: 1
-                  }}
-                  className="absolute -bottom-4 -left-4 w-32 h-32 bg-[#815536]/10 rounded-full blur-2xl"
-                ></motion.div>
-              </div>
-
-              <div className={`space-y-6 ${index % 2 === 1 ? 'lg:col-start-1' : ''}`}>
-                <div className="flex items-center space-x-2 mb-4">
-                  <div className="flex text-yellow-400">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`h-5 w-5 ${i < Math.floor(product.rating) ? 'fill-current' : ''}`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-gray-600">({product.reviews_count} reviews)</span>
-                  <span className="bg-[#c9baa8]/20 text-[#815536] px-3 py-1 rounded-full text-sm font-medium">
-                    {product.category_name}
-                  </span>
-                </div>
-
-                <h3 className="text-3xl lg:text-4xl font-bold text-gray-900 leading-tight">
-                  {product.name}
-                </h3>
-
-                <p className="text-lg text-gray-700 leading-relaxed">
-                  {product.description}
-                </p>
-
-                {product.features && product.features.length > 0 && (
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-gray-900">Key Features:</h4>
-                    <ul className="space-y-1">
-                      {product.features.slice(0, 3).map((feature, idx) => (
-                        <li key={idx} className="flex items-center space-x-2 text-gray-700">
-                          <div className="w-2 h-2 bg-[#815536] rounded-full"></div>
-                          <span>{feature}</span>
-                        </li>
+                <div className="p-6">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <div className="flex text-yellow-400">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-3 w-3 ${i < Math.floor(product.rating) ? 'fill-current' : ''}`}
+                        />
                       ))}
-                    </ul>
+                    </div>
+                    <span className="text-xs text-gray-600">({product.reviews_count})</span>
                   </div>
-                )}
 
-                <div className="flex items-center space-x-4">
-                  <span className="text-3xl font-bold text-[#815536]">₹{product.price.toLocaleString()}</span>
-                  {product.original_price && (
-                    <span className="text-xl text-gray-400 line-through">₹{product.original_price.toLocaleString()}</span>
-                  )}
+                  <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-[#815536] transition-colors">
+                    {product.name}
+                  </h3>
+
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                    {product.description}
+                  </p>
+
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-xl font-bold text-[#815536]">₹{product.price.toLocaleString()}</span>
+                      {product.original_price && (
+                        <span className="text-sm text-gray-400 line-through">₹{product.original_price.toLocaleString()}</span>
+                      )}
+                    </div>
+                    <span className="bg-[#c9baa8]/20 text-[#815536] px-2 py-1 rounded-full text-xs font-medium">
+                      {product.category_name}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleAddToCart(product.id, e);
+                      }}
+                      className="flex items-center justify-center space-x-1 px-3 py-2 bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white text-sm font-semibold rounded-lg hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200"
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                      <span>Add</span>
+                    </motion.button>
+
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={(e) => handleBuyNow(e, product.id)}
+                      className="flex items-center justify-center space-x-1 px-3 py-2 border-2 border-[#815536] text-[#815536] text-sm font-semibold rounded-lg hover:bg-[#815536] hover:text-white transition-all duration-200"
+                    >
+                      <span>Buy Now</span>
+                    </motion.button>
+                  </div>
                 </div>
-
-                <div className="flex flex-wrap gap-4">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleAddToCart(product.id, e);
-                    }}
-                    className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white font-semibold rounded-lg hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200"
-                  >
-                    <ShoppingCart className="h-5 w-5" />
-                    <span>Add to Cart</span>
-                  </motion.button>
-
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={(e) => handleBuyNow(e, product.id)}
-                    className="flex items-center space-x-2 px-6 py-3 border-2 border-[#815536] text-[#815536] font-semibold rounded-lg hover:bg-[#815536] hover:text-white transition-all duration-200"
-                  >
-                    <ShoppingCart className="h-5 w-5" />
-                    <span>Buy Now</span>
-                  </motion.button>
-                </div>
-              </div>
+              </Link>
             </motion.div>
           ))}
         </div>

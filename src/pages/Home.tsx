@@ -197,16 +197,16 @@ const Home: React.FC = () => {
             <p className="text-xl text-[#c9baa8] mb-8">
               Subscribe to get updates on new arrivals, exclusive offers, and fragrance tips.
             </p>
-            <div className="flex flex-col sm:flex-row max-w-md mx-auto">
+            <div className="flex flex-col sm:flex-row max-w-md mx-auto gap-3 sm:gap-0">
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="flex-1 px-6 py-4 rounded-l-lg sm:rounded-r-none rounded-r-lg border-0 focus:ring-2 focus:ring-white/50 focus:outline-none"
+                className="flex-1 px-6 py-4 rounded-lg sm:rounded-r-none border-0 focus:ring-2 focus:ring-white/50 focus:outline-none"
               />
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 bg-white text-[#815536] font-semibold rounded-r-lg sm:rounded-l-none rounded-l-lg hover:bg-gray-100 transition-colors duration-200"
+                className="px-8 py-4 bg-white text-[#815536] font-semibold rounded-lg sm:rounded-l-none hover:bg-gray-100 transition-colors duration-200"
               >
                 Subscribe
               </motion.button>

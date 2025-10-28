@@ -112,48 +112,50 @@ const Cart: React.FC = () => {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                    className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
                   >
                     <img
                       src={item.product.image_url}
                       alt={item.product.name}
-                      className="w-20 h-20 object-cover rounded-lg"
+                      className="w-20 h-20 object-cover rounded-lg flex-shrink-0"
                     />
-                    
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{item.product.name}</h3>
+
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 truncate">{item.product.name}</h3>
                       <p className="text-gray-600 text-sm">{item.product.category_name}</p>
-                      <p className="font-bold text-[#815536] mt-1">₹{item.product.price}</p>
+                      <p className="font-bold text-[#815536] mt-1">₹{item.product.price.toLocaleString()}</p>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          className="p-1 hover:bg-gray-100 rounded transition-colors"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </button>
+                        <span className="w-8 text-center font-medium">{item.quantity}</span>
+                        <button
+                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          className="p-1 hover:bg-gray-100 rounded transition-colors"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      <div className="text-right">
+                        <p className="font-bold text-gray-900">
+                          ₹{(item.product.price * item.quantity).toLocaleString()}
+                        </p>
+                      </div>
+
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                        className="p-1 hover:bg-gray-100 rounded transition-colors"
+                        onClick={() => removeFromCart(item.id)}
+                        className="p-2 text-gray-400 hover:text-red-500 transition-colors"
                       >
-                        <Minus className="h-4 w-4" />
-                      </button>
-                      <span className="w-8 text-center font-medium">{item.quantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                        className="p-1 hover:bg-gray-100 rounded transition-colors"
-                      >
-                        <Plus className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-
-                    <div className="text-right">
-                      <p className="font-bold text-gray-900">
-                        ₹{(item.product.price * item.quantity).toLocaleString()}
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => removeFromCart(item.id)}
-                      className="p-2 text-gray-400 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
                   </motion.div>
                 ))}
               </div>
