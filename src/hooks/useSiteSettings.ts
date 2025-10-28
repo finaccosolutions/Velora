@@ -32,7 +32,11 @@ export const useSiteSettings = () => {
       if (data && Array.isArray(data)) {
         const settingsMap: Record<string, any> = {};
         data.forEach((setting: SiteSetting) => {
+          // Store both snake_case (original) and camelCase versions for convenience
           settingsMap[setting.key] = setting.value;
+          // Also add camelCase version
+          const camelKey = setting.key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+          settingsMap[camelKey] = setting.value;
         });
         setSettings(settingsMap);
       } else {

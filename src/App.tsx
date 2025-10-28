@@ -32,14 +32,16 @@ import AdminUsers from './pages/admin/AdminUsers';
 import { ToastProvider } from './context/ToastContext';
 import ScrollToTop from './components/ScrollToTop';
 import EmailVerified from './pages/EmailVerified';
+import ThemeProvider from './components/ThemeProvider';
 
 
 function App() {
   return (
     <Router>
       <ScrollToTop />
-      <ToastProvider> {/* NEW: Wrap with ToastProvider */}
-        <div className="min-h-screen flex flex-col">
+      <ToastProvider>
+        <ThemeProvider>
+          <div className="min-h-screen flex flex-col">
           <Routes>
             <Route path="/admin" element={<AdminLayout />}>
               <Route path="dashboard" element={<AdminDashboard />} />
@@ -121,7 +123,8 @@ function App() {
             <Route path="*" element={<Footer />} />
           </Routes>
         </div>
-      </ToastProvider> {/* NEW: Close ToastProvider */}
+        </ThemeProvider>
+      </ToastProvider>
     </Router>
   );
 }

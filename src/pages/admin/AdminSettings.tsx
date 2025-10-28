@@ -375,7 +375,7 @@ const AdminSettings: React.FC = () => {
                     <Settings className="h-6 w-6" />
                     <span>General Settings</span>
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-6">
                     <div>
                       <label className="block text-sm font-medium text-admin-text-dark mb-2">Site Name</label>
                       <input
@@ -384,12 +384,22 @@ const AdminSettings: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Logo URL</label>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Logo URL (Full Logo with Text)</label>
                       <input
                         {...register('logoUrl')}
                         className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
                         placeholder="https://example.com/logo.png"
                       />
+                      <p className="text-xs text-admin-text-light mt-1">Upload your logo to an image hosting service and paste the direct link here. Logo should include both icon and business name. Recommended: PNG with transparent background, max height 80px.</p>
+                      {/* Logo Preview */}
+                      {settings.logoUrl && (
+                        <div className="mt-3 p-4 bg-admin-background rounded-lg border border-admin-border">
+                          <p className="text-xs font-semibold text-admin-text mb-2">Preview:</p>
+                          <div className="bg-white p-4 rounded">
+                            <img src={settings.logoUrl} alt="Logo Preview" className="h-10 w-auto max-w-full object-contain" />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -400,6 +410,9 @@ const AdminSettings: React.FC = () => {
                     <Palette className="h-6 w-6" />
                     <span>Theme Colors</span>
                   </h2>
+                  <p className="text-sm text-admin-text-light mb-6">
+                    Customize your site's color scheme. These colors are currently for reference only. Full theme color customization will apply globally in future updates.
+                  </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label className="block text-sm font-medium text-admin-text-dark mb-2">Primary Color</label>
