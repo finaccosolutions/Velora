@@ -118,7 +118,7 @@ const AdminLayout: React.FC = () => {
                 to={item.href}
                 onClick={() => {
                   // Only close sidebar on small screens
-                  if (window.innerWidth < 768) { // Check if screen is smaller than md breakpoint
+                  if (window.innerWidth < 768) {
                     setIsSidebarOpen(false);
                   }
                 }}
@@ -127,44 +127,47 @@ const AdminLayout: React.FC = () => {
                     ? 'bg-admin-primary text-white shadow-md'
                     : 'text-admin-text-light hover:bg-admin-card hover:text-admin-primary-dark'
                   }
-                  ${isSidebarExpanded ? 'space-x-3' : 'justify-center'} /* No px-4 here, parent handles it */
+                  ${isSidebarExpanded ? 'space-x-3 px-4' : 'justify-center'}
                   `}
+                title={!isSidebarExpanded ? item.name : undefined}
               >
-                <item.icon className="h-5 w-5" />
-                {isSidebarExpanded && <span className="font-medium">{item.name}</span>} {/* Conditionally render text */}
+                <item.icon className={`${isSidebarExpanded ? 'h-5 w-5' : 'h-6 w-6'} flex-shrink-0`} />
+                {isSidebarExpanded && <span className="font-medium">{item.name}</span>}
               </Link>
             ))}
           </nav>
 
           {/* User and Logout */}
           <div className="mt-auto pt-6 border-t border-admin-border">
-            <div className={`flex items-center mb-4 ${isSidebarExpanded ? 'space-x-3' : 'justify-center'}`}> {/* No px-4 here */}
-              <div className="bg-admin-card p-2 rounded-full">
-                <User className="h-5 w-5 text-admin-primary-dark" />
+            <div className={`flex items-center mb-4 ${isSidebarExpanded ? 'space-x-3 px-4' : 'justify-center'}`}>
+              <div className="bg-admin-card p-2 rounded-full flex-shrink-0">
+                <User className={`${isSidebarExpanded ? 'h-5 w-5' : 'h-6 w-6'} text-admin-primary-dark`} />
               </div>
-              {isSidebarExpanded && ( // Conditionally render text
-                <div>
-                  <p className="font-semibold text-admin-text-dark">{userProfile?.full_name || 'Admin User'}</p>
-                  <p className="text-sm text-admin-text-light">{userProfile?.email}</p>
+              {isSidebarExpanded && (
+                <div className="overflow-hidden">
+                  <p className="font-semibold text-admin-text-dark truncate">{userProfile?.full_name || 'Admin User'}</p>
+                  <p className="text-sm text-admin-text-light truncate">{userProfile?.email}</p>
                 </div>
               )}
             </div>
             <button
               onClick={handleLogout}
               className={`flex items-center w-full py-3 rounded-lg text-admin-danger hover:bg-admin-danger/20 transition-colors duration-200
-                ${isSidebarExpanded ? 'space-x-3' : 'justify-center'} /* No px-4 here */
+                ${isSidebarExpanded ? 'space-x-3 px-4' : 'justify-center'}
                 `}
+              title={!isSidebarExpanded ? 'Logout' : undefined}
             >
-              <LogOut className="h-5 w-5" />
+              <LogOut className={`${isSidebarExpanded ? 'h-5 w-5' : 'h-6 w-6'} flex-shrink-0`} />
               {isSidebarExpanded && <span className="font-medium">Logout</span>}
             </button>
             <Link
               to="/"
               className={`flex items-center w-full py-3 rounded-lg text-admin-text-light hover:bg-admin-card hover:text-admin-primary-dark transition-colors duration-200 mt-2
-                ${isSidebarExpanded ? 'space-x-3' : 'justify-center'} /* No px-4 here */
+                ${isSidebarExpanded ? 'space-x-3 px-4' : 'justify-center'}
                 `}
+              title={!isSidebarExpanded ? 'View Site' : undefined}
             >
-              <Eye className="h-5 w-5" />
+              <Eye className={`${isSidebarExpanded ? 'h-5 w-5' : 'h-6 w-6'} flex-shrink-0`} />
               {isSidebarExpanded && <span className="font-medium">View Site</span>}
             </Link>
           </div>

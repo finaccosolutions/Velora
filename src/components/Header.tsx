@@ -1,7 +1,7 @@
 // src/components/Header.tsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCart, User, Menu, X, Heart, Search, LogOut, Settings, MapPin } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Heart, LogOut, Settings, MapPin } from 'lucide-react';
 import { useCart } from '../hooks/useCart';
 import { useAuth } from '../context/AuthContext';
 import { useWishlist } from '../hooks/useWishlist';
@@ -77,28 +77,30 @@ const Header: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-2 group">
-              {settings.logoUrl ? ( // NEW: Conditional rendering for image logo
+            <Link to="/" className="flex items-center space-x-2 group flex-shrink-0">
+              {settings.logoUrl ? (
                 <motion.img
                   src={settings.logoUrl}
                   alt={settings.siteName || 'Velora Tradings'}
-                  className="h-8 w-auto"
+                  className="h-8 w-auto max-w-[120px] md:max-w-none"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 />
               ) : (
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-gradient-to-r from-[#815536] to-[#c9baa8] p-2 rounded-lg group-hover:shadow-lg transition-all duration-200"
-                >
-                  <span className="text-white font-bold text-xl">V</span>
-                </motion.div>
+                <>
+                  <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="bg-gradient-to-r from-[#815536] to-[#c9baa8] p-2 rounded-lg group-hover:shadow-lg transition-all duration-200 flex-shrink-0"
+                  >
+                    <span className="text-white font-bold text-xl">V</span>
+                  </motion.div>
+                  <div className="group-hover:scale-105 transition-transform duration-200 hidden sm:block">
+                    <h1 className="text-2xl font-bold text-[#815536] group-hover:text-[#6d4429] transition-colors duration-200">{settings.siteName || 'Velora'}</h1>
+                    <p className="text-xs text-[#c9baa8] -mt-1">TRADINGS</p>
+                  </div>
+                </>
               )}
-              <div className="group-hover:scale-105 transition-transform duration-200">
-                <h1 className="text-2xl font-bold text-[#815536] group-hover:text-[#6d4429] transition-colors duration-200">{settings.siteName || 'Velora'}</h1>
-                <p className="text-xs text-[#c9baa8] -mt-1">TRADINGS</p>
-              </div>
             </Link>
 
             {/* Desktop Navigation */}
@@ -133,24 +135,8 @@ const Header: React.FC = () => {
 
             {/* Right Side Icons */}
             <div className="flex items-center space-x-2">
-              {/* Search Button */}
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => navigate('/products')}
-                className="relative p-3 text-gray-700 hover:text-[#815536] hover:bg-[#815536]/10 rounded-lg transition-all duration-200 group"
-                title="Search Products"
-              >
-                <Search className="h-5 w-5" />
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-[#815536]/10 to-[#c9baa8]/10 rounded-lg opacity-0"
-                  whileHover={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                />
-              </motion.button>
-
-              {/* Wishlist Button */}
-              <Link to="/wishlist" className="relative group">
+              {/* Wishlist Button - Desktop Only */}
+              <Link to="/wishlist" className="relative group hidden md:block">
                 <motion.div
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -178,8 +164,8 @@ const Header: React.FC = () => {
                 </motion.div>
               </Link>
 
-              {/* Cart Button */}
-              <Link to="/cart" className="relative group">
+              {/* Cart Button - Desktop Only */}
+              <Link to="/cart" className="relative group hidden md:block">
                 <motion.div
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -266,6 +252,37 @@ const Header: React.FC = () => {
                               <div className="px-4 py-2 text-sm text-gray-700">Loading menu...</div>
                             ) : (
                               <>
+                                {/* Mobile-only Cart and Wishlist */}
+                                <div className="md:hidden">
+                                  <Link
+                                    to="/cart"
+                                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
+                                    onClick={() => setIsProfileOpen(false)}
+                                  >
+                                    <ShoppingCart className="h-4 w-4 mr-3" />
+                                    My Cart
+                                    {cartItemsCount > 0 && (
+                                      <span className="ml-auto bg-[#815536] text-white text-xs px-2 py-1 rounded-full">
+                                        {cartItemsCount}
+                                      </span>
+                                    )}
+                                  </Link>
+                                  <Link
+                                    to="/wishlist"
+                                    className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
+                                    onClick={() => setIsProfileOpen(false)}
+                                  >
+                                    <Heart className="h-4 w-4 mr-3" />
+                                    My Wishlist
+                                    {wishlistItemsCount > 0 && (
+                                      <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                                        {wishlistItemsCount}
+                                      </span>
+                                    )}
+                                  </Link>
+                                  <div className="border-t border-gray-100 my-2"></div>
+                                </div>
+
                                 <Link
                                   to="/profile"
                                   className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
@@ -282,9 +299,11 @@ const Header: React.FC = () => {
                                   <ShoppingCart className="h-4 w-4 mr-3" />
                                   My Orders
                                 </Link>
+
+                                {/* Desktop Wishlist link */}
                                 <Link
                                   to="/wishlist"
-                                  className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
+                                  className="hidden md:flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
                                   onClick={() => setIsProfileOpen(false)}
                                 >
                                   <Heart className="h-4 w-4 mr-3" />
@@ -295,6 +314,7 @@ const Header: React.FC = () => {
                                     </span>
                                   )}
                                 </Link>
+
                                 <Link
                                   to="/addresses"
                                   className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-[#815536]/10 hover:text-[#815536] transition-colors duration-200"
@@ -354,34 +374,17 @@ const Header: React.FC = () => {
 
               {/* Mobile Menu Button */}
               <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="md:hidden p-3 text-gray-700 hover:text-[#815536] hover:bg-[#815536]/10 rounded-lg transition-all duration-200"
+                className="md:hidden p-2 text-gray-700 hover:text-[#815536] hover:bg-[#815536]/10 rounded-lg transition-all duration-200 flex-shrink-0"
+                aria-label="Toggle Menu"
               >
-                <AnimatePresence mode="wait">
-                  {isMenuOpen ? (
-                    <motion.div
-                      key="close"
-                      initial={{ rotate: -90, opacity: 0 }}
-                      animate={{ rotate: 0, opacity: 1 }}
-                      exit={{ rotate: 90, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <X className="h-6 w-6" />
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      key="menu"
-                      initial={{ rotate: 90, opacity: 0 }}
-                      animate={{ rotate: 0, opacity: 1 }}
-                      exit={{ rotate: -90, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Menu className="h-6 w-6" />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {isMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
               </motion.button>
               </div>
             </div>

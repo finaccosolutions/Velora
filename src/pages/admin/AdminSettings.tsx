@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
-  Settings, Palette, Type, Image as ImageIcon, Info, Phone, MessageCircle, Home, LayoutDashboard, Mail, Server, Globe, DollarSign, ShieldCheck, Building2, FileText,
+  Settings, Palette, Type, Info, Phone, Home, LayoutDashboard, Mail, Server, DollarSign, ShieldCheck, Building2, FileText,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -118,6 +118,10 @@ interface SiteSettingsForm {
   invoiceTerms: string;
   invoiceFooter: string;
   deliveryCharge: number;
+  // Font Settings
+  fontFamily: string;
+  fontSize: string;
+  headingFontFamily: string;
 }
 
 const AdminSettings: React.FC = () => {
@@ -244,6 +248,9 @@ const AdminSettings: React.FC = () => {
         invoiceTerms: formData.invoiceTerms || 'All sales are final. Returns accepted within 7 days.',
         invoiceFooter: formData.invoiceFooter || 'This is a computer generated invoice.',
         deliveryCharge: formData.deliveryCharge || 0,
+        fontFamily: formData.fontFamily || 'system-ui',
+        fontSize: formData.fontSize || '16px',
+        headingFontFamily: formData.headingFontFamily || 'system-ui',
       });
     }
   }, [settingsLoading, settingsError, settings, reset]);
@@ -298,11 +305,10 @@ const AdminSettings: React.FC = () => {
 
   const tabs = [
     { id: 'general', label: 'General', icon: Settings, color: 'text-admin-primary' },
-    { id: 'branding', label: 'Branding & Contact', icon: ImageIcon, color: 'text-purple-500' },
+    { id: 'appearance', label: 'Appearance', icon: Type, color: 'text-purple-500' },
     { id: 'business', label: 'Business/GST', icon: Building2, color: 'text-indigo-500' },
     { id: 'email', label: 'Email & SMTP', icon: Mail, color: 'text-red-500' },
     { id: 'payment', label: 'Payment & Shipping', icon: DollarSign, color: 'text-green-500' },
-    { id: 'seo', label: 'SEO & Analytics', icon: Globe, color: 'text-blue-500' },
     { id: 'maintenance', label: 'Maintenance', icon: ShieldCheck, color: 'text-orange-500' },
     { id: 'home', label: 'Home Page', icon: Home, color: 'text-admin-success' },
     { id: 'about', label: 'About Page', icon: Info, color: 'text-admin-warning' },
@@ -411,6 +417,105 @@ const AdminSettings: React.FC = () => {
                         className="w-full h-12 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
                       />
                     </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'appearance' && (
+              <motion.div
+                key="appearance"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6"
+              >
+                {/* Font Settings Section */}
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
+                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'appearance')?.color}`}>
+                    <Type className="h-6 w-6" />
+                    <span>Typography Settings</span>
+                  </h2>
+                  <p className="text-sm text-admin-text-light mb-6">
+                    Customize the fonts and text sizes used across your site. Changes will apply globally.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Body Font Family</label>
+                      <select
+                        {...register('fontFamily')}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      >
+                        <option value="system-ui">System UI (Default)</option>
+                        <option value="'Inter', sans-serif">Inter</option>
+                        <option value="'Roboto', sans-serif">Roboto</option>
+                        <option value="'Open Sans', sans-serif">Open Sans</option>
+                        <option value="'Lato', sans-serif">Lato</option>
+                        <option value="'Poppins', sans-serif">Poppins</option>
+                        <option value="'Montserrat', sans-serif">Montserrat</option>
+                        <option value="'Arial', sans-serif">Arial</option>
+                        <option value="'Helvetica', sans-serif">Helvetica</option>
+                        <option value="'Georgia', serif">Georgia</option>
+                        <option value="'Times New Roman', serif">Times New Roman</option>
+                      </select>
+                      <p className="text-xs text-admin-text-light mt-1">Used for body text and paragraphs</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Heading Font Family</label>
+                      <select
+                        {...register('headingFontFamily')}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      >
+                        <option value="system-ui">System UI (Default)</option>
+                        <option value="'Inter', sans-serif">Inter</option>
+                        <option value="'Roboto', sans-serif">Roboto</option>
+                        <option value="'Open Sans', sans-serif">Open Sans</option>
+                        <option value="'Lato', sans-serif">Lato</option>
+                        <option value="'Poppins', sans-serif">Poppins</option>
+                        <option value="'Montserrat', sans-serif">Montserrat</option>
+                        <option value="'Arial', sans-serif">Arial</option>
+                        <option value="'Helvetica', sans-serif">Helvetica</option>
+                        <option value="'Playfair Display', serif">Playfair Display</option>
+                        <option value="'Merriweather', serif">Merriweather</option>
+                      </select>
+                      <p className="text-xs text-admin-text-light mt-1">Used for headings and titles</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Base Font Size</label>
+                      <select
+                        {...register('fontSize')}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      >
+                        <option value="14px">Small (14px)</option>
+                        <option value="16px">Medium (16px - Default)</option>
+                        <option value="18px">Large (18px)</option>
+                        <option value="20px">Extra Large (20px)</option>
+                      </select>
+                      <p className="text-xs text-admin-text-light mt-1">Base size for body text</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <h3 className="font-semibold text-admin-text mb-2">Font Preview</h3>
+                    <div className="space-y-3">
+                      <p className="text-admin-text" style={{ fontFamily: 'var(--body-font, system-ui)', fontSize: 'var(--base-font-size, 16px)' }}>
+                        This is a sample paragraph using the body font. The quick brown fox jumps over the lazy dog.
+                      </p>
+                      <h3 className="text-2xl font-bold text-admin-text" style={{ fontFamily: 'var(--heading-font, system-ui)' }}>
+                        This is a Sample Heading
+                      </h3>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                    <h3 className="font-semibold text-admin-text mb-2">Important Notes</h3>
+                    <ul className="list-disc list-inside text-admin-text text-sm space-y-1 ml-2">
+                      <li>Font changes apply globally across the entire website</li>
+                      <li>Google Fonts are automatically loaded for supported fonts</li>
+                      <li>Some fonts may take a moment to load on first visit</li>
+                      <li>Test your selections on different devices for best results</li>
+                    </ul>
                   </div>
                 </div>
               </motion.div>
@@ -689,109 +794,6 @@ const AdminSettings: React.FC = () => {
               </motion.div>
             )}
 
-            {activeTab === 'branding' && (
-              <motion.div
-                key="branding"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
-                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'branding')?.color}`}>
-                    <ImageIcon className="h-6 w-6" />
-                    <span>Branding</span>
-                  </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Site Logo URL</label>
-                      <input
-                        {...register('siteLogoUrl')}
-                        type="text"
-                        placeholder="https://example.com/logo.png"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Site Favicon URL</label>
-                      <input
-                        {...register('siteFaviconUrl')}
-                        type="text"
-                        placeholder="https://example.com/favicon.ico"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
-                  <h2 className="text-2xl font-bold mb-4 text-admin-text">Contact Information</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Contact Phone</label>
-                      <input
-                        {...register('contactPhone')}
-                        type="text"
-                        placeholder="+91 12345 67890"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Contact Address</label>
-                      <input
-                        {...register('contactAddress')}
-                        type="text"
-                        placeholder="123 Main St, City, Country"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
-                  <h2 className="text-2xl font-bold mb-4 text-admin-text">Social Media</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Facebook URL</label>
-                      <input
-                        {...register('socialFacebook')}
-                        type="text"
-                        placeholder="https://facebook.com/yourpage"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Twitter URL</label>
-                      <input
-                        {...register('socialTwitter')}
-                        type="text"
-                        placeholder="https://twitter.com/yourhandle"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Instagram URL</label>
-                      <input
-                        {...register('socialInstagram')}
-                        type="text"
-                        placeholder="https://instagram.com/yourhandle"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">LinkedIn URL</label>
-                      <input
-                        {...register('socialLinkedin')}
-                        type="text"
-                        placeholder="https://linkedin.com/company/yourcompany"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
 
             {activeTab === 'payment' && (
               <motion.div
@@ -889,61 +891,6 @@ const AdminSettings: React.FC = () => {
               </motion.div>
             )}
 
-            {activeTab === 'seo' && (
-              <motion.div
-                key="seo"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-6"
-              >
-                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
-                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'seo')?.color}`}>
-                    <Globe className="h-6 w-6" />
-                    <span>SEO Settings</span>
-                  </h2>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Meta Title</label>
-                      <input
-                        {...register('metaTitle')}
-                        type="text"
-                        placeholder="Your Site - Best Products Online"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Meta Description</label>
-                      <textarea
-                        {...register('metaDescription')}
-                        rows={3}
-                        placeholder="Description of your site for search engines"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Meta Keywords</label>
-                      <input
-                        {...register('metaKeywords')}
-                        type="text"
-                        placeholder="keyword1, keyword2, keyword3"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Google Analytics ID</label>
-                      <input
-                        {...register('googleAnalyticsId')}
-                        type="text"
-                        placeholder="G-XXXXXXXXXX or UA-XXXXXXXXX-X"
-                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
 
             {activeTab === 'maintenance' && (
               <motion.div
