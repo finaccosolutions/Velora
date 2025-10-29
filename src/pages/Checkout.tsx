@@ -29,8 +29,9 @@ const Checkout: React.FC = () => {
   const location = useLocation();
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('cod');
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'razorpay'>('cod');
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [razorpayKeyId, setRazorpayKeyId] = useState<string>('');
   const [billingAddressId, setSelectedBillingAddressId] = useState<string | null>(null);
   const [billingSameAsDelivery, setBillingSameAsDelivery] = useState(true);
   const [showAddressForm, setShowAddressForm] = useState(false);
@@ -42,9 +43,7 @@ const Checkout: React.FC = () => {
 
   const [fieldErrors, setFieldErrors] = useState<{[key: string]: boolean}>({});
   const [isOrderPlaced, setIsOrderPlaced] = useState(false);
-
-  const isRazorpayConfigured = import.meta.env.VITE_RAZORPAY_KEY_ID &&
-    import.meta.env.VITE_RAZORPAY_KEY_ID.startsWith('rzp_');
+  const [isRazorpayEnabled, setIsRazorpayEnabled] = useState(false);
 
   const buyNowProductId = location.state?.buyNowProductId;
   const buyNowProduct = buyNowProductId ? products.find(p => p.id === buyNowProductId) : null;
@@ -138,6 +137,37 @@ const Checkout: React.FC = () => {
     };
 
     loadRazorpayScript();
+  }, []);
+
+  useEffect(() => {
+    const fetchRazorpaySettings = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('site_settings')
+          .select('key, value')
+          .in('key', ['razorpay_key_id', 'payment_methods_enabled']);
+
+        if (!error && data) {
+          const settingsMap = data.reduce((acc: any, item: any) => {
+            acc[item.key] = item.value;
+            return acc;
+          }, {});
+
+          const keyId = settingsMap['razorpay_key_id'];
+          const paymentMethods = settingsMap['payment_methods_enabled'];
+
+          if (keyId && keyId.startsWith('rzp_')) {
+            setRazorpayKeyId(keyId);
+            const methods = Array.isArray(paymentMethods) ? paymentMethods : JSON.parse(paymentMethods || '[]');
+            setIsRazorpayEnabled(methods.includes('razorpay'));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching Razorpay settings:', error);
+      }
+    };
+
+    fetchRazorpaySettings();
   }, []);
 
   const handleAddressSubmit = async (data: any) => {
@@ -440,8 +470,8 @@ const Checkout: React.FC = () => {
     }
   };
 
-  const handleRazorpayPayment = async (order: any) => {
-    if (!isRazorpayConfigured) {
+  const handleRazorpayPayment = async () => {
+    if (!isRazorpayEnabled || !razorpayKeyId) {
       showToast('Online payment is not configured. Please use Cash on Delivery.', 'error');
       setIsProcessing(false);
       return;
@@ -453,62 +483,128 @@ const Checkout: React.FC = () => {
       return;
     }
 
-    const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-      amount: Math.round(total * 100),
-      currency: 'INR',
-      name: settings.business_name || 'Velora Tradings',
-      description: `Order #${order.id.slice(-8).toUpperCase()}`,
-      handler: async function (response: any) {
-        try {
-          await supabase
-            .from('orders')
-            .update({
-              payment_status: 'paid',
-              status: 'confirmed'
-            })
-            .eq('id', order.id);
-
-          setIsOrderPlaced(true);
-
-          if (!buyNowProduct) {
-            await clearCart();
-          }
-
-          navigate('/order-confirmation', {
-            state: {
-              orderId: order.id,
-              orderDetails: {
-                total: total,
-                paymentMethod: 'online',
-                items: displayItems
-              }
-            },
-            replace: true
-          });
-        } catch (error) {
-          showToast('Payment verification failed', 'error');
-        } finally {
-          setIsProcessing(false);
-        }
-      },
-      prefill: {
-        name: user ? (userProfile?.full_name || '') : guestFullName,
-        email: user ? (userProfile?.email || '') : guestEmail,
-        contact: user ? (userProfile?.phone || '') : guestPhone
-      },
-      theme: {
-        color: '#815536'
-      },
-      modal: {
-        ondismiss: function() {
-          setIsProcessing(false);
-          showToast('Payment cancelled', 'error');
-        }
-      }
-    };
-
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const session = sessionData?.session;
+
+      const createOrderResponse = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-razorpay-order`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            amount: total,
+            currency: 'INR',
+            receipt: `order_${Date.now()}`,
+          }),
+        }
+      );
+
+      if (!createOrderResponse.ok) {
+        const errorData = await createOrderResponse.json();
+        throw new Error(errorData.error || 'Failed to create payment order');
+      }
+
+      const razorpayOrderData = await createOrderResponse.json();
+
+      const deliveryAddress = user ? selectedAddress : guestAddress;
+      const finalBillingAddress = billingSameAsDelivery
+        ? deliveryAddress
+        : (user ? addresses.find(a => a.id === billingAddressId) : guestBillingAddress);
+
+      const orderData = {
+        total_amount: total,
+        shipping_address: deliveryAddress,
+        billing_address: finalBillingAddress,
+        items: displayItems.map(item => ({
+          product_id: item.product.id,
+          quantity: item.quantity,
+          price: item.product.price,
+        })),
+        guest_email: !user ? guestEmail : null,
+      };
+
+      const options = {
+        key: razorpayOrderData.key_id,
+        amount: razorpayOrderData.amount,
+        currency: razorpayOrderData.currency,
+        order_id: razorpayOrderData.order_id,
+        name: settings.business_name || 'Velora Tradings',
+        description: `Payment for order`,
+        handler: async function (response: any) {
+          try {
+            const verifyResponse = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-razorpay-payment`,
+              {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  orderData,
+                }),
+              }
+            );
+
+            if (!verifyResponse.ok) {
+              throw new Error('Payment verification failed');
+            }
+
+            const verifyData = await verifyResponse.json();
+
+            if (verifyData.verified) {
+              setIsOrderPlaced(true);
+
+              if (!buyNowProduct) {
+                await clearCart();
+              }
+
+              await sendOrderEmails(verifyData.order, deliveryAddress);
+
+              navigate('/order-confirmation', {
+                state: {
+                  orderId: verifyData.order.id,
+                  orderDetails: {
+                    total: total,
+                    paymentMethod: 'razorpay',
+                    items: displayItems,
+                  },
+                },
+                replace: true,
+              });
+            } else {
+              throw new Error('Payment verification failed');
+            }
+          } catch (error: any) {
+            console.error('Payment verification error:', error);
+            showToast('Payment verification failed. Please contact support.', 'error');
+          } finally {
+            setIsProcessing(false);
+          }
+        },
+        prefill: {
+          name: user ? (userProfile?.full_name || '') : guestFullName,
+          email: user ? (userProfile?.email || '') : guestEmail,
+          contact: user ? (userProfile?.phone || '') : guestPhone,
+        },
+        theme: {
+          color: '#815536',
+        },
+        modal: {
+          ondismiss: function () {
+            setIsProcessing(false);
+            showToast('Payment cancelled', 'error');
+          },
+        },
+      };
+
       const razorpay = new window.Razorpay(options);
       razorpay.on('payment.failed', function (response: any) {
         console.error('Payment failed:', response.error);
@@ -517,8 +613,8 @@ const Checkout: React.FC = () => {
       });
       razorpay.open();
     } catch (error: any) {
-      console.error('Razorpay initialization error:', error);
-      showToast('Failed to initialize payment. Please try again or use COD.', 'error');
+      console.error('Razorpay payment error:', error);
+      showToast(error.message || 'Failed to process payment. Please try again.', 'error');
       setIsProcessing(false);
     }
   };
@@ -536,20 +632,23 @@ const Checkout: React.FC = () => {
     setIsProcessing(true);
 
     try {
-      const order = await createOrder();
-      if (!order) {
-        setIsProcessing(false);
-        return;
-      }
-
-      if (paymentMethod === 'online') {
-        await handleRazorpayPayment(order);
+      if (paymentMethod === 'razorpay') {
+        await handleRazorpayPayment();
       } else {
+        const order = await createOrder();
+        if (!order) {
+          setIsProcessing(false);
+          return;
+        }
+
         setIsOrderPlaced(true);
 
         if (!buyNowProduct) {
           await clearCart();
         }
+
+        const deliveryAddress = user ? selectedAddress : guestAddress;
+        await sendOrderEmails(order, deliveryAddress);
 
         setIsProcessing(false);
 
@@ -559,10 +658,10 @@ const Checkout: React.FC = () => {
             orderDetails: {
               total: total,
               paymentMethod: 'cod',
-              items: displayItems
-            }
+              items: displayItems,
+            },
           },
-          replace: true
+          replace: true,
         });
       }
     } catch (error) {
@@ -1172,28 +1271,28 @@ const Checkout: React.FC = () => {
 
                 <label
                   className={`flex items-center p-4 border-2 rounded-lg transition-all ${
-                    !isRazorpayConfigured
+                    !isRazorpayEnabled
                       ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
-                      : paymentMethod === 'online'
+                      : paymentMethod === 'razorpay'
                       ? 'border-[#815536] bg-[#815536]/5 cursor-pointer'
                       : 'border-gray-200 hover:border-[#815536]/50 cursor-pointer'
                   }`}
                 >
                   <input
                     type="radio"
-                    value="online"
-                    checked={paymentMethod === 'online'}
-                    onChange={(e) => setPaymentMethod(e.target.value as 'online')}
-                    disabled={!isRazorpayConfigured}
+                    value="razorpay"
+                    checked={paymentMethod === 'razorpay'}
+                    onChange={(e) => setPaymentMethod(e.target.value as 'razorpay')}
+                    disabled={!isRazorpayEnabled}
                     className="mr-3 text-[#815536] disabled:opacity-50"
                   />
                   <CreditCard className="h-5 w-5 text-gray-600 mr-3" />
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900">Online Payment</p>
+                    <p className="font-medium text-gray-900">Razorpay (Online Payment)</p>
                     <p className="text-sm text-gray-600">
-                      {isRazorpayConfigured
-                        ? 'UPI, Cards, NetBanking'
-                        : 'Not available - Configuration required'}
+                      {isRazorpayEnabled
+                        ? 'UPI, Cards, NetBanking, Wallets'
+                        : 'Not available - Enable in admin settings'}
                     </p>
                   </div>
                 </label>

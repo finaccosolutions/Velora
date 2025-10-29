@@ -78,10 +78,10 @@ const Header: React.FC = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <Link to="/" className="flex items-center space-x-2 group flex-shrink-0">
-              {settings.logoUrl ? (
+              {settings.logo_url ? (
                 <motion.img
-                  src={settings.logoUrl}
-                  alt={settings.siteName || 'Velora Tradings'}
+                  src={settings.logo_url}
+                  alt={settings.site_name || 'Velora Tradings'}
                   className="h-10 w-auto max-w-[180px] object-contain"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -96,7 +96,7 @@ const Header: React.FC = () => {
                     <span className="text-white font-bold text-xl">V</span>
                   </motion.div>
                   <div className="group-hover:scale-105 transition-transform duration-200">
-                    <h1 className="text-xl sm:text-2xl font-bold text-[#815536] group-hover:text-[#6d4429] transition-colors duration-200">{settings.siteName || 'Velora'}</h1>
+                    <h1 className="text-xl sm:text-2xl font-bold text-[#815536] group-hover:text-[#6d4429] transition-colors duration-200">{settings.site_name || 'Velora'}</h1>
                     <p className="text-xs text-[#c9baa8] -mt-1">TRADINGS</p>
                   </div>
                 </>

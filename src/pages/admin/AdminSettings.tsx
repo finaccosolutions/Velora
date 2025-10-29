@@ -15,10 +15,14 @@ import { INDIAN_STATES } from '../../data/indianStates';
 interface SiteSettingsForm {
   siteName: string;
   logoUrl: string;
+  heroImageUrl: string;
   primaryColor: string;
   secondaryColor: string;
   heroTitle: string;
   heroSubtitle: string;
+  razorpayKeyId: string;
+  razorpayKeySecret: string;
+  paymentMethodsEnabled: string[];
   adminEmail: string;
   smtpHost: string;
   smtpPort: number;
@@ -154,6 +158,10 @@ const AdminSettings: React.FC = () => {
         secondaryColor: formData.secondaryColor || '#c9baa8',
         heroTitle: formData.heroTitle || 'Discover Your Signature Scent',
         heroSubtitle: formData.heroSubtitle || 'Experience luxury fragrances that define your personality.',
+        heroImageUrl: formData.heroImageUrl || '',
+        razorpayKeyId: formData.razorpayKeyId || '',
+        razorpayKeySecret: formData.razorpayKeySecret || '',
+        paymentMethodsEnabled: formData.paymentMethodsEnabled || ['cod'],
         adminEmail: formData.adminEmail || 'shafeeqkpt@gmail.com',
         smtpHost: formData.smtpHost || '',
         smtpPort: formData.smtpPort || 587,
@@ -405,11 +413,29 @@ const AdminSettings: React.FC = () => {
                       />
                       <p className="text-xs text-admin-text-light mt-1">Upload your logo to an image hosting service and paste the direct link here. Logo should include both icon and business name. Recommended: PNG with transparent background, max height 80px.</p>
                       {/* Logo Preview */}
-                      {settings.logoUrl && (
+                      {settings.logo_url && (
                         <div className="mt-3 p-4 bg-admin-background rounded-lg border border-admin-border">
                           <p className="text-xs font-semibold text-admin-text mb-2">Preview:</p>
                           <div className="bg-white p-4 rounded">
-                            <img src={settings.logoUrl} alt="Logo Preview" className="h-10 w-auto max-w-full object-contain" />
+                            <img src={settings.logo_url} alt="Logo Preview" className="h-10 w-auto max-w-full object-contain" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Hero Section Background Image URL</label>
+                      <input
+                        {...register('heroImageUrl')}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                        placeholder="https://example.com/hero-bg.jpg"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Upload your hero background image to an image hosting service and paste the direct link here. Recommended: High-resolution image, 1920x1080px or larger.</p>
+                      {/* Hero Image Preview */}
+                      {settings.hero_image_url && (
+                        <div className="mt-3 p-4 bg-admin-background rounded-lg border border-admin-border">
+                          <p className="text-xs font-semibold text-admin-text mb-2">Preview:</p>
+                          <div className="bg-white p-2 rounded">
+                            <img src={settings.hero_image_url} alt="Hero Background Preview" className="w-full h-48 object-cover rounded" />
                           </div>
                         </div>
                       )}
@@ -854,6 +880,82 @@ const AdminSettings: React.FC = () => {
                         className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
                       />
                     </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
+                  <h2 className={`text-2xl font-bold mb-4 flex items-center space-x-2 ${tabs.find(t => t.id === 'payment')?.color}`}>
+                    <DollarSign className="h-6 w-6" />
+                    <span>Razorpay Payment Gateway</span>
+                  </h2>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                    <p className="text-admin-text text-sm mb-2">
+                      <strong>Configure Razorpay to accept online payments.</strong> Sign up at razorpay.com and get your API keys from the dashboard.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Razorpay Key ID (Public Key)</label>
+                      <input
+                        {...register('razorpayKeyId')}
+                        type="text"
+                        placeholder="rzp_test_xxxxxxxxxxxxx"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Your Razorpay public key (safe to expose)</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Razorpay Key Secret (Private Key)</label>
+                      <input
+                        {...register('razorpayKeySecret')}
+                        type="password"
+                        placeholder="Enter your secret key"
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Your Razorpay secret key (kept secure in database)</p>
+                    </div>
+                  </div>
+                  <div className="mt-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                    <h3 className="font-semibold text-admin-text mb-2">Getting Started with Razorpay</h3>
+                    <ul className="list-disc list-inside text-admin-text text-sm space-y-1 ml-2">
+                      <li>Sign up at <strong>razorpay.com</strong></li>
+                      <li>Complete your KYC verification</li>
+                      <li>Go to Settings → API Keys in your Razorpay dashboard</li>
+                      <li>Generate or copy your Key ID and Key Secret</li>
+                      <li>Paste both keys above and save settings</li>
+                      <li>Enable Razorpay in payment methods below</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-admin-sidebar to-admin-background border border-admin-border p-6 rounded-xl shadow-lg">
+                  <h2 className="text-2xl font-bold mb-4 text-admin-text">Payment Methods</h2>
+                  <div className="space-y-3">
+                    <label className="flex items-center space-x-3 p-3 bg-admin-card rounded-lg border border-admin-border cursor-pointer hover:bg-admin-background">
+                      <input
+                        type="checkbox"
+                        value="cod"
+                        defaultChecked
+                        disabled
+                        className="w-5 h-5 text-admin-primary focus:ring-2 focus:ring-admin-primary border-admin-border rounded"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-admin-text-dark">Cash on Delivery (COD)</span>
+                        <p className="text-xs text-admin-text-light">Always enabled - customers can pay upon delivery</p>
+                      </div>
+                    </label>
+                    <label className="flex items-center space-x-3 p-3 bg-admin-card rounded-lg border border-admin-border cursor-pointer hover:bg-admin-background">
+                      <input
+                        type="checkbox"
+                        value="razorpay"
+                        {...register('paymentMethodsEnabled')}
+                        className="w-5 h-5 text-admin-primary focus:ring-2 focus:ring-admin-primary border-admin-border rounded"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-admin-text-dark">Razorpay (UPI, Cards, Net Banking, Wallets)</span>
+                        <p className="text-xs text-admin-text-light">Enable after configuring Razorpay keys above</p>
+                      </div>
+                    </label>
                   </div>
                 </div>
 
