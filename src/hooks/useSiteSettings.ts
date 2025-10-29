@@ -73,13 +73,13 @@ export const useSiteSettings = () => {
           .update({ value, updated_at: new Date().toISOString() })
           .eq('key', key)
           .select()
-          .single();
+          .maybeSingle();
       } else {
         result = await supabase
           .from('site_settings')
           .insert({ key, value })
           .select()
-          .single();
+          .maybeSingle();
       }
 
       if (result.error) throw result.error;
