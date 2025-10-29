@@ -127,13 +127,14 @@ interface SiteSettingsForm {
 const AdminSettings: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('general'); // State for active tab
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const { isAdmin } = useAuth();
   const { settings, loading: settingsLoading, error: settingsError, updateSetting, fetchSettings } = useSiteSettings();
   const navigate = useNavigate();
   const { showToast } = useToast();
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<SiteSettingsForm>();
+  const { register, handleSubmit, reset, formState: { errors, isDirty } } = useForm<SiteSettingsForm>();
 
   useEffect(() => {
     if (!isAdmin) {
@@ -259,6 +260,8 @@ const AdminSettings: React.FC = () => {
     setIsLoading(true);
 
     try {
+      console.log('Starting to save settings...', Object.keys(data).length, 'fields');
+
       // Convert camelCase form data to snake_case for database
       const updates = Object.keys(data).map(key => {
         const dbKey = camelToSnake(key);
@@ -267,13 +270,21 @@ const AdminSettings: React.FC = () => {
 
       const results = await Promise.all(updates);
       const hasError = results.some(result => result.error);
+      const errorResults = results.filter(result => result.error);
 
       if (hasError) {
-        showToast('Some settings failed to save. Please try again.', 'error');
+        console.error('Failed settings:', errorResults.map((r, i) => ({ key: Object.keys(data)[i], error: r.error })));
+        showToast(`Failed to save ${errorResults.length} settings. Please try again.`, 'error');
+        setSaveSuccess(false);
       } else {
-        showToast('Settings saved successfully!', 'success');
+        console.log('All settings saved successfully!', results.length, 'settings updated');
+        showToast(`All settings saved successfully! (${results.length} fields updated)`, 'success');
+        setSaveSuccess(true);
         // Refresh settings from database after successful save
         await fetchSettings();
+
+        // Reset save success state after 3 seconds
+        setTimeout(() => setSaveSuccess(false), 3000);
       }
     } catch (error: any) {
       console.error('Error saving site settings:', error);
@@ -1302,16 +1313,26 @@ const AdminSettings: React.FC = () => {
           </div>
 
           <div className="sticky bottom-0 bg-admin-card border-t border-admin-border px-6 py-4 flex justify-between items-center">
-            <p className="text-sm text-admin-text-light">Save your changes to update the site configuration</p>
+            <div>
+              <p className="text-sm text-admin-text-light">
+                {saveSuccess ? (
+                  <span className="text-admin-success font-medium">✓ All changes saved successfully!</span>
+                ) : isDirty ? (
+                  <span className="text-admin-warning">You have unsaved changes</span>
+                ) : (
+                  'Save your changes to update the site configuration'
+                )}
+              </p>
+            </div>
             <motion.button
               type="submit"
               disabled={isLoading}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="px-8 py-3 bg-gradient-to-r from-admin-primary to-admin-primary-dark text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+              className={`px-8 py-3 ${saveSuccess ? 'bg-admin-success' : 'bg-gradient-to-r from-admin-primary to-admin-primary-dark'} text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2`}
             >
               <Settings className="h-5 w-5" />
-              <span>{isLoading ? 'Saving Changes...' : 'Save All Settings'}</span>
+              <span>{isLoading ? 'Saving Changes...' : saveSuccess ? 'Saved!' : 'Save All Settings'}</span>
             </motion.button>
           </div>
         </form>

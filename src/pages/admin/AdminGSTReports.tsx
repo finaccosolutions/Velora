@@ -428,39 +428,35 @@ const AdminGSTReports: React.FC = () => {
                 <p>No data available for this report</p>
               </div>
             ) : (
-              <div className="overflow-x-auto max-w-full">
-                <div className="inline-block min-w-full align-middle">
-                  <div className="overflow-hidden border border-admin-border rounded-lg">
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-admin-border">
-                        <thead className="bg-admin-sidebar sticky top-0 z-10">
-                          <tr>
-                            {Object.keys(reportData[0]).map(key => (
-                              <th
-                                key={key}
-                                className="px-4 py-3 text-left text-xs font-medium text-admin-text-light uppercase tracking-wider whitespace-nowrap"
-                              >
-                                {key.replace(/([A-Z])/g, ' $1').trim()}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="bg-admin-card divide-y divide-admin-border">
-                          {reportData.map((row, idx) => (
-                            <tr key={idx} className="hover:bg-admin-sidebar transition-colors">
-                              {Object.entries(row).map(([key, value], cellIdx) => (
-                                <td key={cellIdx} className="px-4 py-3 whitespace-nowrap text-sm text-admin-text">
-                                  {typeof value === 'number' && (key.toLowerCase().includes('value') || key.toLowerCase().includes('gst') || key.toLowerCase().includes('cgst') || key.toLowerCase().includes('sgst') || key.toLowerCase().includes('igst'))
-                                    ? `₹${Math.round(value as number).toLocaleString()}`
-                                    : String(value)}
-                                </td>
-                              ))}
-                            </tr>
+              <div className="border border-admin-border rounded-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-admin-border">
+                    <thead className="bg-admin-sidebar">
+                      <tr>
+                        {Object.keys(reportData[0]).map(key => (
+                          <th
+                            key={key}
+                            className="px-4 py-3 text-left text-xs font-medium text-admin-text-light uppercase tracking-wider whitespace-nowrap"
+                          >
+                            {key.replace(/([A-Z])/g, ' $1').trim()}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="bg-admin-card divide-y divide-admin-border">
+                      {reportData.map((row, idx) => (
+                        <tr key={idx} className="hover:bg-admin-sidebar transition-colors">
+                          {Object.entries(row).map(([key, value], cellIdx) => (
+                            <td key={cellIdx} className="px-4 py-3 whitespace-nowrap text-sm text-admin-text">
+                              {typeof value === 'number' && (key.toLowerCase().includes('value') || key.toLowerCase().includes('gst') || key.toLowerCase().includes('cgst') || key.toLowerCase().includes('sgst') || key.toLowerCase().includes('igst'))
+                                ? `₹${Math.round(value as number).toLocaleString()}`
+                                : String(value)}
+                            </td>
                           ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )}
