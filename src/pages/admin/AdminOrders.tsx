@@ -199,21 +199,51 @@ const AdminOrders: React.FC = () => {
       return;
     }
 
-    const headers = ['Order ID', 'Customer', 'Email', 'Phone', 'Amount', 'Status', 'Payment', 'Date', 'Items'];
+    const headers = [
+      'Order ID', 'Customer', 'Email', 'Phone', 'Product Name', 'Quantity',
+      'Price Per Item', 'Item Total', 'Order Total', 'Status', 'Payment Method',
+      'Payment Status', 'Tracking Number', 'Date', 'Address'
+    ];
 
-    const rows = filteredOrders.map(order => [
-      order.id.slice(-8).toUpperCase(),
-      order.users?.full_name || order.guest_name || 'Guest',
-      order.users?.email || order.guest_email || 'N/A',
-      order.users?.phone || order.guest_phone || 'N/A',
-      `₹${Number(order.total_amount).toLocaleString()}`,
-      order.status.charAt(0).toUpperCase() + order.status.slice(1),
-      order.payment_method === 'cod' ? 'COD' : 'Online',
-      new Date(order.created_at).toLocaleString(),
-      order.order_items.length
-    ]);
+    const rows: string[][] = [];
 
-    let csvContent = headers.join(',') + '\n';
+    filteredOrders.forEach(order => {
+      const baseInfo = [
+        order.id.slice(-8).toUpperCase(),
+        order.users?.full_name || order.guest_name || 'Guest',
+        order.users?.email || order.guest_email || 'N/A',
+        order.users?.phone || order.guest_phone || 'N/A'
+      ];
+
+      const orderInfo = [
+        `Rs ${Number(order.total_amount).toLocaleString()}`,
+        order.status.charAt(0).toUpperCase() + order.status.slice(1),
+        order.payment_method === 'cod' ? 'COD' : 'Online',
+        order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1),
+        order.tracking_number || 'N/A',
+        new Date(order.created_at).toLocaleString('en-IN'),
+        `${order.shipping_address.address_line_1}, ${order.shipping_address.city}, ${order.shipping_address.state} ${order.shipping_address.postal_code}`
+      ];
+
+      if (order.order_items.length === 0) {
+        rows.push([...baseInfo, 'No items', '0', 'Rs 0', 'Rs 0', ...orderInfo]);
+      } else {
+        order.order_items.forEach((item, index) => {
+          const itemTotal = Number(item.price) * item.quantity;
+          rows.push([
+            ...baseInfo,
+            item.product.name,
+            item.quantity.toString(),
+            `Rs ${Number(item.price).toLocaleString()}`,
+            `Rs ${itemTotal.toLocaleString()}`,
+            ...orderInfo
+          ]);
+        });
+      }
+    });
+
+    const BOM = '\uFEFF';
+    let csvContent = BOM + headers.join(',') + '\n';
     rows.forEach(row => {
       csvContent += row.map(cell => `"${cell}"`).join(',') + '\n';
     });

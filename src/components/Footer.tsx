@@ -46,58 +46,61 @@ const Footer: React.FC = () => {
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h4 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Quick Links</h4>
-            <ul className="space-y-1.5 sm:space-y-2 text-sm sm:text-base">
-              <li>
-                <Link to="/" className="text-[#c9baa8] hover:text-white transition-colors">
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link to="/products" className="text-[#c9baa8] hover:text-white transition-colors">
-                  Products
-                </Link>
-              </li>
-              <li>
-                <Link to="/about" className="text-[#c9baa8] hover:text-white transition-colors">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="text-[#c9baa8] hover:text-white transition-colors">
-                  Contact
-                </Link>
-              </li>
-            </ul>
-          </div>
+          {/* Quick Links and Customer Service - Combined on mobile */}
+          <div className="sm:col-span-2 md:col-span-2 grid grid-cols-2 gap-4 sm:gap-8">
+            {/* Quick Links */}
+            <div>
+              <h4 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Quick Links</h4>
+              <ul className="space-y-1.5 sm:space-y-2 text-sm sm:text-base">
+                <li>
+                  <Link to="/" className="text-[#c9baa8] hover:text-white transition-colors">
+                    Home
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/products" className="text-[#c9baa8] hover:text-white transition-colors">
+                    Products
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/about" className="text-[#c9baa8] hover:text-white transition-colors">
+                    About Us
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/contact" className="text-[#c9baa8] hover:text-white transition-colors">
+                    Contact
+                  </Link>
+                </li>
+              </ul>
+            </div>
 
-          {/* Customer Service */}
-          <div>
-            <h4 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Customer Service</h4>
-            <ul className="space-y-1.5 sm:space-y-2 text-sm sm:text-base">
-              <li>
-                <Link to="/shipping" className="text-[#c9baa8] hover:text-white transition-colors">
-                  Shipping Info
-                </Link>
-              </li>
-              <li>
-                <Link to="/returns" className="text-[#c9baa8] hover:text-white transition-colors">
-                  Returns & Exchanges
-                </Link>
-              </li>
-              <li>
-                <Link to="/faq" className="text-[#c9baa8] hover:text-white transition-colors">
-                  FAQ
-                </Link>
-              </li>
-              <li>
-                <Link to="/support" className="text-[#c9baa8] hover:text-white transition-colors">
-                  Support
-                </Link>
-              </li>
-            </ul>
+            {/* Customer Service */}
+            <div>
+              <h4 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Customer Service</h4>
+              <ul className="space-y-1.5 sm:space-y-2 text-sm sm:text-base">
+                <li>
+                  <Link to="/shipping" className="text-[#c9baa8] hover:text-white transition-colors">
+                    Shipping Info
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/returns" className="text-[#c9baa8] hover:text-white transition-colors">
+                    Returns & Exchanges
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/faq" className="text-[#c9baa8] hover:text-white transition-colors">
+                    FAQ
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/support" className="text-[#c9baa8] hover:text-white transition-colors">
+                    Support
+                  </Link>
+                </li>
+              </ul>
+            </div>
           </div>
 
           {/* Contact Info */}

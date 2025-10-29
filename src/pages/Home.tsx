@@ -146,7 +146,7 @@ const Home: React.FC = () => {
       {/* Features Section */}
       <section className="py-8 sm:py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-8">
             {[
               { icon: Truck, title: 'Free Shipping', desc: 'On orders above ₹2000' },
               { icon: Shield, title: 'Authentic Products', desc: '100% genuine fragrances' },
@@ -158,13 +158,13 @@ const Home: React.FC = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="text-center p-4 sm:p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
+                className="text-center p-3 sm:p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
               >
-                <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-[#815536] to-[#c9baa8] rounded-full mb-3 sm:mb-4">
-                  <feature.icon className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                <div className="inline-flex items-center justify-center w-10 h-10 sm:w-16 sm:h-16 bg-gradient-to-r from-[#815536] to-[#c9baa8] rounded-full mb-2 sm:mb-4">
+                  <feature.icon className="h-5 w-5 sm:h-8 sm:w-8 text-white" />
                 </div>
-                <h3 className="text-sm sm:text-lg font-semibold text-gray-900 mb-1 sm:mb-2">{feature.title}</h3>
-                <p className="text-xs sm:text-base text-gray-600">{feature.desc}</p>
+                <h3 className="text-xs sm:text-lg font-semibold text-gray-900 mb-1 sm:mb-2">{feature.title}</h3>
+                <p className="text-[10px] sm:text-base text-gray-600 leading-tight sm:leading-normal">{feature.desc}</p>
               </motion.div>
             ))}
           </div>

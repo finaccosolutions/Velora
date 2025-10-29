@@ -394,36 +394,38 @@ const Header: React.FC = () => {
         {/* Mobile Navigation */}
         <AnimatePresence>
           {isMenuOpen && (
-            <motion.nav
+            <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={{ duration: 0.3 }}
-              className="md:hidden py-4 border-t border-gray-100 overflow-hidden"
+              className="md:hidden fixed top-16 left-0 right-0 bg-white shadow-lg border-t border-gray-100 z-50 max-h-[calc(100vh-4rem)] overflow-y-auto"
             >
-              <div className="flex flex-col space-y-2">
-                {navigationItems.map((item, index) => (
-                  <motion.div
-                    key={item.path}
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <Link
-                      to={item.path}
-                      className={`block px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                        isActivePath(item.path)
-                          ? 'text-[#815536] bg-[#815536]/10 border-l-4 border-[#815536]'
-                          : 'text-gray-700 hover:text-[#815536] hover:bg-[#815536]/5'
-                      }`}
-                      onClick={() => setIsMenuOpen(false)}
+              <nav className="py-4">
+                <div className="flex flex-col space-y-2 px-4">
+                  {navigationItems.map((item, index) => (
+                    <motion.div
+                      key={item.path}
+                      initial={{ x: -20, opacity: 0 }}
+                      animate={{ x: 0, opacity: 1 }}
+                      transition={{ delay: index * 0.1 }}
                     >
-                      {item.label}
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.nav>
+                      <Link
+                        to={item.path}
+                        className={`block px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
+                          isActivePath(item.path)
+                            ? 'text-[#815536] bg-[#815536]/10 border-l-4 border-[#815536]'
+                            : 'text-gray-700 hover:text-[#815536] hover:bg-[#815536]/5'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        {item.label}
+                      </Link>
+                    </motion.div>
+                  ))}
+                </div>
+              </nav>
+            </motion.div>
           )}
         </AnimatePresence>
 
