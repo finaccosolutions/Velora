@@ -174,83 +174,84 @@ const ProductDetail: React.FC = () => {
                 <span className="text-gray-600">({product.reviews_count} reviews)</span>
               </div>
 
-              <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+              <h1 className="text-xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
                 {product.name}
               </h1>
 
-              <div className="flex items-center space-x-4 mb-6">
-                <span className="text-3xl font-bold text-[#815536]">₹{product.price}</span>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
+                <span className="text-2xl sm:text-3xl font-bold text-[#815536]">₹{product.price}</span>
                 {product.original_price && (
-                  <span className="text-xl text-gray-400 line-through">₹{product.original_price}</span>
+                  <span className="text-lg sm:text-xl text-gray-400 line-through">₹{product.original_price}</span>
                 )}
-                <span className="bg-[#c9baa8]/20 text-[#815536] px-3 py-1 rounded-full text-sm font-medium">
+                <span className="bg-[#c9baa8]/20 text-[#815536] px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
                   {product.category_name} {/* Display category_name */}
                 </span>
               </div>
 
-              <p className="text-gray-700 text-lg mb-8 leading-relaxed">
+              <p className="text-gray-700 text-sm sm:text-base lg:text-lg mb-6 sm:mb-8 leading-relaxed">
                 {product.description}
               </p>
 
               {/* Quantity and Add to Cart */}
-              <div className="flex items-center space-x-4 mb-8">
-                <div className="flex items-center border border-gray-300 rounded-lg">
+              <div className="space-y-3 sm:space-y-0 sm:flex sm:items-center sm:space-x-4 mb-6 sm:mb-8">
+                <div className="flex items-center border border-gray-300 rounded-lg w-fit">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="p-3 hover:bg-gray-100 transition-colors"
+                    className="p-2 sm:p-3 hover:bg-gray-100 transition-colors"
                   >
-                    <Minus className="h-4 w-4" />
+                    <Minus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
-                  <span className="px-4 py-3 font-medium">{quantity}</span>
+                  <span className="px-3 sm:px-4 py-2 sm:py-3 font-medium text-sm sm:text-base">{quantity}</span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="p-3 hover:bg-gray-100 transition-colors"
+                    className="p-2 sm:p-3 hover:bg-gray-100 transition-colors"
                   >
-                    <Plus className="h-4 w-4" />
+                    <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   </button>
                 </div>
 
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleAddToCart}
-                  className="flex-1 bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white py-4 px-6 rounded-lg font-semibold hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200 flex items-center justify-center space-x-2  border-2 border-[#815536]"
-                >
-                  
-                  <span>Add to Cart</span>
-                </motion.button>
+                <div className="flex items-center space-x-2 sm:space-x-4 flex-1">
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleAddToCart}
+                    className="flex-1 bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white py-2.5 sm:py-4 px-3 sm:px-6 rounded-lg text-sm sm:text-base font-semibold hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200 flex items-center justify-center space-x-1 sm:space-x-2 border-2 border-[#815536]"
+                  >
+                    <span>Add to Cart</span>
+                  </motion.button>
 
-                {/* NEW: Buy Now Button */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={handleBuyNow}
-                  className="flex-1 border-2 border-[#815536] text-[#815536] py-4 px-6 rounded-lg font-semibold hover:bg-[#815536] hover:text-white transition-all duration-200 flex items-center justify-center space-x-2"
-                >
-                  <span>Buy Now</span>
-                </motion.button>
+                  {/* NEW: Buy Now Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleBuyNow}
+                    className="flex-1 border-2 border-[#815536] text-[#815536] py-2.5 sm:py-4 px-3 sm:px-6 rounded-lg text-sm sm:text-base font-semibold hover:bg-[#815536] hover:text-white transition-all duration-200 flex items-center justify-center space-x-1 sm:space-x-2"
+                  >
+                    <span>Buy Now</span>
+                  </motion.button>
 
-                <button 
-                  onClick={handleWishlistToggle} // NEW: Add wishlist toggle handler
-                  className="p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <Heart className={`h-5 w-5 ${isInWishlist(product.id) ? 'text-red-500 fill-current' : 'text-gray-600'}`} /> {/* NEW: Conditional styling */}
-                </button>
+                  <button
+                    onClick={handleWishlistToggle} // NEW: Add wishlist toggle handler
+                    className="p-2.5 sm:p-4 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex-shrink-0"
+                  >
+                    <Heart className={`h-4 w-4 sm:h-5 sm:w-5 ${isInWishlist(product.id) ? 'text-red-500 fill-current' : 'text-gray-600'}`} /> {/* NEW: Conditional styling */}
+                  </button>
+                </div>
               </div>
 
               {/* Features */}
-              <div className="grid grid-cols-3 gap-4 mb-8">
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <Shield className="h-6 w-6 text-[#815536] mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Authentic</p>
+              <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8">
+                <div className="text-center p-2 sm:p-3 bg-gray-50 rounded-lg">
+                  <Shield className="h-4 w-4 sm:h-6 sm:w-6 text-[#815536] mx-auto mb-1 sm:mb-2" />
+                  <p className="text-xs sm:text-sm text-gray-600">Authentic</p>
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <Truck className="h-6 w-6 text-[#815536] mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Free Shipping</p>
+                <div className="text-center p-2 sm:p-3 bg-gray-50 rounded-lg">
+                  <Truck className="h-4 w-4 sm:h-6 sm:w-6 text-[#815536] mx-auto mb-1 sm:mb-2" />
+                  <p className="text-xs sm:text-sm text-gray-600">Free Shipping</p>
                 </div>
-                <div className="text-center p-3 bg-gray-50 rounded-lg">
-                  <RotateCcw className="h-6 w-6 text-[#815536] mx-auto mb-2" />
-                  <p className="text-sm text-gray-600">Easy Returns</p>
+                <div className="text-center p-2 sm:p-3 bg-gray-50 rounded-lg">
+                  <RotateCcw className="h-4 w-4 sm:h-6 sm:w-6 text-[#815536] mx-auto mb-1 sm:mb-2" />
+                  <p className="text-xs sm:text-sm text-gray-600">Easy Returns</p>
                 </div>
               </div>
             </motion.div>
@@ -258,7 +259,7 @@ const ProductDetail: React.FC = () => {
 
           {/* Product Details Tabs */}
           <div className="border-t border-gray-200">
-            <div className="flex border-b border-gray-200">
+            <div className="flex border-b border-gray-200 overflow-x-auto">
               {[
                 { key: 'description', label: 'Description' },
                 { key: 'features', label: 'Features' },
@@ -267,7 +268,7 @@ const ProductDetail: React.FC = () => {
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key as any)}
-                  className={`px-6 py-4 font-medium transition-colors ${
+                  className={`px-4 sm:px-6 py-3 sm:py-4 font-medium transition-colors text-sm sm:text-base whitespace-nowrap ${
                     activeTab === tab.key
                       ? 'border-b-2 border-[#815536] text-[#815536]'
                       : 'text-gray-600 hover:text-gray-900'
@@ -278,7 +279,7 @@ const ProductDetail: React.FC = () => {
               ))}
             </div>
 
-            <div className="p-8">
+            <div className="p-4 sm:p-8">
               {activeTab === 'description' && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}

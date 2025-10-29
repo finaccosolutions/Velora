@@ -545,16 +545,6 @@ const Checkout: React.FC = () => {
       if (paymentMethod === 'online') {
         await handleRazorpayPayment(order);
       } else {
-        const { error: updateError } = await supabase
-          .from('orders')
-          .update({ status: 'confirmed' })
-          .eq('id', order.id);
-
-        if (updateError) {
-          console.error('Error updating order status:', updateError);
-          showToast('Order placed but status update failed', 'warning');
-        }
-
         setIsOrderPlaced(true);
 
         if (!buyNowProduct) {

@@ -9,8 +9,8 @@ const Footer: React.FC = () => {
 
   return (
     <footer className="bg-[#815536] text-white mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8">
           {/* Company Info */}
           <div>
             {settings.logoUrl ? (
@@ -48,8 +48,8 @@ const Footer: React.FC = () => {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
-            <ul className="space-y-2">
+            <h4 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Quick Links</h4>
+            <ul className="space-y-1.5 sm:space-y-2 text-sm sm:text-base">
               <li>
                 <Link to="/" className="text-[#c9baa8] hover:text-white transition-colors">
                   Home
@@ -75,8 +75,8 @@ const Footer: React.FC = () => {
 
           {/* Customer Service */}
           <div>
-            <h4 className="text-lg font-semibold mb-4">Customer Service</h4>
-            <ul className="space-y-2">
+            <h4 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Customer Service</h4>
+            <ul className="space-y-1.5 sm:space-y-2 text-sm sm:text-base">
               <li>
                 <Link to="/shipping" className="text-[#c9baa8] hover:text-white transition-colors">
                   Shipping Info
@@ -101,22 +101,22 @@ const Footer: React.FC = () => {
           </div>
 
           {/* Contact Info */}
-          <div>
-            <h4 className="text-lg font-semibold mb-4">Contact Info</h4>
-            <div className="space-y-3">
-              <div className="flex items-center space-x-3">
-                <MapPin className="h-4 w-4 text-[#c9baa8]" />
-                <span className="text-[#c9baa8]">
+          <div className="sm:col-span-2 md:col-span-1">
+            <h4 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">Contact Info</h4>
+            <div className="space-y-2 sm:space-y-3 text-sm sm:text-base">
+              <div className="flex items-start space-x-2 sm:space-x-3">
+                <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#c9baa8] mt-1 flex-shrink-0" />
+                <span className="text-[#c9baa8] text-xs sm:text-sm">
                   {settings.contactAddressLine1 || 'Perinthalmanna'}, {settings.contactCity || 'Kerala'}, {settings.contactCountry || 'India'}
                 </span>
               </div>
-              <div className="flex items-center space-x-3">
-                <Phone className="h-4 w-4 text-[#c9baa8]" />
-                <span className="text-[#c9baa8]">{settings.contactPhone1 || '+91 7356062349'}</span>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#c9baa8] flex-shrink-0" />
+                <span className="text-[#c9baa8] text-xs sm:text-sm">{settings.contactPhone1 || '+91 7356062349'}</span>
               </div>
-              <div className="flex items-center space-x-3">
-                <Mail className="h-4 w-4 text-[#c9baa8]" />
-                <span className="text-[#c9baa8]">{settings.contactEmail1 || 'info@veloratradings.com'}</span>
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#c9baa8] flex-shrink-0" />
+                <span className="text-[#c9baa8] text-xs sm:text-sm break-all">{settings.contactEmail1 || 'info@veloratradings.com'}</span>
               </div>
             </div>
           </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Package, Search, Filter, Eye, Edit, Truck, CheckCircle, XCircle, Clock,
-  ChevronDown, ChevronUp, User, MapPin, Phone, Mail, Calendar, DollarSign
+  ChevronDown, ChevronUp, User, MapPin, Phone, Mail, Calendar, DollarSign, Download
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
@@ -53,6 +53,15 @@ const AdminOrders: React.FC = () => {
     tracking_number: '',
     estimated_delivery: ''
   });
+  const [showFilterPanel, setShowFilterPanel] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState({
+    paymentMethod: 'all',
+    paymentStatus: 'all',
+    startDate: '',
+    endDate: '',
+    minAmount: '',
+    maxAmount: ''
+  });
 
   const { isAdmin } = useAuth();
   const { showToast } = useToast();
@@ -68,7 +77,7 @@ const AdminOrders: React.FC = () => {
 
   useEffect(() => {
     filterOrders();
-  }, [searchTerm, statusFilter, orders]);
+  }, [searchTerm, statusFilter, orders, advancedFilters]);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -122,6 +131,32 @@ const AdminOrders: React.FC = () => {
       });
     }
 
+    if (advancedFilters.paymentMethod !== 'all') {
+      filtered = filtered.filter(order => order.payment_method === advancedFilters.paymentMethod);
+    }
+
+    if (advancedFilters.paymentStatus !== 'all') {
+      filtered = filtered.filter(order => order.payment_status === advancedFilters.paymentStatus);
+    }
+
+    if (advancedFilters.startDate) {
+      filtered = filtered.filter(order => new Date(order.created_at) >= new Date(advancedFilters.startDate));
+    }
+
+    if (advancedFilters.endDate) {
+      const endDate = new Date(advancedFilters.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(order => new Date(order.created_at) <= endDate);
+    }
+
+    if (advancedFilters.minAmount) {
+      filtered = filtered.filter(order => Number(order.total_amount) >= Number(advancedFilters.minAmount));
+    }
+
+    if (advancedFilters.maxAmount) {
+      filtered = filtered.filter(order => Number(order.total_amount) <= Number(advancedFilters.maxAmount));
+    }
+
     setFilteredOrders(filtered);
   };
 
@@ -156,6 +191,56 @@ const AdminOrders: React.FC = () => {
       console.error('Error updating order:', error);
       showToast('Failed to update order', 'error');
     }
+  };
+
+  const exportToExcel = () => {
+    if (filteredOrders.length === 0) {
+      showToast('No orders to export', 'error');
+      return;
+    }
+
+    const headers = ['Order ID', 'Customer', 'Email', 'Phone', 'Amount', 'Status', 'Payment', 'Date', 'Items'];
+
+    const rows = filteredOrders.map(order => [
+      order.id.slice(-8).toUpperCase(),
+      order.users?.full_name || order.guest_name || 'Guest',
+      order.users?.email || order.guest_email || 'N/A',
+      order.users?.phone || order.guest_phone || 'N/A',
+      `₹${Number(order.total_amount).toLocaleString()}`,
+      order.status.charAt(0).toUpperCase() + order.status.slice(1),
+      order.payment_method === 'cod' ? 'COD' : 'Online',
+      new Date(order.created_at).toLocaleString(),
+      order.order_items.length
+    ]);
+
+    let csvContent = headers.join(',') + '\n';
+    rows.forEach(row => {
+      csvContent += row.map(cell => `"${cell}"`).join(',') + '\n';
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `orders_${statusFilter}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    showToast('Orders exported successfully', 'success');
+  };
+
+  const resetFilters = () => {
+    setAdvancedFilters({
+      paymentMethod: 'all',
+      paymentStatus: 'all',
+      startDate: '',
+      endDate: '',
+      minAmount: '',
+      maxAmount: ''
+    });
+    setSearchTerm('');
   };
 
   const getStatusColor = (status: string) => {
@@ -198,6 +283,15 @@ const AdminOrders: React.FC = () => {
     revenue: orders.reduce((sum, o) => sum + Number(o.total_amount), 0)
   };
 
+  const statusTabs = [
+    { key: 'all', label: 'All Orders', count: stats.total },
+    { key: 'pending', label: 'Pending', count: stats.pending },
+    { key: 'confirmed', label: 'Confirmed', count: stats.confirmed },
+    { key: 'shipped', label: 'Shipped', count: stats.shipped },
+    { key: 'delivered', label: 'Delivered', count: stats.delivered },
+    { key: 'cancelled', label: 'Cancelled', count: stats.cancelled }
+  ];
+
   if (loading) {
     return (
       <div className="min-h-screen bg-admin-background flex items-center justify-center">
@@ -210,66 +304,154 @@ const AdminOrders: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-admin-background p-8">
-      <header className="bg-admin-card shadow-lg rounded-xl p-6 mb-8">
-        <h1 className="text-3xl font-bold text-admin-text">Orders Management</h1>
-        <p className="text-admin-text-light mt-2">Manage and track customer orders</p>
+    <div className="min-h-screen bg-admin-background p-4 sm:p-8">
+      <header className="bg-admin-card shadow-lg rounded-xl p-4 sm:p-6 mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-admin-text">Orders Management</h1>
+            <p className="text-admin-text-light mt-1 sm:mt-2 text-sm sm:text-base">Manage and track customer orders</p>
+          </div>
+          <button
+            onClick={exportToExcel}
+            className="flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm sm:text-base"
+          >
+            <Download className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span>Export Excel</span>
+          </button>
+        </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        {[
-          { label: 'Total Orders', value: stats.total, color: 'bg-admin-primary', icon: Package },
-          { label: 'Confirmed', value: stats.confirmed, color: 'bg-admin-warning', icon: Clock },
-          { label: 'Shipped', value: stats.shipped, color: 'bg-admin-info', icon: Truck },
-          { label: 'Delivered', value: stats.delivered, color: 'bg-admin-success', icon: CheckCircle }
-        ].map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            className="bg-admin-card rounded-xl shadow-lg p-6"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-admin-text-light">{stat.label}</p>
-                <p className="text-2xl font-bold text-admin-text mt-1">{stat.value}</p>
-              </div>
-              <div className={`${stat.color} p-3 rounded-lg`}>
-                <stat.icon className="h-6 w-6 text-white" />
-              </div>
-            </div>
-          </motion.div>
-        ))}
+      <div className="bg-admin-card rounded-xl shadow-lg mb-6 overflow-hidden">
+        <div className="overflow-x-auto">
+          <div className="flex border-b border-admin-border min-w-max">
+            {statusTabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setStatusFilter(tab.key)}
+                className={`px-4 sm:px-6 py-3 sm:py-4 font-medium transition-colors whitespace-nowrap text-sm sm:text-base ${
+                  statusFilter === tab.key
+                    ? 'border-b-2 border-admin-primary text-admin-primary bg-admin-primary/5'
+                    : 'text-admin-text-light hover:text-admin-text hover:bg-admin-sidebar'
+                }`}
+              >
+                {tab.label} ({tab.count})
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div className="bg-admin-card rounded-xl shadow-lg p-6 mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-admin-text-light" />
-            <input
-              type="text"
-              placeholder="Search by order ID, customer name or email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-admin-border rounded-lg bg-admin-background text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
-            />
-          </div>
-          <div className="relative">
-            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-admin-text-light" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="pl-10 pr-8 py-2 border border-admin-border rounded-lg bg-admin-background text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent appearance-none"
+      <div className="bg-admin-card rounded-xl shadow-lg p-4 sm:p-6 mb-6">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-admin-text-light" />
+              <input
+                type="text"
+                placeholder="Search by order ID, customer name or email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 sm:pl-10 pr-4 py-2 border border-admin-border rounded-lg bg-admin-background text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent text-sm sm:text-base"
+              />
+            </div>
+            <button
+              onClick={() => setShowFilterPanel(!showFilterPanel)}
+              className="flex items-center justify-center space-x-2 px-4 py-2 border border-admin-border rounded-lg bg-admin-background text-admin-text hover:bg-admin-sidebar transition-colors text-sm sm:text-base"
             >
-              <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="shipped">Shipped</option>
-              <option value="delivered">Delivered</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
+              <Filter className="h-4 w-4 sm:h-5 sm:w-5" />
+              <span>Filters</span>
+              {showFilterPanel ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </button>
           </div>
+
+          {showFilterPanel && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="border-t border-admin-border pt-4 space-y-4"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-admin-text mb-2">Payment Method</label>
+                  <select
+                    value={advancedFilters.paymentMethod}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, paymentMethod: e.target.value })}
+                    className="w-full p-2 border border-admin-border rounded-lg bg-admin-background text-admin-text text-sm"
+                  >
+                    <option value="all">All Methods</option>
+                    <option value="cod">Cash on Delivery</option>
+                    <option value="online">Online Payment</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-admin-text mb-2">Payment Status</label>
+                  <select
+                    value={advancedFilters.paymentStatus}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, paymentStatus: e.target.value })}
+                    className="w-full p-2 border border-admin-border rounded-lg bg-admin-background text-admin-text text-sm"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="paid">Paid</option>
+                    <option value="failed">Failed</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-admin-text mb-2">Start Date</label>
+                  <input
+                    type="date"
+                    value={advancedFilters.startDate}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, startDate: e.target.value })}
+                    className="w-full p-2 border border-admin-border rounded-lg bg-admin-background text-admin-text text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-admin-text mb-2">End Date</label>
+                  <input
+                    type="date"
+                    value={advancedFilters.endDate}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, endDate: e.target.value })}
+                    className="w-full p-2 border border-admin-border rounded-lg bg-admin-background text-admin-text text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-admin-text mb-2">Min Amount (₹)</label>
+                  <input
+                    type="number"
+                    value={advancedFilters.minAmount}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, minAmount: e.target.value })}
+                    placeholder="0"
+                    className="w-full p-2 border border-admin-border rounded-lg bg-admin-background text-admin-text text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-admin-text mb-2">Max Amount (₹)</label>
+                  <input
+                    type="number"
+                    value={advancedFilters.maxAmount}
+                    onChange={(e) => setAdvancedFilters({ ...advancedFilters, maxAmount: e.target.value })}
+                    placeholder="999999"
+                    className="w-full p-2 border border-admin-border rounded-lg bg-admin-background text-admin-text text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={resetFilters}
+                  className="px-4 py-2 text-sm text-admin-text-light hover:text-admin-text transition-colors"
+                >
+                  Reset Filters
+                </button>
+              </div>
+            </motion.div>
+          )}
         </div>
       </div>
 
@@ -288,69 +470,69 @@ const AdminOrders: React.FC = () => {
               transition={{ delay: index * 0.05 }}
               className="bg-admin-card rounded-xl shadow-lg overflow-hidden"
             >
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="bg-admin-primary p-3 rounded-lg">
+                  <div className="flex items-center space-x-3 sm:space-x-4">
+                    <div className="bg-admin-primary p-2 sm:p-3 rounded-lg flex-shrink-0">
                       {getStatusIcon(order.status)}
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-admin-text">
+                      <h3 className="text-base sm:text-lg font-semibold text-admin-text">
                         Order #{order.id.slice(-8).toUpperCase()}
                       </h3>
-                      <p className="text-sm text-admin-text-light">
+                      <p className="text-xs sm:text-sm text-admin-text-light">
                         {new Date(order.created_at).toLocaleString()}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`px-4 py-2 rounded-full text-sm font-medium border ${getStatusColor(order.status)}`}>
+                    <span className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium border ${getStatusColor(order.status)}`}>
                       {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
                     </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                  <div className="flex items-center space-x-3 p-3 bg-admin-sidebar rounded-lg">
-                    <User className="h-5 w-5 text-admin-primary" />
-                    <div>
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4">
+                  <div className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-admin-sidebar rounded-lg">
+                    <User className="h-4 w-4 sm:h-5 sm:w-5 text-admin-primary flex-shrink-0" />
+                    <div className="min-w-0">
                       <p className="text-xs text-admin-text-light">Customer</p>
-                      <p className="font-semibold text-admin-text">{order.users?.full_name || order.guest_name || 'Guest'}</p>
+                      <p className="font-semibold text-admin-text text-xs sm:text-sm truncate">{order.users?.full_name || order.guest_name || 'Guest'}</p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3 p-3 bg-admin-sidebar rounded-lg">
-                    <DollarSign className="h-5 w-5 text-admin-primary" />
+                  <div className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-admin-sidebar rounded-lg">
+                    <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-admin-primary flex-shrink-0" />
                     <div>
                       <p className="text-xs text-admin-text-light">Amount</p>
-                      <p className="font-semibold text-admin-text">₹{Number(order.total_amount).toLocaleString()}</p>
+                      <p className="font-semibold text-admin-text text-xs sm:text-sm">₹{Number(order.total_amount).toLocaleString()}</p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3 p-3 bg-admin-sidebar rounded-lg">
-                    <Calendar className="h-5 w-5 text-admin-primary" />
+                  <div className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-admin-sidebar rounded-lg">
+                    <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-admin-primary flex-shrink-0" />
                     <div>
                       <p className="text-xs text-admin-text-light">Payment</p>
-                      <p className="font-semibold text-admin-text">{order.payment_method === 'cod' ? 'COD' : 'Online'}</p>
+                      <p className="font-semibold text-admin-text text-xs sm:text-sm">{order.payment_method === 'cod' ? 'COD' : 'Online'}</p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3 p-3 bg-admin-sidebar rounded-lg">
-                    <Package className="h-5 w-5 text-admin-primary" />
+                  <div className="flex items-center space-x-2 sm:space-x-3 p-2 sm:p-3 bg-admin-sidebar rounded-lg">
+                    <Package className="h-4 w-4 sm:h-5 sm:w-5 text-admin-primary flex-shrink-0" />
                     <div>
                       <p className="text-xs text-admin-text-light">Items</p>
-                      <p className="font-semibold text-admin-text">{order.order_items.length}</p>
+                      <p className="font-semibold text-admin-text text-xs sm:text-sm">{order.order_items.length}</p>
                     </div>
                   </div>
                 </div>
 
                 {editingOrder === order.id ? (
                   <div className="border-t border-admin-border pt-4 mt-4">
-                    <h4 className="font-semibold text-admin-text mb-4">Update Order</h4>
+                    <h4 className="font-semibold text-admin-text mb-4 text-sm sm:text-base">Update Order</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                       <div>
                         <label className="block text-sm font-medium text-admin-text mb-2">Status</label>
                         <select
                           value={editForm.status}
                           onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
-                          className="w-full p-2 border border-admin-border rounded-lg bg-admin-background text-admin-text"
+                          className="w-full p-2 border border-admin-border rounded-lg bg-admin-background text-admin-text text-sm"
                         >
                           <option value="pending">Pending</option>
                           <option value="confirmed">Confirmed</option>
@@ -366,7 +548,7 @@ const AdminOrders: React.FC = () => {
                           value={editForm.tracking_number}
                           onChange={(e) => setEditForm({ ...editForm, tracking_number: e.target.value })}
                           placeholder="Enter tracking number"
-                          className="w-full p-2 border border-admin-border rounded-lg bg-admin-background text-admin-text"
+                          className="w-full p-2 border border-admin-border rounded-lg bg-admin-background text-admin-text text-sm"
                         />
                       </div>
                       <div>
@@ -375,20 +557,20 @@ const AdminOrders: React.FC = () => {
                           type="date"
                           value={editForm.estimated_delivery}
                           onChange={(e) => setEditForm({ ...editForm, estimated_delivery: e.target.value })}
-                          className="w-full p-2 border border-admin-border rounded-lg bg-admin-background text-admin-text"
+                          className="w-full p-2 border border-admin-border rounded-lg bg-admin-background text-admin-text text-sm"
                         />
                       </div>
                     </div>
                     <div className="flex gap-3">
                       <button
                         onClick={() => handleUpdateOrder(order.id)}
-                        className="px-4 py-2 bg-admin-success text-white rounded-lg hover:bg-admin-success/80 transition-colors"
+                        className="px-4 py-2 bg-admin-success text-white rounded-lg hover:bg-admin-success/80 transition-colors text-sm"
                       >
                         Save Changes
                       </button>
                       <button
                         onClick={() => setEditingOrder(null)}
-                        className="px-4 py-2 border border-admin-border rounded-lg hover:bg-admin-sidebar transition-colors text-admin-text"
+                        className="px-4 py-2 border border-admin-border rounded-lg hover:bg-admin-sidebar transition-colors text-admin-text text-sm"
                       >
                         Cancel
                       </button>
@@ -398,17 +580,17 @@ const AdminOrders: React.FC = () => {
                   <div className="flex flex-wrap gap-3">
                     <button
                       onClick={() => setSelectedOrder(selectedOrder === order.id ? null : order.id)}
-                      className="flex items-center space-x-2 px-4 py-2 border border-admin-border rounded-lg hover:bg-admin-sidebar transition-colors text-admin-text"
+                      className="flex items-center space-x-2 px-3 sm:px-4 py-2 border border-admin-border rounded-lg hover:bg-admin-sidebar transition-colors text-admin-text text-sm"
                     >
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       <span>{selectedOrder === order.id ? 'Hide' : 'View'} Details</span>
-                      {selectedOrder === order.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      {selectedOrder === order.id ? <ChevronUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> : <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4" />}
                     </button>
                     <button
                       onClick={() => handleEditOrder(order)}
-                      className="flex items-center space-x-2 px-4 py-2 bg-admin-primary text-white rounded-lg hover:bg-admin-primary/80 transition-colors"
+                      className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-admin-primary text-white rounded-lg hover:bg-admin-primary/80 transition-colors text-sm"
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       <span>Update</span>
                     </button>
                   </div>
@@ -423,22 +605,22 @@ const AdminOrders: React.FC = () => {
                   >
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <div>
-                        <h4 className="font-semibold text-admin-text mb-3 flex items-center space-x-2">
-                          <User className="h-5 w-5" />
+                        <h4 className="font-semibold text-admin-text mb-3 flex items-center space-x-2 text-sm sm:text-base">
+                          <User className="h-4 w-4 sm:h-5 sm:w-5" />
                           <span>Customer Information</span>
                         </h4>
-                        <div className="bg-admin-sidebar p-4 rounded-lg space-y-2">
+                        <div className="bg-admin-sidebar p-3 sm:p-4 rounded-lg space-y-2 text-sm sm:text-base">
                           <p className="text-admin-text"><strong>Name:</strong> {order.users?.full_name || order.guest_name || 'Guest'}</p>
-                          <p className="text-admin-text"><strong>Email:</strong> {order.users?.email || order.guest_email || 'N/A'}</p>
+                          <p className="text-admin-text break-all"><strong>Email:</strong> {order.users?.email || order.guest_email || 'N/A'}</p>
                           <p className="text-admin-text"><strong>Phone:</strong> {order.users?.phone || order.guest_phone || 'N/A'}</p>
                           {!order.users && <p className="text-sm text-admin-warning mt-2">(Guest Order)</p>}
                         </div>
 
-                        <h4 className="font-semibold text-admin-text mb-3 mt-4 flex items-center space-x-2">
-                          <MapPin className="h-5 w-5" />
+                        <h4 className="font-semibold text-admin-text mb-3 mt-4 flex items-center space-x-2 text-sm sm:text-base">
+                          <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />
                           <span>Shipping Address</span>
                         </h4>
-                        <div className="bg-admin-sidebar p-4 rounded-lg">
+                        <div className="bg-admin-sidebar p-3 sm:p-4 rounded-lg text-sm sm:text-base">
                           <p className="text-admin-text">{order.shipping_address.full_name}</p>
                           <p className="text-admin-text">{order.shipping_address.address_line_1}</p>
                           {order.shipping_address.address_line_2 && (
@@ -452,37 +634,37 @@ const AdminOrders: React.FC = () => {
 
                         {order.status === 'cancelled' && order.cancellation_reason && (
                           <>
-                            <h4 className="font-semibold text-admin-text mb-3 mt-4 flex items-center space-x-2">
-                              <XCircle className="h-5 w-5 text-admin-danger" />
+                            <h4 className="font-semibold text-admin-text mb-3 mt-4 flex items-center space-x-2 text-sm sm:text-base">
+                              <XCircle className="h-4 w-4 sm:h-5 sm:w-5 text-admin-danger" />
                               <span>Cancellation Reason</span>
                             </h4>
-                            <div className="bg-admin-danger/10 border border-admin-danger/30 p-4 rounded-lg">
-                              <p className="text-admin-text">{order.cancellation_reason}</p>
+                            <div className="bg-admin-danger/10 border border-admin-danger/30 p-3 sm:p-4 rounded-lg">
+                              <p className="text-admin-text text-sm sm:text-base">{order.cancellation_reason}</p>
                             </div>
                           </>
                         )}
                       </div>
 
                       <div>
-                        <h4 className="font-semibold text-admin-text mb-3 flex items-center space-x-2">
-                          <Package className="h-5 w-5" />
+                        <h4 className="font-semibold text-admin-text mb-3 flex items-center space-x-2 text-sm sm:text-base">
+                          <Package className="h-4 w-4 sm:h-5 sm:w-5" />
                           <span>Order Items</span>
                         </h4>
                         <div className="space-y-3">
                           {order.order_items.map((item) => (
-                            <div key={item.id} className="flex items-center space-x-4 p-3 bg-admin-sidebar rounded-lg">
+                            <div key={item.id} className="flex items-center space-x-3 sm:space-x-4 p-3 bg-admin-sidebar rounded-lg">
                               <img
                                 src={item.product.image_url}
                                 alt={item.product.name}
-                                className="w-16 h-16 object-cover rounded-lg"
+                                className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0"
                               />
-                              <div className="flex-1">
-                                <h5 className="font-medium text-admin-text">{item.product.name}</h5>
-                                <p className="text-sm text-admin-text-light">Qty: {item.quantity}</p>
+                              <div className="flex-1 min-w-0">
+                                <h5 className="font-medium text-admin-text text-sm sm:text-base truncate">{item.product.name}</h5>
+                                <p className="text-xs sm:text-sm text-admin-text-light">Qty: {item.quantity}</p>
                               </div>
-                              <div className="text-right">
-                                <p className="font-semibold text-admin-text">₹{Number(item.price).toLocaleString()}</p>
-                                <p className="text-sm text-admin-text-light">per item</p>
+                              <div className="text-right flex-shrink-0">
+                                <p className="font-semibold text-admin-text text-sm sm:text-base">₹{Number(item.price).toLocaleString()}</p>
+                                <p className="text-xs sm:text-sm text-admin-text-light">per item</p>
                               </div>
                             </div>
                           ))}
