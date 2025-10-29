@@ -20,6 +20,7 @@ export const useGuestWishlist = () => {
   const saveToStorage = (items: string[]) => {
     localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(items));
     setGuestWishlist(items);
+    window.dispatchEvent(new CustomEvent('guestWishlistUpdated', { detail: items }));
   };
 
   const addToGuestWishlist = (productId: string) => {

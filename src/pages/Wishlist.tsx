@@ -54,9 +54,9 @@ const Wishlist: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="text-center py-16"
           >
-            <HeartCrack className="h-24 w-24 text-gray-300 mx-auto mb-6" />
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Your Wishlist is Empty</h2>
-            <p className="text-xl text-gray-600 mb-8">
+            <HeartCrack className="h-16 w-16 sm:h-24 sm:w-24 text-gray-300 mx-auto mb-4 sm:mb-6" />
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">Your Wishlist is Empty</h2>
+            <p className="text-sm sm:text-base lg:text-xl text-gray-600 mb-6 sm:mb-8 px-4">
               Save your favorite fragrances here to easily find them later!
             </p>
             <Link

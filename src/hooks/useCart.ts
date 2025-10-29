@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSupabaseCart } from './useSupabaseCart';
 import { useGuestCart } from './useGuestCart';
@@ -10,12 +10,24 @@ export const useCart = () => {
   const supabaseCart = useSupabaseCart();
   const guestCartHook = useGuestCart();
   const { products } = useSupabaseProducts();
+  const [guestCartVersion, setGuestCartVersion] = useState(0);
 
   useEffect(() => {
     if (user && guestCartHook.guestCart.length > 0) {
       guestCartHook.migrateToUserCart(user.id, supabase);
     }
   }, [user]);
+
+  useEffect(() => {
+    const handleGuestCartUpdate = () => {
+      setGuestCartVersion(v => v + 1);
+    };
+
+    window.addEventListener('guestCartUpdated', handleGuestCartUpdate);
+    return () => {
+      window.removeEventListener('guestCartUpdated', handleGuestCartUpdate);
+    };
+  }, []);
 
   if (user) {
     return {
@@ -31,27 +43,30 @@ export const useCart = () => {
     };
   }
 
-  const guestCartItems = guestCartHook.guestCart
-    .map(item => {
-      const product = products.find(p => p.id === item.product_id);
-      if (!product) return null;
-      return {
-        id: item.product_id,
-        product_id: item.product_id,
-        quantity: item.quantity,
-        product: {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          original_price: product.original_price,
-          image_url: product.image_url,
-          category: product.category,
-          category_name: product.category_name,
-          in_stock: product.in_stock,
-        },
-      };
-    })
-    .filter(item => item !== null);
+  const guestCartItems = useMemo(() =>
+    guestCartHook.guestCart
+      .map(item => {
+        const product = products.find(p => p.id === item.product_id);
+        if (!product) return null;
+        return {
+          id: item.product_id,
+          product_id: item.product_id,
+          quantity: item.quantity,
+          product: {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            original_price: product.original_price,
+            image_url: product.image_url,
+            category: product.category,
+            category_name: product.category_name,
+            in_stock: product.in_stock,
+          },
+        };
+      })
+      .filter(item => item !== null),
+    [guestCartHook.guestCart, products, guestCartVersion]
+  );
 
   return {
     cartItems: guestCartItems,

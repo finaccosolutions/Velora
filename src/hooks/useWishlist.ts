@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSupabaseWishlist } from './useSupabaseWishlist';
 import { useGuestWishlist } from './useGuestWishlist';
@@ -10,12 +10,24 @@ export const useWishlist = () => {
   const supabaseWishlist = useSupabaseWishlist();
   const guestWishlistHook = useGuestWishlist();
   const { products } = useSupabaseProducts();
+  const [guestWishlistVersion, setGuestWishlistVersion] = useState(0);
 
   useEffect(() => {
     if (user && guestWishlistHook.guestWishlist.length > 0) {
       guestWishlistHook.migrateToUserWishlist(user.id, supabase);
     }
   }, [user]);
+
+  useEffect(() => {
+    const handleGuestWishlistUpdate = () => {
+      setGuestWishlistVersion(v => v + 1);
+    };
+
+    window.addEventListener('guestWishlistUpdated', handleGuestWishlistUpdate);
+    return () => {
+      window.removeEventListener('guestWishlistUpdated', handleGuestWishlistUpdate);
+    };
+  }, []);
 
   if (user) {
     return {
@@ -30,25 +42,28 @@ export const useWishlist = () => {
     };
   }
 
-  const guestWishlistItems = guestWishlistHook.guestWishlist
-    .map(productId => {
-      const product = products.find(p => p.id === productId);
-      if (!product) return null;
-      return {
-        id: productId,
-        product_id: productId,
-        created_at: new Date().toISOString(),
-        product: {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          image_url: product.image_url,
-          category: product.category,
-          category_name: product.category_name,
-        },
-      };
-    })
-    .filter(item => item !== null);
+  const guestWishlistItems = useMemo(() =>
+    guestWishlistHook.guestWishlist
+      .map(productId => {
+        const product = products.find(p => p.id === productId);
+        if (!product) return null;
+        return {
+          id: productId,
+          product_id: productId,
+          created_at: new Date().toISOString(),
+          product: {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            image_url: product.image_url,
+            category: product.category,
+            category_name: product.category_name,
+          },
+        };
+      })
+      .filter(item => item !== null),
+    [guestWishlistHook.guestWishlist, products, guestWishlistVersion]
+  );
 
   return {
     wishlistItems: guestWishlistItems,

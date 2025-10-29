@@ -25,6 +25,7 @@ export const useGuestCart = () => {
   const saveToStorage = (items: GuestCartItem[]) => {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
     setGuestCart(items);
+    window.dispatchEvent(new CustomEvent('guestCartUpdated', { detail: items }));
   };
 
   const addToGuestCart = (productId: string, quantity: number = 1) => {
