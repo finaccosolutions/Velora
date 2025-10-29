@@ -525,6 +525,8 @@ const Checkout: React.FC = () => {
           price: item.product.price,
         })),
         guest_email: !user ? guestEmail : null,
+        guest_phone: !user ? guestPhone : null,
+        guest_name: !user ? guestFullName : null,
       };
 
       const options = {
@@ -1288,7 +1290,7 @@ const Checkout: React.FC = () => {
                   />
                   <CreditCard className="h-5 w-5 text-gray-600 mr-3" />
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900">Razorpay (Online Payment)</p>
+                    <p className="font-medium text-gray-900">Online Payment</p>
                     <p className="text-sm text-gray-600">
                       {isRazorpayEnabled
                         ? 'UPI, Cards, NetBanking, Wallets'
