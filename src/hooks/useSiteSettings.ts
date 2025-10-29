@@ -82,7 +82,9 @@ export const useSiteSettings = () => {
 
       if (result.error) throw result.error;
 
-      setSettings(prev => ({ ...prev, [key]: value }));
+      // Update both snake_case and camelCase versions in state
+      const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+      setSettings(prev => ({ ...prev, [key]: value, [camelKey]: value }));
       return { data: result.data, error: null };
     } catch (err: any) {
       console.error(`Error updating setting '${key}':`, err.message);

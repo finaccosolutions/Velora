@@ -129,7 +129,7 @@ const AdminSettings: React.FC = () => {
   const [activeTab, setActiveTab] = useState('general'); // State for active tab
 
   const { isAdmin } = useAuth();
-  const { settings, loading: settingsLoading, error: settingsError, updateSetting } = useSiteSettings();
+  const { settings, loading: settingsLoading, error: settingsError, updateSetting, fetchSettings } = useSiteSettings();
   const navigate = useNavigate();
   const { showToast } = useToast();
 
@@ -272,6 +272,8 @@ const AdminSettings: React.FC = () => {
         showToast('Some settings failed to save. Please try again.', 'error');
       } else {
         showToast('Settings saved successfully!', 'success');
+        // Refresh settings from database after successful save
+        await fetchSettings();
       }
     } catch (error: any) {
       console.error('Error saving site settings:', error);

@@ -12,36 +12,7 @@ export const useWishlist = () => {
   const { products } = useSupabaseProducts();
   const [guestWishlistVersion, setGuestWishlistVersion] = useState(0);
 
-  useEffect(() => {
-    if (user && guestWishlistHook.guestWishlist.length > 0) {
-      guestWishlistHook.migrateToUserWishlist(user.id, supabase);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    const handleGuestWishlistUpdate = () => {
-      setGuestWishlistVersion(v => v + 1);
-    };
-
-    window.addEventListener('guestWishlistUpdated', handleGuestWishlistUpdate);
-    return () => {
-      window.removeEventListener('guestWishlistUpdated', handleGuestWishlistUpdate);
-    };
-  }, []);
-
-  if (user) {
-    return {
-      wishlistItems: supabaseWishlist.wishlistItems,
-      loading: supabaseWishlist.loading,
-      addToWishlist: supabaseWishlist.addToWishlist,
-      removeFromWishlist: supabaseWishlist.removeFromWishlist,
-      removeFromWishlistByProductId: supabaseWishlist.removeFromWishlistByProductId,
-      getWishlistItemsCount: supabaseWishlist.getWishlistItemsCount,
-      isInWishlist: supabaseWishlist.isInWishlist,
-      fetchWishlistItems: supabaseWishlist.fetchWishlistItems,
-    };
-  }
-
+  // Always create guest wishlist items (memoized)
   const guestWishlistItems = useMemo(() =>
     guestWishlistHook.guestWishlist
       .map(productId => {
@@ -64,6 +35,37 @@ export const useWishlist = () => {
       .filter(item => item !== null),
     [guestWishlistHook.guestWishlist, products, guestWishlistVersion]
   );
+
+  useEffect(() => {
+    if (user && guestWishlistHook.guestWishlist.length > 0) {
+      guestWishlistHook.migrateToUserWishlist(user.id, supabase);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    const handleGuestWishlistUpdate = () => {
+      setGuestWishlistVersion(v => v + 1);
+    };
+
+    window.addEventListener('guestWishlistUpdated', handleGuestWishlistUpdate);
+    return () => {
+      window.removeEventListener('guestWishlistUpdated', handleGuestWishlistUpdate);
+    };
+  }, []);
+
+  // Return appropriate wishlist based on user state
+  if (user) {
+    return {
+      wishlistItems: supabaseWishlist.wishlistItems,
+      loading: supabaseWishlist.loading,
+      addToWishlist: supabaseWishlist.addToWishlist,
+      removeFromWishlist: supabaseWishlist.removeFromWishlist,
+      removeFromWishlistByProductId: supabaseWishlist.removeFromWishlistByProductId,
+      getWishlistItemsCount: supabaseWishlist.getWishlistItemsCount,
+      isInWishlist: supabaseWishlist.isInWishlist,
+      fetchWishlistItems: supabaseWishlist.fetchWishlistItems,
+    };
+  }
 
   return {
     wishlistItems: guestWishlistItems,
