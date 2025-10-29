@@ -118,7 +118,8 @@ useEffect(() => {
       setInitialLoadComplete(true);
     }
   }
-}, [user?.id, authLoading]); // Changed from user to user?.id to prevent reference changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [user?.id, authLoading]);
 
 
   const addToWishlist = async (productId: string) => {

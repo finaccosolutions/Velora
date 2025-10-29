@@ -72,14 +72,12 @@ export const useSiteSettings = () => {
           .from('site_settings')
           .update({ value, updated_at: new Date().toISOString() })
           .eq('key', key)
-          .select()
-          .maybeSingle();
+          .select();
       } else {
         result = await supabase
           .from('site_settings')
           .insert({ key, value })
-          .select()
-          .maybeSingle();
+          .select();
       }
 
       if (result.error) throw result.error;
