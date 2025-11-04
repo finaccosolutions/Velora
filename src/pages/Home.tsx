@@ -9,57 +9,8 @@ import { supabaseUrl, supabaseAnonKey } from '../lib/supabase'; // Import Supaba
 import { useSiteSettings } from '../hooks/useSiteSettings'; // NEW: Import useSiteSettings
 
 const Home: React.FC = () => {
-  const { user, session, loading: authLoading } = useAuth(); // Get user and session from useAuth
-  const { settings, loading: settingsLoading } = useSiteSettings(); // NEW: Get site settings
-
-  // REMOVE START: Direct fetch test
-  // const handleDirectFetchProducts = async () => {
-  //   console.log('Attempting direct product fetch...');
-  //   if (!user || !session) {
-  //     console.error('No active user or session found for direct fetch.');
-  //     return;
-  //   }
-
-  //   try {
-  //     const productsEndpoint = `${supabaseUrl}/rest/v1/products?select=*`;
-  //     console.log('Attempting raw fetch to:', productsEndpoint);
-  //     console.log('Using access token (first 5 chars):', session.access_token.substring(0, 5) + '...');
-
-  //     const response = await Promise.race([
-  //       fetch(productsEndpoint, {
-  //         method: 'GET',
-  //         headers: {
-  //           'Content-Type': 'application/json',
-  //           'apikey': supabaseAnonKey, // Your anon key
-  //           'Authorization': `Bearer ${session.access_token}`, // The authenticated token
-  //         },
-  //       }),
-  //       new Promise((_, reject) =>
-  //         setTimeout(() => reject(new Error('Direct fetch timed out after 5 seconds')), 5000)
-  //       )
-  //     ]);
-
-  //     if (!response.ok) {
-  //       const errorText = await response.text();
-  //       throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
-  //     }
-
-  //     const data = await response.json();
-  //     console.log('Raw fetch successful:', data);
-
-  //   } catch (e: any) {
-  //     console.error('Direct product fetch caught exception:', e.message);
-  //   }
-  // };
-
-  // Optional: Trigger direct fetch on component mount if user is logged in
-  // useEffect(() => {
-  //   if (!authLoading && user && session) {
-  //     console.log('Home.tsx: User and session available, attempting direct fetch on mount.');
-  //     handleDirectFetchProducts();
-  //   }
-  // }, [user, session, authLoading]); // Dependencies
-  // REMOVE END: Direct fetch test
+  const { user, session, loading: authLoading } = useAuth();
+  const { settings, loading: settingsLoading } = useSiteSettings();
 
   if (settingsLoading) {
     return (
@@ -148,50 +99,6 @@ const Home: React.FC = () => {
           </div>
         </div>
       </section>
-
-      {/* Features Section */}
-      <section className="py-12 sm:py-20 bg-gradient-to-br from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8">
-            {[
-              { icon: Truck, title: 'Free Shipping', desc: 'On orders above ₹2000' },
-              { icon: Shield, title: 'Authentic Products', desc: '100% genuine fragrances' },
-              { icon: HeadphonesIcon, title: '24/7 Support', desc: 'Always here to help' },
-              { icon: Star, title: 'Premium Quality', desc: 'Luxury at its finest' }
-            ].map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                whileHover={{ y: -8, transition: { duration: 0.3 } }}
-                className="text-center p-4 sm:p-8 bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-[#815536]/30"
-              >
-                <motion.div
-                  className="inline-flex items-center justify-center w-12 h-12 sm:w-20 sm:h-20 bg-gradient-to-br from-[#815536] to-[#c9baa8] rounded-full mb-3 sm:mb-6"
-                  whileHover={{ scale: 1.1, rotate: 5 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <feature.icon className="h-6 w-6 sm:h-10 sm:w-10 text-white" />
-                </motion.div>
-                <h3 className="text-sm sm:text-lg font-bold text-gray-900 mb-2 sm:mb-3">{feature.title}</h3>
-                <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">{feature.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* REMOVE START: NEW: Temporary Direct Fetch Button for testing */}
-      {/* <section className="py-8 bg-gray-100 text-center">
-        <button
-          onClick={handleDirectFetchProducts}
-          className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-        >
-          Fetch Products Directly (Debug)
-        </button>
-      </section> */}
-      {/* REMOVE END: NEW: Temporary Direct Fetch Button for testing */}
 
       {/* Featured Products */}
       <FeaturedProducts />

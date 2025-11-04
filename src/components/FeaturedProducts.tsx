@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Heart, Star, ArrowRight } from 'lucide-react';
+import { ShoppingCart, Heart, Star, Truck, Shield, HeadphonesIcon } from 'lucide-react';
 import { useSupabaseProducts } from '../hooks/useSupabaseProducts';
 import { useSupabaseCart } from '../hooks/useSupabaseCart';
 import { useSupabaseWishlist } from '../hooks/useSupabaseWishlist';
@@ -15,7 +15,7 @@ const FeaturedProducts: React.FC = () => {
   const { showToast } = useToast();
   const navigate = useNavigate();
 
-  const featuredProducts = products.slice(0, 6);
+  const allProducts = products;
 
   const handleAddToCart = async (productId: string, event?: React.MouseEvent) => {
     if (event) {
@@ -114,7 +114,7 @@ const FeaturedProducts: React.FC = () => {
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {featuredProducts.map((product, index) => (
+          {allProducts.map((product, index) => (
             <motion.div
               key={product.id}
               initial={{ opacity: 0, y: 50 }}
@@ -223,20 +223,37 @@ const FeaturedProducts: React.FC = () => {
           ))}
         </div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-          className="text-center mt-16"
-        >
-          <Link
-            to="/products"
-            className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white font-semibold rounded-lg hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200 space-x-2"
-          >
-            <span>View All Products</span>
-            <ArrowRight className="h-5 w-5" />
-          </Link>
-        </motion.div>
+      </div>
+
+      {/* Features Section Below Products */}
+      <div className="mt-20 pt-20 border-t border-gray-200">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8">
+          {[
+            { icon: Truck, title: 'Free Shipping', desc: 'On orders above ₹2000' },
+            { icon: Shield, title: 'Authentic Products', desc: '100% genuine fragrances' },
+            { icon: HeadphonesIcon, title: '24/7 Support', desc: 'Always here to help' },
+            { icon: Star, title: 'Premium Quality', desc: 'Luxury at its finest' }
+          ].map((feature, index) => (
+            <motion.div
+              key={feature.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              whileHover={{ y: -8, transition: { duration: 0.3 } }}
+              className="text-center p-4 sm:p-8 bg-white rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-[#815536]/30"
+            >
+              <motion.div
+                className="inline-flex items-center justify-center w-12 h-12 sm:w-20 sm:h-20 bg-gradient-to-br from-[#815536] to-[#c9baa8] rounded-full mb-3 sm:mb-6"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                transition={{ duration: 0.3 }}
+              >
+                <feature.icon className="h-6 w-6 sm:h-10 sm:w-10 text-white" />
+              </motion.div>
+              <h3 className="text-sm sm:text-lg font-bold text-gray-900 mb-2 sm:mb-3">{feature.title}</h3>
+              <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">{feature.desc}</p>
+            </motion.div>
+          ))}
+        </div>
       </div>
     </section>
   );
