@@ -26,7 +26,7 @@ const Home: React.FC = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative w-full h-96 sm:h-[600px] lg:h-screen flex items-end justify-center overflow-hidden bg-black">
+      <section className="relative w-full h-[400px] sm:h-[550px] lg:h-[800px] flex items-end justify-center overflow-hidden bg-black">
         {/* Hero Image Background */}
         {settings.hero_image_url && (
           <motion.div
@@ -74,15 +74,7 @@ const Home: React.FC = () => {
               Discover Your Signature Scent
             </motion.h1>
 
-            {/* Subtitle */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6, delay: 0.6 }}
-              className="text-base sm:text-lg lg:text-xl text-white/90 mb-10 max-w-2xl mx-auto"
-            >
-              Elevate your presence with our exquisite collection of authentic, luxury fragrances
-            </motion.p>
+
 
             {/* CTA Buttons */}
             <motion.div
