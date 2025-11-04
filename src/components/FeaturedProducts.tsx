@@ -98,7 +98,7 @@ const FeaturedProducts: React.FC = () => {
   }
 
   return (
-    <section className="py-20 bg-white">
+    <section className="py-20 bg-gradient-to-br from-white via-gray-50 to-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -106,8 +106,8 @@ const FeaturedProducts: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">Featured Fragrances</h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">Featured Fragrances</h2>
+          <p className="text-sm sm:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto">
             Discover our handpicked selection of premium perfumes, each crafted to perfection
             and designed to make you unforgettable.
           </p>
@@ -120,18 +120,24 @@ const FeaturedProducts: React.FC = () => {
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-2xl transition-all duration-300"
+              whileHover={{ y: -12, transition: { duration: 0.3 } }}
+              className="bg-white rounded-2xl shadow-lg overflow-hidden group hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-[#815536]/20"
             >
               <Link to={`/product/${product.id}`} className="block">
-                <div className="relative overflow-hidden">
+                <div className="relative overflow-hidden bg-gray-100">
                   <motion.img
-                    whileHover={{ scale: 1.1 }}
-                    transition={{ duration: 0.5 }}
+                    whileHover={{ scale: 1.15 }}
+                    transition={{ duration: 0.6 }}
                     src={product.image_url}
                     alt={product.name}
-                    className="w-full h-64 object-cover"
+                    className="w-full h-72 object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    whileHover={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"
+                  ></motion.div>
 
                   <button
                     onClick={(e) => handleWishlistToggle(e, product.id, product.name)}
@@ -154,7 +160,7 @@ const FeaturedProducts: React.FC = () => {
                   )}
                 </div>
 
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   <div className="flex items-center space-x-2 mb-2">
                     <div className="flex text-yellow-400">
                       {[...Array(5)].map((_, i) => (
@@ -167,19 +173,19 @@ const FeaturedProducts: React.FC = () => {
                     <span className="text-xs text-gray-600">({product.reviews_count})</span>
                   </div>
 
-                  <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-[#815536] transition-colors">
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2 line-clamp-2 group-hover:text-[#815536] transition-colors">
                     {product.name}
                   </h3>
 
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                  <p className="text-xs sm:text-sm text-gray-600 mb-3 line-clamp-2">
                     {product.description}
                   </p>
 
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-2">
-                      <span className="text-xl font-bold text-[#815536]">₹{product.price.toLocaleString()}</span>
+                      <span className="text-lg sm:text-xl font-bold text-[#815536]">₹{product.price.toLocaleString()}</span>
                       {product.original_price && (
-                        <span className="text-sm text-gray-400 line-through">₹{product.original_price.toLocaleString()}</span>
+                        <span className="text-xs sm:text-sm text-gray-400 line-through">₹{product.original_price.toLocaleString()}</span>
                       )}
                     </div>
                     <span className="bg-[#c9baa8]/20 text-[#815536] px-2 py-1 rounded-full text-xs font-medium">
@@ -196,7 +202,7 @@ const FeaturedProducts: React.FC = () => {
                         e.stopPropagation();
                         handleAddToCart(product.id, e);
                       }}
-                      className="flex items-center justify-center space-x-1 px-3 py-2 bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white text-sm font-semibold rounded-lg hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200"
+                      className="flex items-center justify-center space-x-1 px-3 py-2 sm:py-3 bg-gradient-to-r from-[#815536] to-[#c9baa8] text-white text-xs sm:text-sm font-semibold rounded-lg hover:from-[#6d4429] hover:to-[#b8a494] transition-all duration-200"
                     >
                       <ShoppingCart className="h-4 w-4" />
                       <span>Add</span>
@@ -206,7 +212,7 @@ const FeaturedProducts: React.FC = () => {
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={(e) => handleBuyNow(e, product.id)}
-                      className="flex items-center justify-center space-x-1 px-3 py-2 border-2 border-[#815536] text-[#815536] text-sm font-semibold rounded-lg hover:bg-[#815536] hover:text-white transition-all duration-200"
+                      className="flex items-center justify-center space-x-1 px-3 py-2 sm:py-3 border-2 border-[#815536] text-[#815536] text-xs sm:text-sm font-semibold rounded-lg hover:bg-[#815536] hover:text-white transition-all duration-200"
                     >
                       <span>Buy Now</span>
                     </motion.button>

@@ -1,5 +1,5 @@
 // src/pages/Wishlist.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Trash2, HeartCrack, ArrowLeft, ShoppingCart } from 'lucide-react';
@@ -8,6 +8,9 @@ import { useCart } from '../hooks/useCart';
 import { useToast } from '../context/ToastContext';
 
 const Wishlist: React.FC = () => {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
   const { wishlistItems, removeFromWishlist, loading } = useWishlist();
   const { addToCart } = useCart();
   const navigate = useNavigate();

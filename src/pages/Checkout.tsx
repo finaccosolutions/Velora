@@ -20,6 +20,10 @@ declare global {
 }
 
 const Checkout: React.FC = () => {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const { cartItems, getCartTotal, clearCart, loading: cartLoading } = useCart();
   const { user, userProfile } = useAuth();
   const { products } = useSupabaseProducts();

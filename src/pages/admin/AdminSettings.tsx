@@ -16,6 +16,8 @@ interface SiteSettingsForm {
   siteName: string;
   logoUrl: string;
   heroImageUrl: string;
+  bannerImageUrl: string;
+  faviconUrl: string;
   primaryColor: string;
   secondaryColor: string;
   heroTitle: string;
@@ -159,6 +161,8 @@ const AdminSettings: React.FC = () => {
         heroTitle: formData.heroTitle || 'Discover Your Signature Scent',
         heroSubtitle: formData.heroSubtitle || 'Experience luxury fragrances that define your personality.',
         heroImageUrl: formData.heroImageUrl || '',
+        bannerImageUrl: formData.bannerImageUrl || '',
+        faviconUrl: formData.faviconUrl || '',
         razorpayKeyId: formData.razorpayKeyId || '',
         razorpayKeySecret: formData.razorpayKeySecret || '',
         paymentMethodsEnabled: formData.paymentMethodsEnabled || ['cod'],
@@ -436,6 +440,42 @@ const AdminSettings: React.FC = () => {
                           <p className="text-xs font-semibold text-admin-text mb-2">Preview:</p>
                           <div className="bg-white p-2 rounded">
                             <img src={settings.hero_image_url} alt="Hero Background Preview" className="w-full h-48 object-cover rounded" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Banner Image URL</label>
+                      <input
+                        {...register('bannerImageUrl')}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                        placeholder="https://example.com/banner.jpg"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Upload your banner image to an image hosting service and paste the direct link here. Recommended: Wide format image for promotional banners.</p>
+                      {/* Banner Image Preview */}
+                      {settings.banner_image_url && (
+                        <div className="mt-3 p-4 bg-admin-background rounded-lg border border-admin-border">
+                          <p className="text-xs font-semibold text-admin-text mb-2">Preview:</p>
+                          <div className="bg-white p-2 rounded">
+                            <img src={settings.banner_image_url} alt="Banner Preview" className="w-full h-32 object-cover rounded" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-admin-text-dark mb-2">Favicon URL</label>
+                      <input
+                        {...register('faviconUrl')}
+                        className="w-full p-3 border border-admin-border rounded-lg bg-admin-card text-admin-text focus:ring-2 focus:ring-admin-primary focus:border-transparent"
+                        placeholder="https://example.com/favicon.png"
+                      />
+                      <p className="text-xs text-admin-text-light mt-1">Upload your favicon to an image hosting service and paste the direct link here. This appears in browser tabs. Recommended: Square PNG, 32x32px or larger.</p>
+                      {/* Favicon Preview */}
+                      {settings.favicon_url && (
+                        <div className="mt-3 p-4 bg-admin-background rounded-lg border border-admin-border">
+                          <p className="text-xs font-semibold text-admin-text mb-2">Preview:</p>
+                          <div className="bg-white p-4 rounded flex items-center justify-center">
+                            <img src={settings.favicon_url} alt="Favicon Preview" className="h-8 w-8 object-contain" />
                           </div>
                         </div>
                       )}

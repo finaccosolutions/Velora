@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Info, X } from 'lucide-react';
@@ -8,6 +8,9 @@ import { useSiteSettings } from '../hooks/useSiteSettings';
 import { calculateGSTBreakdown } from '../utils/gstCalculator';
 
 const Cart: React.FC = () => {
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
   const { cartItems, removeFromCart, updateQuantity, getCartTotal, clearCart, loading } = useCart();
   const { user } = useAuth();
   const { settings } = useSiteSettings();
