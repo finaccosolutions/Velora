@@ -41,15 +41,6 @@ const Home: React.FC = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
             >
-              <h1 className="text-2xl sm:text-4xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight">
-                {settings.heroTitle || 'Discover Your'}
-                <span className="block bg-gradient-to-r from-[#c9baa8] to-white bg-clip-text text-transparent">
-                  {settings.heroTitle ? (settings.heroTitle.includes('Signature Scent') ? '' : 'Signature Scent') : 'Signature Scent'}
-                </span>
-              </h1>
-              <p className="text-base sm:text-xl text-[#c9baa8] mb-6 sm:mb-8 leading-relaxed">
-                {settings.heroSubtitle || 'Experience luxury fragrances that define your personality. From fresh daily wear to sophisticated evening scents, find your perfect match at Velora Tradings.'}
-              </p>
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                 <motion.div
                   whileHover={{ scale: 1.05 }}
@@ -86,13 +77,7 @@ const Home: React.FC = () => {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="relative"
             >
-              <div className="relative z-10">
-                <img
-                  src="https://images.pexels.com/photos/965989/pexels-photo-965989.jpeg?auto=compress&cs=tinysrgb&w=600"
-                  alt="Luxury Perfume"
-                  className="rounded-2xl shadow-2xl"
-                />
-              </div>
+
               <div className="absolute -top-4 -left-4 w-72 h-72 bg-[#c9baa8]/30 rounded-full blur-3xl"></div>
               <div className="absolute -bottom-4 -right-4 w-64 h-64 bg-white/20 rounded-full blur-3xl"></div>
             </motion.div>
