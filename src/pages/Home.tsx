@@ -26,63 +26,101 @@ const Home: React.FC = () => {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-[#815536] via-[#a67c52] to-[#c9baa8] overflow-hidden">
+      <section className="relative w-full h-96 sm:h-[600px] lg:h-screen flex items-end justify-center overflow-hidden bg-black">
+        {/* Hero Image Background */}
         {settings.hero_image_url && (
-          <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{ backgroundImage: `url(${settings.hero_image_url})` }}
-          ></div>
+          <motion.div
+            initial={{ scale: 1.05 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 1.2 }}
+            className="absolute inset-0 w-full h-full"
+          >
+            <img
+              src={settings.hero_image_url}
+              alt="Hero Banner"
+              className="w-full h-full object-cover"
+            />
+          </motion.div>
         )}
-        <div className="absolute inset-0 bg-black/40"></div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-24 lg:py-32">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-full sm:w-auto"
-                >
-                  <Link
-                    to="/products"
-                    className="inline-flex items-center justify-center w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-white text-[#815536] font-semibold rounded-lg hover:bg-gray-100 transition-colors duration-200 space-x-2"
-                  >
-                    <ShoppingBag className="h-5 w-5" />
-                    <span>Shop Now</span>
-                    <ArrowRight className="h-5 w-5" />
-                  </Link>
-                </motion.div>
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-full sm:w-auto hidden sm:block"
-                >
-                  <Link
-                    to="/about"
-                    className="inline-flex items-center justify-center w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 border-2 border-white text-white font-semibold rounded-lg hover:bg-white hover:text-[#815536] transition-all duration-200"
-                  >
-                    Learn More
-                  </Link>
-                </motion.div>
-              </div>
-            </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative"
-            >
+        {/* Overlay - Gradient at bottom for text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70"></div>
 
-              <div className="absolute -top-4 -left-4 w-72 h-72 bg-[#c9baa8]/30 rounded-full blur-3xl"></div>
-              <div className="absolute -bottom-4 -right-4 w-64 h-64 bg-white/20 rounded-full blur-3xl"></div>
+        {/* Content - Positioned at bottom */}
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          className="relative z-10 pb-12 sm:pb-16 lg:pb-20 px-4 sm:px-6 lg:px-8 w-full"
+        >
+          <div className="max-w-7xl mx-auto text-center">
+            {/* Optional Tagline */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="text-sm sm:text-base font-medium text-white/80 mb-6 tracking-wide uppercase"
+            >
+              Premium Fragrances Collection
+            </motion.p>
+
+            {/* Main Heading */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.5 }}
+              className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-8 max-w-4xl mx-auto leading-tight"
+            >
+              Discover Your Signature Scent
+            </motion.h1>
+
+            {/* Subtitle */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+              className="text-base sm:text-lg lg:text-xl text-white/90 mb-10 max-w-2xl mx-auto"
+            >
+              Elevate your presence with our exquisite collection of authentic, luxury fragrances
+            </motion.p>
+
+            {/* CTA Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.7 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center items-center"
+            >
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Link
+                  to="/products"
+                  className="inline-flex items-center justify-center px-8 sm:px-12 py-4 sm:py-5 bg-white text-[#815536] font-bold rounded-lg hover:bg-gray-100 transition-all duration-300 space-x-2 shadow-lg hover:shadow-2xl"
+                >
+                  <ShoppingBag className="h-5 w-5" />
+                  <span>Shop Now</span>
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="hidden sm:block"
+              >
+                <Link
+                  to="/about"
+                  className="inline-flex items-center justify-center px-8 sm:px-12 py-4 sm:py-5 border-2 border-white text-white font-bold rounded-lg hover:bg-white hover:text-[#815536] transition-all duration-300 shadow-lg hover:shadow-2xl"
+                >
+                  Learn More
+                </Link>
+              </motion.div>
             </motion.div>
           </div>
-        </div>
+        </motion.div>
+
       </section>
 
       {/* Featured Products */}
